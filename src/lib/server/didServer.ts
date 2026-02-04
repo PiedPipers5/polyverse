@@ -4,7 +4,7 @@ import { env } from "$env/dynamic/private";
 // Type definition for the result
 interface DidGenerationResult {
     did: string;
-    didDocument: any; // Using 'any' for simplicity, but strictly this is a DID Document interface
+    didDocument: any; // TODO:add type, this is a DID Document interface
     privateKey: string; // The private key (JWK format) to store securely
     publicKey: string;  // The public key (JWK format)
 }
