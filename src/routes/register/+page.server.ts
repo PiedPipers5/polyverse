@@ -1,10 +1,10 @@
-import { fail, redirect } from "@sveltejs/kit";
+import { fail } from "@sveltejs/kit";
 import { db } from "$lib/server/db";
 import { users, userSecrets } from "$lib/server/db/schema";
 import { generateDidWeb } from "$lib/server/didServer";
 import { encrypt } from "$lib/server/encryption";
 import { eq } from "drizzle-orm";
-import z, { success } from "zod";
+import z from "zod";
 import * as argon2 from "argon2";
 import type { Actions } from "./$types";
 
@@ -17,7 +17,7 @@ const registerSchema = z.object({
         .min(12, { message: "Password must be at least 12 characters" })
         .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
         .regex(/[0-9]/, { message: "Password must contain at least one number" })
-        .regex(/\!\@\#\$\%\^\&\*\-\+/, { message: "Password must contain at least one special character [!,@,#,$,%,^,&,*,-,+]" }),
+        .regex(/[!@#$%^&*\-+]/, { message: "Password must contain at least one special character [!,@,#,$,%,^,&,*,-,+]" }),
 });
 
 type UserAuthData = z.infer<typeof registerSchema>;
@@ -50,6 +50,11 @@ export const actions: Actions = {
             // Check if user is already existing:
             const userExisting = await db.select().from(users).where(eq(users.username, validatedUserData.username));
 
+
+            if (userExisting.length > 0) {
+                return fail(409, { errors: "Username already taken" });
+            }
+
             // Hash Password with Argon2
             const pswdHash = await argon2.hash(validatedUserData.password);
 
@@ -59,21 +64,17 @@ export const actions: Actions = {
             // Encrypt Private key
             const encryptedPrivateKey = encrypt(didResult.privateKey);
 
-            // Add data to db (Transaction)
-            await db.transaction(async (tx) => {
+            // Add public viewable user data
+            const [newUser] = await db.insert(users).values({
+                username: validatedUserData.username,
+                passwordHash: pswdHash,
+                didDocument: didResult.didDocument
+            }).returning({ id: users.id });
 
-                // Add public viewable user data
-                const [newUser] = await tx.insert(users).values({
-                    username: validatedUserData.username,
-                    passwordHash: pswdHash,
-                    didDocument: didResult.didDocument
-                }).returning({ id: users.id });
-
-                // Add secrets to sepeerate db
-                await tx.insert(userSecrets).values({
-                    userId: newUser.id,
-                    encryptedPrivateKey: encryptedPrivateKey
-                });
+            // Add secrets to separate db
+            await db.insert(userSecrets).values({
+                userId: newUser.id,
+                encryptedPrivateKey: encryptedPrivateKey
             });
 
             return {
@@ -83,7 +84,7 @@ export const actions: Actions = {
 
         } catch (e) {
             console.log("Error when trying to register new user: ", e);
-            return fail(500, { message: "Internal Server Error" });
+            return fail(500, { errors: "Internal Server Error" });
         }
     }
 }
