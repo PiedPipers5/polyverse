@@ -7,34 +7,49 @@
 	import { toast } from 'svelte-sonner';
 	import { Copy } from 'lucide-svelte';
 
-	/* =========================================
-     TODO (Backend)
-     Replace with real user data
-  ========================================= */
-
-	let name = $state('Veeranji Uppara');
-	let username = $state('veeranji');
+	/**
+	 * USER STATE
+	 *
+	 * These values currently act as local UI state.
+	 * In future, they should be hydrated from:
+	 * - authenticated session
+	 * - database (Neon via Drizzle)
+	 * - decentralized identity service (did:web)
+	 */
+	let name = $state('sai tejash');
+	let username = $state('tejash');
 	let domain = $state('example.com');
 	let bio = $state('Full stack developer passionate about decentralized web.');
 	let did = $state('did:web:example.com:user:veeranji');
 
-	/* Derived handle */
+	/**
+	 * DERIVED HANDLE
+	 *
+	 * This is a computed value based on username + domain.
+	 * Backend should ensure consistency between stored username/domain
+	 * and the generated handle format.
+	 */
 	let handle = $derived(`@${username}@${domain}`);
 
-	/* =========================================
-     Copy Helpers
-  ========================================= */
-
+	/**
+	 * CLIPBOARD UTILITY
+	 *
+	 * Shared helper for copying user identifiers (handle, DID, etc.)
+	 * Can later be moved to a shared utilities module.
+	 */
 	async function copy(text: string) {
 		await navigator.clipboard.writeText(text);
 		toast.success('Copied to clipboard!');
 	}
 
-	/* =========================================
-     TODO (Backend)
-     Send updated profile data to API
-  ========================================= */
-
+	/**
+	 * SAVE PROFILE ACTION
+	 *
+	 * Intended future behavior:
+	 * - Validate inputs
+	 * - Send PATCH/PUT request to profile API
+	 * - Handle loading and error states
+	 */
 	function saveProfile() {
 		toast.success('Profile saved (frontend demo)');
 	}
@@ -47,10 +62,12 @@
 		</CardHeader>
 
 		<CardContent class="space-y-8">
-			<!-- ===============================
-       Avatar Section
-  ================================ -->
-
+			<!--
+				PROFILE IMAGE
+				Future implementation:
+				- Upload to object storage (Vercel Blob)
+				- Persist image URL in user profile table
+			-->
 			<div class="space-y-2">
 				<label class="font-medium">Profile Picture</label>
 
@@ -59,79 +76,76 @@
 						<AvatarFallback>VU</AvatarFallback>
 					</Avatar>
 
-					<!-- TODO (Backend)
-           Upload image to Vercel Blob -->
 					<Button variant="secondary">Upload Avatar</Button>
 				</div>
 			</div>
 
-			<!-- ===============================
-       Name Section
-  ================================ -->
-
+			<!--
+				DISPLAY NAME
+				User-facing name shown across profile and federation views
+			-->
 			<div class="space-y-2">
 				<label class="font-medium">Display Name</label>
-
 				<Input bind:value={name} />
 			</div>
 
-			<!-- ===============================
-       Username Section
-  ================================ -->
-
+			<!--
+				USERNAME
+				Constraints to be enforced server-side:
+				- uniqueness
+				- immutability (optional)
+			-->
 			<div class="space-y-2">
 				<label class="font-medium">Username</label>
-
-				<!-- TODO (Backend): Validate username uniqueness -->
 				<Input bind:value={username} />
 			</div>
 
-			<!-- ===============================
-       Bio Section
-  ================================ -->
-
+			<!--
+				BIO
+				Free-text profile description.
+				May be reused in ActivityPub `summary` field.
+			-->
 			<div class="space-y-2">
 				<label class="font-medium">Bio</label>
-
 				<Textarea rows={3} bind:value={bio} />
 			</div>
 
-			<!-- ===============================
-       Handle Display
-  ================================ -->
-
+			<!--
+				HANDLE
+				Read-only federated identifier derived from username + domain.
+				Used for discovery and sharing.
+			-->
 			<div class="space-y-2">
 				<label class="font-medium">Your Handle</label>
 
 				<div class="flex gap-2">
 					<Input readonly value={handle} />
-
 					<Button size="icon" onclick={() => copy(handle)}>
 						<Copy class="h-4 w-4" />
 					</Button>
 				</div>
 			</div>
 
-			<!-- ===============================
-       DID Identity Section
-  ================================ -->
-
+			<!--
+				DECENTRALIZED IDENTITY
+				Represents the user's DID (did:web).
+				Should remain immutable after creation.
+			-->
 			<div class="space-y-2">
 				<label class="font-medium">Decentralized Identity (DID)</label>
 
 				<div class="flex gap-2">
 					<Input readonly value={did} />
-
 					<Button size="icon" onclick={() => copy(did)}>
 						<Copy class="h-4 w-4" />
 					</Button>
 				</div>
 			</div>
 
-			<!-- ===============================
-       Save Button
-  ================================ -->
-
+			<!--
+				PRIMARY ACTION
+				Persists all profile changes.
+			-->
 			<div class="flex justify-end border-t pt-4">
 				<Button onclick={saveProfile}>Save Changes</Button>
 			</div>
