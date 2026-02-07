@@ -6,6 +6,8 @@
 	import { Copy, Settings } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { auth } from '$lib/stores/auth';
+	
 
 	/* =========================================
      TODO (Backend): Replace static user data
@@ -53,6 +55,18 @@
 		await navigator.clipboard.writeText(window.location.href);
 		toast.success('Profile link copied!');
 	}
+
+
+/* =========================================
+	Task 1.4.2
+     Authentication :  like needs login for viewing profile
+  ========================================= */
+
+	$effect(() => {
+		if (!$auth.loading && !$auth.authenticated) {
+			goto('/login');
+		}
+	});
 </script>
 
 <div class="flex min-h-screen justify-center bg-muted p-6">

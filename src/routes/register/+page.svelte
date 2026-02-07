@@ -10,64 +10,93 @@
 	let { form }: PageProps = $props();
 </script>
 
-<section class="flex h-screen w-screen items-center justify-center overflow-hidden select-none">
+<section
+	class="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-indigo-500/10 via-background to-purple-500/10 p-6 select-none"
+>
+	<!-- Overlay Alert -->
 	{#if form?.errors || form?.success}
-		<section
-			class="absolute flex h-screen w-screen flex-col items-center justify-center bg-background/20 backdrop-blur select-none"
-		>
-			<Alert.Root class={`w-1/3 shadow-[0px_0px_50px_0px_#80000000]`}>
-				<Alert.Title class={`${form?.errors && 'text-red-400'}`}
-					>{form?.success ? 'Error Occurred' : 'Yayy!'}</Alert.Title
-				>
+		<div class="absolute inset-0 z-20 flex items-center justify-center bg-background/40 backdrop-blur">
+			<Alert.Root class="w-full max-w-md shadow-2xl border">
+				<Alert.Title class={form?.errors ? 'text-red-500' : 'text-green-500'}>
+					{form?.errors ? 'Error Occurred' : 'Registration Successful'}
+				</Alert.Title>
 
 				{#if form?.success}
-					<Alert.Description class="font-bold">Your DID Web Token is:</Alert.Description>
+					<Alert.Description class="font-semibold mt-2">
+						Your DID Web Token:
+					</Alert.Description>
 				{/if}
 
-				<Alert.Description>{form?.errors ? form.errors : form.did}</Alert.Description>
-				<Alert.Description
-					><p class="w-full py-3 text-center text-balance">
-						Refresh page to try again
-					</p></Alert.Description
-				>
+				<Alert.Description class="mt-2 break-all">
+					{form?.errors ? form.errors : form.did}
+				</Alert.Description>
+
+				<Alert.Description class="pt-4 text-center text-sm text-muted-foreground">
+					Refresh the page to continue
+				</Alert.Description>
 			</Alert.Root>
-		</section>
+		</div>
 	{/if}
 
-	<!-- User Registration Card -->
-	<Card.Root class="-my-4 w-full max-w-sm">
-		<Card.Header>
-			<Card.Title>Register on PolyVerse</Card.Title>
-			<Card.Description
-				>Hello there! Your journey to the future of social media starts here</Card.Description
-			>
+	<!-- Registration Card -->
+	<Card.Root
+		class="relative z-10 w-full max-w-md border bg-card/90 backdrop-blur-xl shadow-xl rounded-2xl"
+	>
+		<Card.Header class="space-y-2 text-center">
+			<Card.Title class="text-2xl font-bold tracking-tight">
+				Join PolyVerse
+			</Card.Title>
+			<Card.Description class="text-sm text-muted-foreground">
+				Create your decentralized identity and step into the future
+			</Card.Description>
 		</Card.Header>
+
 		<Card.Content>
-			<form id="register-form" method="POST">
-				<div class="flex flex-col gap-6">
-					<div class="grid gap-2">
-						<Label for="username">Username</Label>
-						<Input
-							id="username"
-							name="username"
-							type="text"
-							placeholder="victor_von_doom"
-							required
-						/>
-					</div>
-					<div class="grid gap-2">
-						<div class="flex items-center">
-							<Label for="password">Create a Password</Label>
-						</div>
-						<Input id="password" name="password" type="password" required />
-					</div>
+			<form id="register-form" method="POST" class="space-y-6">
+				<div class="space-y-2">
+					<Label for="username">Username</Label>
+					<Input
+						id="username"
+						name="username"
+						type="text"
+						placeholder="victor_von_doom"
+						required
+						class="h-11"
+					/>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="password">Create a Password</Label>
+					<Input
+						id="password"
+						name="password"
+						type="password"
+						required
+						class="h-11"
+					/>
 				</div>
 			</form>
 		</Card.Content>
-		<Card.Footer class="flex-col gap-2">
-			<Button type="submit" form="register-form" class="w-full cursor-pointer"
-				>Join the PolyVerse</Button
+
+		<Card.Footer class="flex flex-col gap-3">
+			<Button
+				type="submit"
+				form="register-form"
+				class="w-full h-11 text-base font-semibold"
 			>
+				Join the PolyVerse
+			</Button>
+
+			<p class="text-center text-xs text-muted-foreground">
+				By registering, you create a decentralized web identity
+			</p>
+			<p class="text-center text-xs text-muted-foreground">
+	Already have an account?
+	<a href="/login" class="ml-1 underline underline-offset-4 hover:text-foreground">
+		Sign in
+	</a>
+</p>
+
 		</Card.Footer>
 	</Card.Root>
 </section>
