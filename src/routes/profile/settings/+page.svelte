@@ -6,6 +6,8 @@
 	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
 	import { toast } from 'svelte-sonner';
 	import { Copy } from 'lucide-svelte';
+	import { auth } from '$lib/stores/auth';
+	import { goto } from '$app/navigation';
 
 	/**
 	 * USER STATE
@@ -53,6 +55,17 @@
 	function saveProfile() {
 		toast.success('Profile saved (frontend demo)');
 	}
+
+/* =========================================
+	Task 1.4.2
+     Authentication : like needs login for viewing profile
+  ========================================= */
+
+	$effect(() => {
+	if (!$auth.loading && !$auth.authenticated) {
+		goto('/login');
+	}
+});
 </script>
 
 <div class="flex min-h-screen justify-center bg-muted p-6">
