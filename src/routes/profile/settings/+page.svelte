@@ -3,71 +3,69 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Avatar, AvatarFallback } from '$lib/components/ui/avatar';
+	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { toast } from 'svelte-sonner';
 	import { Copy } from 'lucide-svelte';
-	import { auth } from '$lib/stores/auth';
-	import { goto } from '$app/navigation';
-	import ImageUploader from '$lib/components/upload/ImageUploader.svelte';
 
+	let { data } = $props();
 
-	/**
-	 * USER STATE
-	 *
-	 * These values currently act as local UI state.
-	 * In future, they should be hydrated from:
-	 * - authenticated session
-	 * - database (Neon via Drizzle)
-	 * - decentralized identity service (did:web)
-	 */
-	let name = $state('sai tejash');
-	let username = $state('tejash');
-	let domain = $state('example.com');
-	let bio = $state('Full stack developer passionate about decentralized web.');
-	let did = $state('did:web:example.com:user:veeranji');
+	// Editable fields from server data
+	let displayName = $state(data.user.displayName || '');
+	let bio = $state(data.user.bio || '');
 
-	/**
-	 * DERIVED HANDLE
-	 *
-	 * This is a computed value based on username + domain.
-	 * Backend should ensure consistency between stored username/domain
-	 * and the generated handle format.
-	 */
-	let handle = $derived(`@${username}@${domain}`);
+	// Derived from server data (readonly)
+	const username = data.user.username;
+	const domain = data.user.domain;
+	const did = data.user.did;
+	const handle = data.user.handle;
+	const avatarUrl = data.user.avatarUrl;
 
-	/**
-	 * CLIPBOARD UTILITY
-	 *
-	 * Shared helper for copying user identifiers (handle, DID, etc.)
-	 * Can later be moved to a shared utilities module.
-	 */
+	// Get initials for avatar fallback
+	function getInitials(name: string | null, username: string): string {
+		if (name) {
+			return name
+				.split(' ')
+				.map((n) => n[0])
+				.join('')
+				.slice(0, 2)
+				.toUpperCase();
+		}
+		return username.slice(0, 2).toUpperCase();
+	}
+
+	/* Copy to clipboard helper */
 	async function copy(text: string) {
 		await navigator.clipboard.writeText(text);
-		toast.success('Copied to clipboard!');
+		toast.success('Copied!');
 	}
 
-	/**
-	 * SAVE PROFILE ACTION
-	 *
-	 * Intended future behavior:
-	 * - Validate inputs
-	 * - Send PATCH/PUT request to profile API
-	 * - Handle loading and error states
-	 */
-	function saveProfile() {
-		toast.success('Profile saved (frontend demo)');
-	}
+	/* Save profile changes */
+	let saving = $state(false);
 
-/* =========================================
-	Task 1.4.2
-     Authentication : like needs login for viewing profile
-  ========================================= */
+	async function saveProfile() {
+		saving = true;
+		try {
+			const response = await fetch('/api/users/me', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					displayName: displayName || null,
+					bio: bio || null
+				})
+			});
 
-	$effect(() => {
-	if (!$auth.loading && !$auth.authenticated) {
-		goto('/login');
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to save');
+			}
+
+			toast.success('Profile saved!');
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Failed to save profile');
+		} finally {
+			saving = false;
+		}
 	}
-});
 </script>
 
 <div class="flex min-h-screen justify-center bg-muted p-6">
@@ -77,35 +75,86 @@
 		</CardHeader>
 
 		<CardContent class="space-y-8">
-			<!--
-				PROFILE IMAGE
-				Future implementation:
-				- Upload to object storage (Vercel Blob)
-				- Persist image URL in user profile table
-			-->
+			<!-- Avatar Section -->
 			<div class="space-y-2">
-				<p class="font-medium">Profile Picture</p>
-
-
-				<div class="flex items-center gap-6">
-	<Avatar class="h-16 w-16">
-		<AvatarFallback>VU</AvatarFallback>
-	</Avatar>
-
-	<div class="flex-1">
-		<ImageUploader />
-	</div>
-</div>
-
+				<label class="font-medium">Profile Picture</label>
+				<div class="flex items-center gap-4">
+					<Avatar class="h-16 w-16">
+						{#if avatarUrl}
+							<AvatarImage src={avatarUrl} alt={displayName || username} />
+						{/if}
+						<AvatarFallback>{getInitials(displayName, username)}</AvatarFallback>
+					</Avatar>
+					<!-- TODO: Upload to Vercel Blob -->
+					<Button variant="secondary">Upload Avatar</Button>
+				</div>
 			</div>
 
+			<!-- Display Name Section -->
+			<div class="space-y-2">
+				<label class="font-medium">Display Name</label>
+				<Input bind:value={displayName} placeholder="Your display name" />
+			</div>
+
+			<!-- Username Section (readonly) -->
+			<div class="space-y-2">
+				<label class="font-medium">Username</label>
+				<Input value={username} readonly class="bg-muted" />
+				<p class="text-sm text-muted-foreground">Username cannot be changed.</p>
+			</div>
+
+			<!-- Bio Section -->
+			<div class="space-y-2">
+				<label class="font-medium">Bio</label>
+				<Textarea rows={3} bind:value={bio} placeholder="Tell the fediverse about yourself..." />
+			</div>
+
+			<!-- Handle Display -->
+			<div class="space-y-2">
+				<label class="font-medium">Your Handle</label>
+				<div class="flex gap-2">
+					<Input readonly value={handle} class="bg-muted" />
+					<Button size="icon" onclick={() => copy(handle)}>
+						<Copy class="h-4 w-4" />
+					</Button>
+				</div>
+				<p class="text-sm text-muted-foreground">
+					Share this with friends on other Fediverse platforms.
+				</p>
+			</div>
+
+			<!-- DID Identity Section -->
+			<div class="space-y-2">
+				<label class="font-medium">Decentralized Identity (DID)</label>
+				<div class="flex gap-2">
+					<Input readonly value={did} class="bg-muted font-mono text-sm" />
+					<Button size="icon" onclick={() => copy(did)}>
+						<Copy class="h-4 w-4" />
+					</Button>
+				</div>
+			</div>
+
+			<!-- Save Button -->
+			<div class="flex justify-end border-t pt-4">
+				<Button onclick={saveProfile} disabled={saving}>
+					{saving ? 'Saving...' : 'Save Changes'}
+				</Button>
+			</div>
+		</CardContent>
+	</Card>
+</div>
+
+<div>
+
+	<Card>
+		<CardContent>
 			<!--
 				DISPLAY NAME
 				User-facing name shown across profile and federation views
 			-->
 			<div class="space-y-2">
 				<label class="font-medium">Display Name</label>
-				<Input bind:value={name} />
+				<Input bind:value={displayName} />
 			</div>
 
 			<!--
@@ -116,7 +165,7 @@
 			-->
 			<div class="space-y-2">
 				<label class="font-medium">Username</label>
-				<Input bind:value={username} />
+				<Input readonly value={username} />
 			</div>
 
 			<!--
