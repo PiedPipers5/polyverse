@@ -8,6 +8,8 @@
 	import { Copy } from 'lucide-svelte';
 	import { auth } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
+	import ImageUploader from '$lib/components/upload/ImageUploader.svelte';
+
 
 	/**
 	 * USER STATE
@@ -82,15 +84,19 @@
 				- Persist image URL in user profile table
 			-->
 			<div class="space-y-2">
-				<label class="font-medium">Profile Picture</label>
+				<p class="font-medium">Profile Picture</p>
 
-				<div class="flex items-center gap-4">
-					<Avatar class="h-16 w-16">
-						<AvatarFallback>VU</AvatarFallback>
-					</Avatar>
 
-					<Button variant="secondary">Upload Avatar</Button>
-				</div>
+				<div class="flex items-center gap-6">
+	<Avatar class="h-16 w-16">
+		<AvatarFallback>VU</AvatarFallback>
+	</Avatar>
+
+	<div class="flex-1">
+		<ImageUploader />
+	</div>
+</div>
+
 			</div>
 
 			<!--
