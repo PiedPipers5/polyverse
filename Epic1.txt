@@ -1,0 +1,42 @@
+Epic 1: Foundation – Identity, Actors, and Cryptography
+Objective: The primary goal of Epic 1 is to establish the server infrastructure and implement the core Identity primitives. By the end of this phase, the system must be able to register users, generate decentralized identifiers, and expose an ActivityPub-compliant "Actor" profile that can be discovered by external Fediverse instances (e.g., Mastodon). This foundational work is critical as all subsequent social interactions rely on a valid, discoverable identity.
+User Story 1.1: Decentralized Account Creation
+Client Perspective: "As a new user, I want to sign up for an account that generates a secure, portable digital identity (DID) so that I can prove ownership of my username independently of the server administrators."
+Context: This story sets the stage for data autonomy. Instead of just a database row, the registration process triggers the creation of a cryptographic key pair and a DID Document. The did:web method is chosen for its balance of decentralization and compatibility with web standards.15
+Task 1.1.1 (BE): Implement the did:web generation service. Upon registration, generate an RSA-2048 or Ed25519 key pair. Construct a W3C-compliant DID Document JSON containing the public key in the verificationMethod section.4
+Task 1.1.2 (DO): Configure the PostgreSQL database schema. Create a users table with columns for id (UUID), username, password_hash, and a jsonb column for the did_document. Ensure the private key is stored in a separate secrets table, encrypted at rest using pgcrypto or application-level encryption.13
+Task 1.1.3 (FE): Develop the registration form in React. Implement client-side validation for username availability and password strength. Upon successful submission, display the generated DID (e.g., did:web:instance.com:u:alice) to the user as their unique identifier.11
+Task 1.1.4 (QA): Write unit tests for the key generation module. Verify that the generated DID Document passes the official W3C DID Core specification validator, ensuring correct syntax for id, controller, and assertionMethod.4
+Task 1.1.5 (BE): Implement the /.well-known/did.json resolution endpoint (or /.well-known/did/url-encoded-id). This endpoint must serve the DID Document with the content type application/did+ld+json or application/json, allowing external verifiers to fetch the public key.15
+User Story 1.2: ActivityPub Actor Discovery (WebFinger)
+Client Perspective: "As a user, I want my profile to be searchable by friends on other platforms (like Mastodon) using a familiar handle format (e.g., @alice@my-social-network.com)."
+Context: ActivityPub relies on WebFinger (RFC 7033) to translate human-readable handles into machine-readable Actor URLs. Without this, the platform is an island, invisible to the rest of the Fediverse.19
+Task 1.2.1 (BE): Implement the /.well-known/webfinger endpoint using the Fedify framework's built-in WebFinger tools or a custom Node.js handler. It must accept a resource query parameter (e.g., acct:alice@domain.com).8
+Task 1.2.2 (BE): Configure the WebFinger response to return a JRD (JSON Resource Descriptor) object. This object must contain a subject (the acct URI) and a link with rel="self" pointing to the ActivityPub Actor URL (e.g., https://domain.com/users/alice).19
+Task 1.2.3 (QA): Create an integration test using a tool like curl or Postman to query the WebFinger endpoint. Assert that the response headers include Content-Type: application/jrd+json and that the body contains the correct links.2
+Task 1.2.4 (DO): Configure the web server (Nginx/Railway Router) to handle the /.well-known/ path prefix correctly, ensuring it is not blocked by static asset caching rules or security filters.17
+Task 1.2.5 (FE): Create a "Profile Settings" page where the user can copy their full handle (@user@domain) to share with friends. Implement a "Copy to Clipboard" feature for better UX.10
+User Story 1.3: The Actor Profile (JSON-LD)
+Client Perspective: "As a user, I want my public profile to contain my name, bio, and avatar in a format that other apps can understand, so they can display my identity correctly."
+Context: The "Actor" object is the core identity primitive in ActivityPub. It is a JSON-LD document served at the user's ID URL. It defines the user's Inbox, Outbox, and Public Key.22
+Task 1.3.1 (BE): Create the GET /users/:username endpoint. This endpoint must perform content negotiation: if the Accept header asks for application/activity+json (or ld+json), return the Actor JSON. If it asks for text/html, serve the React frontend.1
+Task 1.3.2 (BE): Construct the Actor object structure using Fedify's type-safe builders. Include mandatory fields: id, type (Person), preferredUsername, inbox, outbox, followers, following, and publicKey.22
+Task 1.3.3 (BE): Integrate the DID Public Key into the Actor object. The publicKey.publicKeyPem field should match the key in the DID Document. This links the ActivityPub identity to the Decentralized Identity.5
+Task 1.3.4 (FE): Design the HTML fallback for the profile page. If a human visits the Actor URL in a browser, they should see a rendered React page with the user's avatar and bio, not raw JSON. This requires Server-Side Rendering (SSR) or proper routing logic.1
+Task 1.3.5 (QA): Validate the generated Actor JSON against the official ActivityStreams validator or activitypub.academy test suite to ensure strict compliance with the spec (e.g., ensuring @context is an array containing the correct string).25
+User Story 1.4: Secure Authentication
+Client Perspective: "As a registered user, I want to log in securely using my password so that I can access my account settings and post messages."
+Context: While federation is decentralized, local access requires standard authentication. The project uses JWTs for stateless session management.26
+Task 1.4.1 (BE): Implement a login endpoint that verifies the password against the stored bcrypt/argon2 hash. Upon success, issue a signed JWT containing the user's UUID and DID.26
+Task 1.4.2 (FE): Build the Login UI. On successful login, store the JWT in a secure, HttpOnly cookie (if possible) or local storage, and update the global application state (Context API/Redux) to reflect the logged-in user.27
+Task 1.4.3 (DO): Set up environment variables for JWT_SECRET and COOKIE_SECRET in the Railway/Render dashboard. Ensure these secrets are never committed to version control.28
+Task 1.4.4 (QA): Perform security testing on the auth endpoints. Attempt SQL injection on the login form and verify that the API handles invalid credentials with generic error messages ("Invalid username or password") to prevent enumeration attacks.2
+Task 1.4.5 (BE): Create an authentication middleware that verifies the JWT on protected routes (e.g., POST /outbox). If the token is invalid or expired, return a 401 Unauthorized status.26
+User Story 1.5: Profile Customization
+Client Perspective: "As a user, I want to upload a profile picture and write a short bio so that I can express my personality to the network."
+Context: Updating the Actor object involves changing the database and ensuring the served JSON reflects these changes immediately.
+Task 1.5.1 (FE): Implement an image upload component using react-dropzone. The upload should send the file to a backend endpoint which streams it to an S3-compatible object storage (e.g., AWS S3, Cloudflare R2).29
+Task 1.5.2 (BE): Create the PATCH /api/users/me endpoint. It accepts summary (bio), name (display name), and icon (avatar URL). Update the users table accordingly.13
+Task 1.5.3 (BE): Ensure the Actor JSON generation logic dynamically pulls these new fields. The icon property must be an Image object with a url and mediaType.19
+Task 1.5.4 (QA): Verify that the bio field sanitizes HTML input. Use a library like dompurify on the backend to prevent Stored XSS attacks if users attempt to inject <script> tags into their profiles.30
+Task 1.5.5 (DO): Configure the object storage bucket policies to allow public read access for the uploaded avatar images, as they need to be fetchable by remote servers.29

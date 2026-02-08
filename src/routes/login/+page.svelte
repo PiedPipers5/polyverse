@@ -1,103 +1,66 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import { Label } from '$lib/components/ui/label';
-	import { Input } from '$lib/components/ui/input';
-	import * as Card from '$lib/components/ui/card';
-	import * as Alert from '$lib/components/ui/alert';
+  import { enhance } from '$app/forms';
+  import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '$lib/components/ui/card';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
 
-    import { auth } from '$lib/stores/auth';
-
-
-	import { goto } from '$app/navigation';
-	import type { PageProps } from './$types';
-
-	let { form }: PageProps = $props();
-
-	$effect(() => {
-	if (form?.success && form?.user) {
-		auth.login(form.user); // ✅ GLOBAL AUTH STATE SET
-		goto(`/u/@${form.user.username}`);
-	}
-});
-
+  let { form } = $props();
 </script>
 
-<section
-	class="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-indigo-500/10 via-background to-purple-500/10 p-6 select-none"
->
-	<!-- Error Overlay -->
-	{#if form?.errors}
-		<div class="absolute inset-0 z-20 flex items-center justify-center bg-background/40 backdrop-blur">
-			<Alert.Root class="w-full max-w-md border shadow-2xl">
-				<Alert.Title class="text-red-500">
-					Login Failed
-				</Alert.Title>
+<div class="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+  <Card class="w-full max-w-md border-purple-500/20 bg-slate-900/80 backdrop-blur-xl">
+    <CardHeader class="text-center">
+      <CardTitle class="text-2xl font-bold text-white">Welcome Back</CardTitle>
+      <CardDescription class="text-slate-400">
+        Sign in to your Polyverse account
+      </CardDescription>
+    </CardHeader>
 
-				<Alert.Description class="mt-2">
-					{form.errors}
-				</Alert.Description>
+    <form method="POST" use:enhance>
+      <CardContent class="space-y-4">
+        {#if form?.error}
+          <div class="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
+            {form.error}
+          </div>
+        {/if}
 
-				<Alert.Description class="pt-4 text-center text-sm text-muted-foreground">
-					Check your credentials and try again
-				</Alert.Description>
-			</Alert.Root>
-		</div>
-	{/if}
+        <div class="space-y-2">
+          <Label for="username" class="text-slate-300">Username</Label>
+          <Input 
+            id="username" 
+            name="username" 
+            type="text" 
+            required 
+            class="border-slate-700 bg-slate-800/50 text-white placeholder:text-slate-500"
+            placeholder="Enter your username"
+          />
+        </div>
 
-	<!-- Login Card -->
-	<Card.Root
-		class="relative z-10 w-full max-w-md border bg-card/90 backdrop-blur-xl shadow-xl rounded-2xl"
-	>
-		<Card.Header class="space-y-2 text-center">
-			<Card.Title class="text-2xl font-bold tracking-tight">
-				Welcome Back
-			</Card.Title>
-			<Card.Description class="text-sm text-muted-foreground">
-				Sign in to your PolyVerse identity
-			</Card.Description>
-		</Card.Header>
+        <div class="space-y-2">
+          <Label for="password" class="text-slate-300">Password</Label>
+          <Input 
+            id="password" 
+            name="password" 
+            type="password" 
+            required 
+            class="border-slate-700 bg-slate-800/50 text-white placeholder:text-slate-500"
+            placeholder="Enter your password"
+          />
+        </div>
+      </CardContent>
 
-		<Card.Content>
-			<form id="login-form" method="POST" class="space-y-6">
-				<div class="space-y-2">
-					<Label for="username">Username</Label>
-					<Input
-						id="username"
-						name="username" 
-                        placeholder="victor_von_doom"
-						type="text"
-						required
-						class="h-11"
-					/>
-				</div>
-
-				<div class="space-y-2">
-					<Label for="password">Password</Label>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-                        placeholder="Enter your password"
-						required
-						class="h-11"
-					/>
-				</div>
-			</form>
-		</Card.Content>
-
-		<Card.Footer class="flex flex-col gap-3">
-			<Button
-	type="submit"
-	form="login-form"
-	class="w-full h-11 text-base font-semibold "
->
-	Sign In
-</Button>
-
-
-			<p class="text-center text-xs text-muted-foreground">
-				New to PolyVerse? <a href="/register" class="underline">Create an account</a>
-			</p>
-		</Card.Footer>
-	</Card.Root>
-</section>
+      <CardFooter class="flex flex-col gap-4">
+        <Button type="submit" class="w-full bg-purple-600 hover:bg-purple-700">
+          Sign In
+        </Button>
+        <p class="text-center text-sm text-slate-400">
+          Don't have an account? 
+          <a href="/register" class="text-purple-400 hover:text-purple-300 underline">
+            Register
+          </a>
+        </p>
+      </CardFooter>
+    </form>
+  </Card>
+</div>

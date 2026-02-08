@@ -38,6 +38,24 @@ export const users = pgTable('users', {
      * Good practice for auditing and sorting :)
      */
     createdAt: timestamp('created_at').defaultNow().notNull(),
+
+    /**
+     * Display name for the user (e.g., "Alice Smith").
+     * This appears in the Actor JSON as 'name'.
+     */
+    displayName: text('display_name'),
+
+    /**
+     * User's bio/summary.
+     * This appears in the Actor JSON as 'summary'.
+     */
+    bio: text('bio'),
+
+    /**
+     * URL to the user's avatar image.
+     * Stored in Vercel Blob storage.
+     */
+    avatarUrl: text('avatar_url'),
 });
 
 
