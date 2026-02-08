@@ -5,11 +5,12 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { toast } from 'svelte-sonner';
-	import { Copy } from 'lucide-svelte';
+	import { Copy, LogOut, ArrowLeft } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
 
-	const { prop_data } = $props();
-
-	let data = $state(prop_data);
+	// Get data from server load function (Svelte 5 syntax)
+	let { data } = $props();
 
 	// Editable fields from server data
 	let displayName = $state(data.user.displayName || '');
@@ -72,8 +73,21 @@
 
 <div class="flex min-h-screen justify-center bg-muted p-6">
 	<Card class="w-full max-w-2xl shadow-lg">
-		<CardHeader>
-			<CardTitle>Profile Settings</CardTitle>
+		<CardHeader class="flex flex-row items-center justify-between">
+			<div class="flex items-center gap-2">
+				<Button variant="ghost" size="icon" onclick={() => goto('/profile')}>
+					<ArrowLeft class="h-4 w-4" />
+				</Button>
+				<CardTitle>Profile Settings</CardTitle>
+			</div>
+
+			<!-- Logout Button -->
+			<form method="POST" action="/logout" use:enhance>
+				<Button type="submit" variant="outline" size="sm">
+					<LogOut class="mr-1 h-4 w-4" />
+					Logout
+				</Button>
+			</form>
 		</CardHeader>
 
 		<CardContent class="space-y-8">
@@ -95,20 +109,25 @@
 			<!-- Display Name Section -->
 			<div class="space-y-2">
 				<label for="display-name" class="font-medium">Display Name</label>
-				<Input name="display-name" bind:value={displayName} placeholder="Your display name" />
+				<Input id="display-name" bind:value={displayName} placeholder="Your display name" />
 			</div>
 
 			<!-- Username Section (readonly) -->
 			<div class="space-y-2">
 				<label for="username" class="font-medium">Username</label>
-				<Input name="username" value={username} readonly class="bg-muted" />
+				<Input id="username" value={username} readonly class="bg-muted" />
 				<p class="text-sm text-muted-foreground">Username cannot be changed.</p>
 			</div>
 
 			<!-- Bio Section -->
 			<div class="space-y-2">
 				<label for="bio" class="font-medium">Bio</label>
-				<Textarea name="bio" rows={3} bind:value={bio} placeholder="Tell the fediverse about yourself..." />
+				<Textarea
+					id="bio"
+					rows={3}
+					bind:value={bio}
+					placeholder="Tell the fediverse about yourself..."
+				/>
 			</div>
 
 			<!-- Handle Display -->

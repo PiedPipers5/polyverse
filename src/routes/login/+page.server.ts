@@ -74,8 +74,8 @@ export const actions: Actions = {
             throw redirect(302, '/profile');
 
         } catch (error) {
-            // Re-throw redirects
-            if (error instanceof Response) {
+            // Re-throw redirects (SvelteKit 2 uses Redirect class)
+            if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
                 throw error;
             }
 
