@@ -7,7 +7,9 @@
 	import { toast } from 'svelte-sonner';
 	import { Copy } from 'lucide-svelte';
 
-	let { data } = $props();
+	const { prop_data } = $props();
+
+	let data = $state(prop_data);
 
 	// Editable fields from server data
 	let displayName = $state(data.user.displayName || '');
@@ -77,7 +79,7 @@
 		<CardContent class="space-y-8">
 			<!-- Avatar Section -->
 			<div class="space-y-2">
-				<label class="font-medium">Profile Picture</label>
+				<p class="font-medium">Profile Picture</p>
 				<div class="flex items-center gap-4">
 					<Avatar class="h-16 w-16">
 						{#if avatarUrl}
@@ -92,26 +94,26 @@
 
 			<!-- Display Name Section -->
 			<div class="space-y-2">
-				<label class="font-medium">Display Name</label>
-				<Input bind:value={displayName} placeholder="Your display name" />
+				<label for="display-name" class="font-medium">Display Name</label>
+				<Input name="display-name" bind:value={displayName} placeholder="Your display name" />
 			</div>
 
 			<!-- Username Section (readonly) -->
 			<div class="space-y-2">
-				<label class="font-medium">Username</label>
-				<Input value={username} readonly class="bg-muted" />
+				<label for="username" class="font-medium">Username</label>
+				<Input name="username" value={username} readonly class="bg-muted" />
 				<p class="text-sm text-muted-foreground">Username cannot be changed.</p>
 			</div>
 
 			<!-- Bio Section -->
 			<div class="space-y-2">
-				<label class="font-medium">Bio</label>
-				<Textarea rows={3} bind:value={bio} placeholder="Tell the fediverse about yourself..." />
+				<label for="bio" class="font-medium">Bio</label>
+				<Textarea name="bio" rows={3} bind:value={bio} placeholder="Tell the fediverse about yourself..." />
 			</div>
 
 			<!-- Handle Display -->
 			<div class="space-y-2">
-				<label class="font-medium">Your Handle</label>
+				<p class="font-medium">Your Handle</p>
 				<div class="flex gap-2">
 					<Input readonly value={handle} class="bg-muted" />
 					<Button size="icon" onclick={() => copy(handle)}>
@@ -125,7 +127,7 @@
 
 			<!-- DID Identity Section -->
 			<div class="space-y-2">
-				<label class="font-medium">Decentralized Identity (DID)</label>
+				<p class="font-medium">Decentralized Identity (DID)</p>
 				<div class="flex gap-2">
 					<Input readonly value={did} class="bg-muted font-mono text-sm" />
 					<Button size="icon" onclick={() => copy(did)}>
@@ -139,83 +141,6 @@
 				<Button onclick={saveProfile} disabled={saving}>
 					{saving ? 'Saving...' : 'Save Changes'}
 				</Button>
-			</div>
-		</CardContent>
-	</Card>
-</div>
-
-<div>
-
-	<Card>
-		<CardContent>
-			<!--
-				DISPLAY NAME
-				User-facing name shown across profile and federation views
-			-->
-			<div class="space-y-2">
-				<label class="font-medium">Display Name</label>
-				<Input bind:value={displayName} />
-			</div>
-
-			<!--
-				USERNAME
-				Constraints to be enforced server-side:
-				- uniqueness
-				- immutability (optional)
-			-->
-			<div class="space-y-2">
-				<label class="font-medium">Username</label>
-				<Input readonly value={username} />
-			</div>
-
-			<!--
-				BIO
-				Free-text profile description.
-				May be reused in ActivityPub `summary` field.
-			-->
-			<div class="space-y-2">
-				<label class="font-medium">Bio</label>
-				<Textarea rows={3} bind:value={bio} />
-			</div>
-
-			<!--
-				HANDLE
-				Read-only federated identifier derived from username + domain.
-				Used for discovery and sharing.
-			-->
-			<div class="space-y-2">
-				<label class="font-medium">Your Handle</label>
-
-				<div class="flex gap-2">
-					<Input readonly value={handle} />
-					<Button size="icon" onclick={() => copy(handle)}>
-						<Copy class="h-4 w-4" />
-					</Button>
-				</div>
-			</div>
-
-			<!--
-				DECENTRALIZED IDENTITY
-				Represents the user's DID (did:web).
-				Should remain immutable after creation.
-			-->
-			<div class="space-y-2">
-				<label class="font-medium">Decentralized Identity (DID)</label>
-
-				<div class="flex gap-2">
-					<Input readonly value={did} />
-					<Button size="icon" onclick={() => copy(did)}>
-						<Copy class="h-4 w-4" />
-					</Button>
-				</div>
-			</div>
-
-			<!--
-				PRIMARY ACTION
-				Persists all profile changes.
-			-->
-			<div class="flex justify-end border-t pt-4">
-				<Button onclick={saveProfile}>Save Changes</Button>
 			</div>
 		</CardContent>
 	</Card>

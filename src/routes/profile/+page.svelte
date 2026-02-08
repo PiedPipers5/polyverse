@@ -78,7 +78,7 @@
          - bannerImageUrl
          - Stored in Vercel Blob
     ========================================= -->
-		<div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600" />
+		<div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
 
 		<div class="-mt-12 flex flex-col items-center">
 			<!-- =========================================
