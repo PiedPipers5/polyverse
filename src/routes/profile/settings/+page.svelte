@@ -15,13 +15,17 @@
 	// Editable fields from server data
 	let displayName = $state(data.user.displayName || '');
 	let bio = $state(data.user.bio || '');
+	let avatarUrl = $state(data.user.avatarUrl);
 
 	// Derived from server data (readonly)
 	const username = data.user.username;
 	const domain = data.user.domain;
 	const did = data.user.did;
 	const handle = data.user.handle;
-	const avatarUrl = data.user.avatarUrl;
+
+	// Avatar upload state
+	let uploading = $state(false);
+	let fileInput: HTMLInputElement;
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
@@ -40,6 +44,53 @@
 	async function copy(text: string) {
 		await navigator.clipboard.writeText(text);
 		toast.success('Copied!');
+	}
+
+	/* Handle avatar upload */
+	async function handleAvatarUpload(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+
+		if (!file) return;
+
+		// Validate file type
+		if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+			toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+			input.value = '';
+			return;
+		}
+
+		// Validate file size (5MB max)
+		if (file.size > 5 * 1024 * 1024) {
+			toast.error('Image too large. Maximum size is 5MB.');
+			input.value = '';
+			return;
+		}
+
+		uploading = true;
+		try {
+			const formData = new FormData();
+			formData.append('avatar', file);
+
+			const response = await fetch('/api/upload/avatar', {
+				method: 'POST',
+				body: formData
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to upload');
+			}
+
+			const data = await response.json();
+			avatarUrl = data.url;
+			toast.success('Avatar uploaded successfully!');
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Failed to upload avatar');
+		} finally {
+			uploading = false;
+			input.value = '';
+		}
 	}
 
 	/* Save profile changes */
@@ -101,8 +152,17 @@
 						{/if}
 						<AvatarFallback>{getInitials(displayName, username)}</AvatarFallback>
 					</Avatar>
-					<!-- TODO: Upload to Vercel Blob -->
-					<Button variant="secondary">Upload Avatar</Button>
+					<!-- Hidden file input -->
+					<input
+						type="file"
+						accept="image/*"
+						bind:this={fileInput}
+						onchange={handleAvatarUpload}
+						class="hidden"
+					/>
+					<Button variant="secondary" onclick={() => fileInput?.click()} disabled={uploading}>
+						{uploading ? 'Uploading...' : 'Upload Avatar'}
+					</Button>
 				</div>
 			</div>
 
