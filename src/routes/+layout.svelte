@@ -12,9 +12,7 @@
 </svelte:head>
 
 {#if $auth.loading}
-	<div class="flex min-h-screen items-center justify-center">
-		Loading...
-	</div>
+	<div class="flex min-h-screen items-center justify-center">Loading...</div>
 {:else}
 	<div class="min-h-screen bg-background text-foreground">
 		{@render children()}
