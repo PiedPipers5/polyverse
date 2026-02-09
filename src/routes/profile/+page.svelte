@@ -17,7 +17,12 @@
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
 		if (name) {
-			return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+			return name
+				.split(' ')
+				.map((n) => n[0])
+				.join('')
+				.slice(0, 2)
+				.toUpperCase();
 		}
 		return username.slice(0, 2).toUpperCase();
 	}
@@ -83,7 +88,7 @@
 		</div>
 
 		<!-- Stats Section (placeholder for now - will be implemented in later epics) -->
-		<div class="mt-6 grid grid-cols-3 border-t py-6 text-center">
+		<div class="mt-6 grid grid-cols-3 border-t py-6 text-center select-none">
 			<div>
 				<p class="text-xl font-semibold">0</p>
 				<p class="text-sm text-muted-foreground">Followers</p>
@@ -133,7 +138,7 @@
 					</div>
 					<div>
 						<p class="text-sm font-medium text-muted-foreground">Member since</p>
-						<p>{new Date(user.createdAt).toLocaleDateString()}</p>
+						<p>{new Date(user.createdAt).toLocaleDateString('en-IN')}</p>
 					</div>
 				</div>
 			</TabsContent>

@@ -1,10 +1,10 @@
-import { fail } from "@sveltejs/kit";
+import { fail, redirect } from "@sveltejs/kit";
 import { db } from "$lib/server/db";
 import { users, userSecrets } from "$lib/server/db/schema";
 import { generateDidWeb } from "$lib/server/didServer";
 import { encrypt } from "$lib/server/encryption";
 import { eq } from "drizzle-orm";
-import z from "zod";
+import z, { success } from "zod";
 import * as argon2 from "argon2";
 import type { Actions } from "./$types";
 
@@ -14,7 +14,7 @@ const registerSchema = z.object({
         .min(5, { message: "Username must be at least 5 characters" })
         .regex(/^[a-zA-Z0-9_]+$/, { message: "Username can only contain letters, numbers, and underscores" }),
     password: z.string()
-        .min(12, { message: "Password must be at least 12 characters" })
+        .min(8, { message: "Password must be at least 12 characters" })
         .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
         .regex(/[0-9]/, { message: "Password must contain at least one number" })
         .regex(/[!@#$%^&*\-+]/, { message: "Password must contain at least one special character [!,@,#,$,%,^,&,*,-,+]" }),
