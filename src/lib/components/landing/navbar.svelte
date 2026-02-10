@@ -3,6 +3,18 @@
 	import { Button } from '$lib/components/ui/button';
 	import ThemeToggle from '$lib/components/ui/theme-toggle.svelte';
 
+	type User = {
+		username: string;
+		displayName: string | null;
+		avatarUrl: string | null;
+	};
+
+	type Props = {
+		user?: User | null;
+	};
+
+	let { user = null }: Props = $props();
+
 	let scrolled = $state(false);
 	let mobileMenuOpen = $state(false);
 
@@ -57,17 +69,37 @@
 			<!-- Theme Toggle & CTA Buttons -->
 			<div class="hidden items-center space-x-4 md:flex">
 				<ThemeToggle />
-				<a href="/login">
-					<Button variant="ghost" size="sm">Sign In</Button>
-				</a>
-				<a href="/register">
-					<Button
-						size="sm"
-						class="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
-					>
-						Get Started
-					</Button>
-				</a>
+				{#if user}
+					<!-- Logged in: Show profile avatar -->
+					<a href="/profile" class="group flex items-center space-x-2">
+						{#if user.avatarUrl}
+							<img
+								src={user.avatarUrl}
+								alt={user.displayName || user.username}
+								class="h-10 w-10 rounded-full border-2 border-violet-500 object-cover transition-transform group-hover:scale-110"
+							/>
+						{:else}
+							<div
+								class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-gradient-to-br from-violet-500 to-fuchsia-500 font-semibold text-white transition-transform group-hover:scale-110"
+							>
+								{(user.displayName || user.username).charAt(0).toUpperCase()}
+							</div>
+						{/if}
+					</a>
+				{:else}
+					<!-- Logged out: Show auth buttons -->
+					<a href="/login">
+						<Button variant="ghost" size="sm">Sign In</Button>
+					</a>
+					<a href="/register">
+						<Button
+							size="sm"
+							class="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
+						>
+							Get Started
+						</Button>
+					</a>
+				{/if}
 			</div>
 
 			<!-- Mobile Menu Button -->
@@ -110,16 +142,41 @@
 						</a>
 					{/each}
 					<div class="flex flex-col space-y-2 border-t border-border pt-4">
-						<a href="/login" onclick={() => (mobileMenuOpen = false)}>
-							<Button variant="ghost" class="w-full">Sign In</Button>
-						</a>
-						<a href="/register" onclick={() => (mobileMenuOpen = false)}>
-							<Button
-								class="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
+						{#if user}
+							<!-- Logged in: Show profile link -->
+							<a
+								href="/profile"
+								onclick={() => (mobileMenuOpen = false)}
+								class="flex items-center space-x-3 py-2"
 							>
-								Get Started
-							</Button>
-						</a>
+								{#if user.avatarUrl}
+									<img
+										src={user.avatarUrl}
+										alt={user.displayName || user.username}
+										class="h-10 w-10 rounded-full border-2 border-violet-500 object-cover"
+									/>
+								{:else}
+									<div
+										class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-gradient-to-br from-violet-500 to-fuchsia-500 font-semibold text-white"
+									>
+										{(user.displayName || user.username).charAt(0).toUpperCase()}
+									</div>
+								{/if}
+								<span class="text-sm font-medium">View Profile</span>
+							</a>
+						{:else}
+							<!-- Logged out: Show auth buttons -->
+							<a href="/login" onclick={() => (mobileMenuOpen = false)}>
+								<Button variant="ghost" class="w-full">Sign In</Button>
+							</a>
+							<a href="/register" onclick={() => (mobileMenuOpen = false)}>
+								<Button
+									class="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
+								>
+									Get Started
+								</Button>
+							</a>
+						{/if}
 					</div>
 				</div>
 			</div>

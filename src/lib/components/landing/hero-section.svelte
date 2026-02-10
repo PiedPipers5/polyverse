@@ -1,6 +1,18 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { ChevronDown } from 'lucide-svelte';
+
+	type User = {
+		username: string;
+		displayName: string | null;
+		avatarUrl: string | null;
+	};
+
+	type Props = {
+		user?: User | null;
+	};
+
+	let { user = null }: Props = $props();
 </script>
 
 <section class="relative flex min-h-screen items-center justify-center overflow-hidden pt-20">
@@ -48,12 +60,12 @@
 
 			<!-- CTA Buttons -->
 			<div class="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
-				<a href="/register">
+				<a href={user ? '/profile' : '/register'}>
 					<Button
 						size="lg"
 						class="bg-gradient-to-r from-violet-500 to-fuchsia-500 px-8 py-6 text-lg text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:from-violet-600 hover:to-fuchsia-600 hover:shadow-violet-500/50"
 					>
-						Get Started Free
+						{user ? 'Go to Profile' : 'Get Started Free'}
 					</Button>
 				</a>
 				<a href="#features">

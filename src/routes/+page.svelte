@@ -5,6 +5,8 @@
 	import StatsSection from '$lib/components/landing/stats-section.svelte';
 	import CtaSection from '$lib/components/landing/cta-section.svelte';
 	import Footer from '$lib/components/landing/footer.svelte';
+
+	let { data } = $props();
 </script>
 
 <svelte:head>
@@ -17,12 +19,12 @@
 </svelte:head>
 
 <div class="min-h-screen">
-	<Navbar />
+	<Navbar user={data.user} />
 	<main>
-		<HeroSection />
+		<HeroSection user={data.user} />
 		<FeaturesGrid />
 		<StatsSection />
-		<CtaSection />
+		<CtaSection user={data.user} />
 	</main>
 	<Footer />
 </div>

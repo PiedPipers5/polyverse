@@ -109,7 +109,7 @@
 			class="flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row"
 		>
 			<p class="text-sm text-foreground/60">
-				© {currentYear} POLYVERSE. All rights reserved.
+				© {currentYear} Piedpipers. All rights reserved.
 			</p>
 			<div class="flex items-center space-x-6">
 				<a
