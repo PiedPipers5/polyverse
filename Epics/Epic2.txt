@@ -1,0 +1,45 @@
+Epic 2: Content Creation and Data Autonomy
+Objective: Epic 2 focuses on the "Outbox" mechanism. In ActivityPub, the Outbox is the user's publishing stream. This Epic covers the creation of posts (Notes), their storage in the database, privacy scoping, and the ability to edit or delete them. This establishes the "local" functionality of the social network before federation is introduced.
+User Story 2.1: Publishing a Note
+Client Perspective: "As a user, I want to write and publish a short text post (Note) so that I can share my thoughts with my followers."
+Context: A "post" in ActivityPub is typically a Note object wrapped in a Create activity. The backend must construct this wrapper automatically.1
+Task 2.1.1 (FE): Develop a "Composer" component. It should include a text area, a character counter (e.g., 500 limit), and a submit button. Implement "optimistic UI" updates where the post appears in the feed immediately upon submission.10
+Task 2.1.2 (BE): Create the POST /users/:username/outbox endpoint. This endpoint accepts the raw text content. The backend must generate a unique ID (URI) for the post, typically https://domain/users/alice/statuses/<uuid>.2
+Task 2.1.3 (BE): Construct the ActivityPub object. Create a Note object with content, published, attributedTo, and to/cc fields. Then, wrap this Note in a Create activity.31
+Task 2.1.4 (DO): Design the activities table in PostgreSQL. Use a jsonb column to store the full Activity object. This schema-less approach allows for flexibility in storing different Activity types (Notes, Articles, Images) without constant migrations.13
+Task 2.1.5 (QA): Write a test case that verifies the Create activity structure. Ensure the actor field matches the attributedTo field of the Note, and that the ids are distinct and valid URIs.22
+User Story 2.2: Viewing the Outbox (My Feed)
+Client Perspective: "As a user, I want to see a chronological list of all the posts I have created so that I can review my own history."
+Context: The Outbox is an OrderedCollection. Fetching it requires pagination logic to handle large histories efficiently.1
+Task 2.2.1 (BE): Implement the GET /users/:username/outbox endpoint. This should return an OrderedCollection containing the total count of items and a link to the first page of items.1
+Task 2.2.2 (BE): Implement pagination logic (OrderedCollectionPage). The first page should contain the next property linking to older posts. The database query must use LIMIT and OFFSET (or cursor-based pagination) for performance.26
+Task 2.2.3 (FE): Build the Feed component. It should fetch the Outbox JSON and render each Note item. Handle the mapping of OrderedCollection structure to a React list.11
+Task 2.2.4 (FE): Implement "Infinite Scroll" or a "Load More" button. When the user reaches the bottom of the feed, the frontend should fetch the URL provided in the next field of the current page.10
+Task 2.2.5 (QA): Performance test the Outbox query. Seed the database with 10,000 activities and verify that the response time for the first page remains under 200ms.29
+User Story 2.3: Audience Scoping (Privacy Levels)
+Client Perspective: "As a user, I want to choose whether my post is public, visible only to followers, or private, so I can control the audience of my content."
+Context: ActivityPub defines privacy via the to and cc fields. There are no explicit "privacy settings" flags; instead, the addressing determines visibility.32
+Task 2.3.1 (FE): Add a privacy selector to the Composer (Public, Unlisted, Followers Only).
+Public: to: [Public], cc: [Followers]
+Unlisted: to: [Followers], cc: [Public]
+Followers Only: to: [Followers].33
+Task 2.3.2 (BE): Implement the mapping logic. Convert the frontend selection into the appropriate ActivityStreams URIs (e.g., https://www.w3.org/ns/activitystreams#Public).33
+Task 2.3.3 (BE): Implement read-access filtering. When the Outbox is requested, check the requestor's identity. If the requestor is not in the to or cc list (and the post is not Public), exclude the activity from the response.34
+Task 2.3.4 (QA): Create a test scenario where User A posts a "Followers Only" note. User B (who does not follow A) requests A's Outbox. Assert that the sensitive note is not present in the returned JSON.34
+Task 2.3.5 (DO): Ensure the database index covers the visibility fields inside the JSONB column to allow efficient filtering of public vs. private content.12
+User Story 2.4: Editing and Deleting
+Client Perspective: "As a user, I want to delete a post I made by mistake, or edit a typo, so that I can maintain the quality of my content."
+Context: ActivityPub handles deletion via the Delete activity and updates via the Update activity. Deletion often replaces the object with a Tombstone.36
+Task 2.4.1 (FE): Add "Edit" and "Delete" actions to the post dropdown menu. "Edit" should reload the content into the Composer.
+Task 2.4.2 (BE): Implement the Update handler. It should accept the new content, create an Update activity wrapping the modified Note, and update the content field in the database. The id of the Note remains the same.31
+Task 2.4.3 (BE): Implement the Delete handler. Create a Delete activity. In the database, replace the Note content with a Tombstone object (type: "Tombstone") to maintain the reference while removing the data.26
+Task 2.4.4 (BE): Ensure that fetching a Tombstoned object ID returns HTTP 410 Gone. This signals to caches and remote servers that the resource is permanently deleted.26
+Task 2.4.5 (QA): Verify that the Update activity increments the updated timestamp on the object and that the revision history is handled correctly (if implemented).22
+User Story 2.5: Media Attachments
+Client Perspective: "As a user, I want to attach an image to my post so that I can share visual experiences."
+Context: The Note object has an attachment property which contains an array of Document or Image objects.1
+Task 2.5.1 (BE): Create a generic /api/media/upload endpoint. It accepts multipart/form-data, validates the file type (MIME check), and uploads it to the configured S3 storage provider.29
+Task 2.5.2 (FE): Integrate a file picker in the Composer. On file selection, upload immediately to the media endpoint and receive a URL. Display a thumbnail preview to the user.10
+Task 2.5.3 (BE): When creating the Note, map the returned media URL to the attachment field: { type: "Image", url: "...", mediaType: "image/jpeg" }.1
+Task 2.5.4 (FE): Update the Feed component to render attachments. Use a secure img tag with alt text support. Consider adding a lightbox for full-screen viewing.11
+Task 2.5.5 (DO): Implement a cleanup job. If a user uploads an image but cancels the post, the orphaned image in S3 should be deleted after 24 hours to save storage costs.

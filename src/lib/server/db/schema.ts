@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, jsonb, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
 
 /**
  * Users Table
@@ -84,4 +84,91 @@ export const userSecrets = pgTable('user_secrets', {
      * Don't store key as plaintext text in this plsssss
      */
     encryptedPrivateKey: text('encrypted_private_key').notNull(),
+});
+
+/**
+ * Activities Table
+ * Stores all ActivityPub activities (Create, Update, Delete, Follow, Like, etc.)
+ * sent or received by this instance.
+ */
+export const activities = pgTable('activities', {
+    /**
+     * Unique identifier for the activity record.
+     */
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    /**
+     * The Actor who performed this activity.
+     * References the users table.
+     */
+    actorId: uuid('actor_id')
+        .notNull()
+        .references(() => users.id, { onDelete: 'cascade' }),
+
+    /**
+     * The full JSON-LD Activity object.
+     * Stored as jsonb for flexibility (schema-less).
+     * Includes standard fields: id, type, actor, object, published, to, cc.
+     */
+    activity: jsonb('activity').notNull(),
+
+    /**
+     * Visibility/Audience scoping.
+     * While 'to' and 'cc' are in the JSON, we might want indexed columns for faster filtering
+     * of Public vs Private posts if we were doing relational queries.
+     * For now, we rely on GIN indexing of the jsonb column or just filtering in code/query
+     * if the volume is low, but let's add a specific column for the top-level visibility
+     * optimization if needed later. For now, standard jsonb is fine as requested in Epic 2.1.4.
+     */
+    
+    /**
+     * Timestamp of when the activity was created/received.
+     */
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+
+    /**
+     * Type of activity (Create, Note, etc) for easier indexing/filtering without parsing JSON
+     */
+     type: text('type').notNull(),
+}, (table) => {
+    return {
+        // Composite index for efficient outbox queries (sorted by date for a specific actor)
+        // This is critical for User Story 2.2 - fetching activities by actorId ordered by createdAt
+        actorCreatedAtIdx: index('activities_actor_created_at_idx')
+            .on(table.actorId, table.createdAt),
+        
+        // Note: GIN index on JSONB column for filtering by to/cc fields
+        // will be created via SQL migration as Drizzle doesn't support .using() in type-safe API
+        // This helps with User Story 2.3 - filtering activities by audience/visibility
+    };
+});
+
+/**
+ * Followers Table
+ * Tracks who follows whom.
+ * Used for audience scoping (delivering to followers) and verifying read access.
+ */
+export const followers = pgTable('followers', {
+    /**
+     * The user being followed (the leader/target).
+     */
+    userId: uuid('user_id')
+        .notNull()
+        .references(() => users.id, { onDelete: 'cascade' }),
+
+    /**
+     * The user who is following (the follower).
+     */
+    followerId: uuid('follower_id')
+        .notNull()
+        .references(() => users.id, { onDelete: 'cascade' }),
+
+    /**
+     * When the follow relationship was established.
+     */
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+    return {
+        pk: { columns: [table.userId, table.followerId] }, // Composite primary key
+    };
 });
