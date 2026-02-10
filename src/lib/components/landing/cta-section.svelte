@@ -3,6 +3,18 @@
 	import { Input } from '$lib/components/ui/input';
 	import { ArrowRight } from 'lucide-svelte';
 
+	type User = {
+		username: string;
+		displayName: string | null;
+		avatarUrl: string | null;
+	};
+
+	type Props = {
+		user?: User | null;
+	};
+
+	let { user = null }: Props = $props();
+
 	let email = $state('');
 	let submitted = $state(false);
 	let loading = $state(false);
@@ -80,17 +92,31 @@
 							disabled={loading}
 							class="glass-card h-12 flex-1 border-white/20 px-6 text-base disabled:opacity-50"
 						/>
-						<Button
-							type="submit"
-							size="lg"
-							disabled={loading}
-							class="group h-12 bg-gradient-to-r from-violet-500 to-fuchsia-500 px-8 text-white hover:from-violet-600 hover:to-fuchsia-600 disabled:opacity-50"
-						>
-							{loading ? 'Subscribing...' : 'Get Started'}
-							{#if !loading}
-								<ArrowRight class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-							{/if}
-						</Button>
+						{#if user}
+							<!-- User is logged in: Show link to profile -->
+							<a href="/profile" class="w-full sm:w-auto">
+								<Button
+									size="lg"
+									class="group h-12 w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 px-8 text-white hover:from-violet-600 hover:to-fuchsia-600"
+								>
+									Go to Profile
+									<ArrowRight class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+								</Button>
+							</a>
+						{:else}
+							<!-- User is logged out: Show newsletter signup -->
+							<Button
+								type="submit"
+								size="lg"
+								disabled={loading}
+								class="group h-12 bg-gradient-to-r from-violet-500 to-fuchsia-500 px-8 text-white hover:from-violet-600 hover:to-fuchsia-600 disabled:opacity-50"
+							>
+								{loading ? 'Subscribing...' : 'Get Started'}
+								{#if !loading}
+									<ArrowRight class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+								{/if}
+							</Button>
+						{/if}
 					</form>
 
 					{#if error}
