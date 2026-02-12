@@ -3,6 +3,9 @@ import { db } from '$lib/server/db';
 import { users, followers, activities } from '$lib/server/db/schema';
 import { eq, and, count } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
+import { db } from '$lib/server/db';
+import { users, activities } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const username = params.username;

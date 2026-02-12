@@ -80,7 +80,7 @@
 			</div>
 
 			<!-- Stats -->
-			<div class="grid grid-cols-2 gap-8 pt-12 md:grid-cols-4">
+			<div class="grid grid-cols-2 gap-8 pt-12 pb-16 md:grid-cols-4 md:pb-16">
 				{#each [{ value: '100%', label: 'You Own Your Data' }, { value: 'Federated', label: 'Network' }, { value: 'E2E', label: 'Encrypted' }, { value: 'Open', label: 'Source' }] as stat}
 					<div class="space-y-1">
 						<div class="gradient-text text-2xl font-bold md:text-3xl">

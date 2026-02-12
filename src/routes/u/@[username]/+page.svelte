@@ -2,31 +2,17 @@
 	import { Card } from '$lib/components/ui/card';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
+	import Composer from '$lib/components/Composer.svelte';
 	import type { PageData } from './$types';
 
 	/* =========================================
-	   TODO (Backend Integration):
-	   This component receives profile data from +page.server.ts
-	   
-	   The data structure is:
-	   - profile.username (string)
-	   - profile.displayName (string)
-	   - profile.bio (string)
-	   - profile.avatarUrl (string) - URL to avatar image
-	   - profile.handle (string) - formatted as @username
-	   - profile.createdAt (Date)
-	   - profile.followersCount (number)
-	   - profile.followingCount (number)
-	   - profile.postsCount (number)
-	   
-	   When backend is integrated, +page.server.ts will fetch
-	   this data from the database instead of mock data.
+	   Backend Integration Complete
 	========================================= */
 
 	// Svelte 5: Receive SSR data via props
 	let { data }: { data: PageData } = $props();
 
-	const { profile } = data;
+	let profile = $derived(data.profile);
 
 	// Get initials for avatar fallback
 	function getInitials(name: string): string {
@@ -110,9 +96,23 @@
 
 			<TabsContent value="posts">
 				<div class="mt-4 space-y-3">
-					<Card class="p-4 text-center text-sm text-muted-foreground">
-						No posts yet. Check back later!
-					</Card>
+					{#if data.isOwner}
+						<Composer />
+					{/if}
+					{#if data.activities && data.activities.length > 0}
+						{#each data.activities as activity}
+							<Card class="p-4">
+								<p class="text-base whitespace-pre-wrap">{activity.content}</p>
+								<p class="mt-2 text-xs text-muted-foreground">
+									{new Date(activity.publishedAt).toLocaleString()}
+								</p>
+							</Card>
+						{/each}
+					{:else}
+						<Card class="p-4 text-center text-sm text-muted-foreground">
+							No posts yet. Check back later!
+						</Card>
+					{/if}
 				</div>
 			</TabsContent>
 
