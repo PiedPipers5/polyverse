@@ -38,11 +38,12 @@
 
 		localStorage.setItem('theme', newTheme);
 
-		document.documentElement.classList.toggle(
-			'dark',
+		// document.documentElement.classList.toggle(
+		// 	'dark',
 
-			newTheme === 'dark'
-		);
+		// 	newTheme === 'dark'
+		// );
+		document.getElementById('BODY')?.classList.toggle('dark', newTheme === 'dark');
 	}
 </script>
 
