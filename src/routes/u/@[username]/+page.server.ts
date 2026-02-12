@@ -1,86 +1,68 @@
 import { error } from '@sveltejs/kit';
+import { db } from '$lib/server/db';
+import { users, followers, activities } from '$lib/server/db/schema';
+import { eq, and, count } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
-/* =========================================
-   TODO (Backend Integration):
-   This is currently a MOCK implementation for frontend testing.
-   
-   To integrate with real database:
-   1. Uncomment database imports (db, users schema, eq from drizzle-orm)
-   2. Replace mockUsers object with actual database query
-   3. Extract profile data from DID document JSON (ActivityPub Actor format)
-   
-   Database fields to fetch:
-   - username (text)
-   - didDocument (jsonb) - contains name, summary, icon.url
-   - createdAt (timestamp)
-   
-   DID Document structure (ActivityPub Actor):
-   {
-	 "name": "Display Name",      // → displayName
-	 "summary": "User bio",        // → bio
-	 "icon": { "url": "..." }      // → avatarUrl
-   }
-========================================= */
-
-// MOCK VERSION - Frontend only, no database required
 export const load: PageServerLoad = async ({ params }) => {
-	let username = params.username;
+	const username = params.username;
 
-	// TODO (Backend): Replace this mock data with database query
-	// Example: const user = await db.query.users.findFirst({ where: eq(users.username, username) })
-	const mockUsers: Record<string, any> = {
-		veeranji: {
-			username: 'veeranji',
-			displayName: 'Veeranji Uppara',
-			bio: 'Full stack developer passionate about decentralized web and cybersecurity.',
-			avatarUrl: '',
-			createdAt: new Date('2024-01-15')
-		},
-		alice: {
-			username: 'alice',
-			displayName: 'Alice Smith',
-			bio: 'Software engineer and open source enthusiast.',
-			avatarUrl: '',
-			createdAt: new Date('2024-02-01')
-		},
-		bob: {
-			username: 'bob',
-			displayName: 'Bob Johnson',
-			bio: 'Designer and creative developer.',
-			avatarUrl: '',
-			createdAt: new Date('2024-03-10')
+	// Fetch user from database
+	const user = await db.query.users.findFirst({
+		where: eq(users.username, username),
+		columns: {
+			id: true,
+			username: true,
+			displayName: true,
+			bio: true,
+			avatarUrl: true,
+			didDocument: true,
+			createdAt: true
 		}
-	};
-
-	// TODO (Backend): Replace with actual database lookup
-	const user = mockUsers[username.toLowerCase()];
+	});
 
 	if (!user) {
-		// 404 handling works the same for real database
 		error(404, 'User not found');
 	}
 
-	// TODO (Backend): Extract from DID document instead of direct fields
-	// Example:
-	// const didDoc = user.didDocument as any;
-	// const displayName = didDoc?.name || username;
-	// const bio = didDoc?.summary || '';
-	// const avatarUrl = didDoc?.icon?.url || '';
+	// Extract profile data from DID document (fallback to direct fields)
+	const didDoc = user.didDocument as any;
+	const displayName = user.displayName || didDoc?.name || username;
+	const bio = user.bio || didDoc?.summary || '';
+	const avatarUrl = user.avatarUrl || didDoc?.icon?.url || '';
+
+	// Count followers (users who follow this user)
+	const followersResult = await db
+		.select({ count: count() })
+		.from(followers)
+		.where(eq(followers.userId, user.id));
+	const followersCount = followersResult[0]?.count || 0;
+
+	// Count following (users this user follows)
+	const followingResult = await db
+		.select({ count: count() })
+		.from(followers)
+		.where(eq(followers.followerId, user.id));
+	const followingCount = followingResult[0]?.count || 0;
+
+	// Count posts (activities created by this user)
+	const postsResult = await db
+		.select({ count: count() })
+		.from(activities)
+		.where(eq(activities.actorId, user.id));
+	const postsCount = postsResult[0]?.count || 0;
 
 	return {
 		profile: {
 			username: user.username,
-			displayName: user.displayName, // TODO: Extract from didDocument.name
-			bio: user.bio, // TODO: Extract from didDocument.summary
-			avatarUrl: user.avatarUrl, // TODO: Extract from didDocument.icon.url
+			displayName,
+			bio,
+			avatarUrl,
 			handle: `@${user.username}`,
 			createdAt: user.createdAt,
-			// TODO (Backend): When implementing social features, replace with real counts
-			// Example: await countFollowers(user.id), await countFollowing(user.id), etc.
-			followersCount: 0,
-			followingCount: 0,
-			postsCount: 0
+			followersCount,
+			followingCount,
+			postsCount
 		}
 	};
 };
