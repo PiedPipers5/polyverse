@@ -34,7 +34,7 @@
 <!-- svelte-ignore a11y_img_redundant_alt -->
 <img
 
-				src="src/lib/assets/pic.jpg"
+				src="src/lib/assets/pic.jpeg"
 
 				alt="Polyverse Network Illustration"
 
