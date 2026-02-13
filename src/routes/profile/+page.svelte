@@ -141,7 +141,7 @@
 			<TabsContent value="posts">
 				<div class="mt-4 space-y-3">
 					<Composer username={user.username} onPostCreated={handleNewPost} />
-					<Feed {posts} />
+					<Feed {posts} next={`/users/${user.username}/outbox?page=2`} />
 				</div>
 			</TabsContent>
 

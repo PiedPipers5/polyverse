@@ -120,7 +120,7 @@
 					{#if data.isOwner}
 						<Composer username={profile.username} onPostCreated={handleNewPost} />
 					{/if}
-					<Feed {posts} />
+					<Feed {posts} next={`/users/${profile.username}/outbox?page=2`} />
 				</div>
 			</TabsContent>
 

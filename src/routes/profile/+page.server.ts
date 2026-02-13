@@ -37,7 +37,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     const recentActivities = await db.query.activities.findMany({
         where: eq(activities.actorId, user.id),
         orderBy: (activities, { desc }) => [desc(activities.createdAt)],
-        limit: 20
+        limit: 3
     });
 
     // Count followers

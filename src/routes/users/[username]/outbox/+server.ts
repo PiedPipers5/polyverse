@@ -51,7 +51,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
     // 3. Determine Audience (to/cc)
     const actorUri = getActorUri(domain, username);
     const followersUri = `${actorUri}/followers`;
-    
+
     let to: string[] = [];
     let cc: string[] = [];
 
@@ -109,7 +109,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
     });
 
     // 7. Return 201 Created
-    return json(createActivity, { 
+    return json(createActivity, {
         status: 201,
         headers: {
             'Location': createId
@@ -129,7 +129,7 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
     const { username } = params;
     const domain = env.DOMAIN!;
     const actorUri = getActorUri(domain, username);
-    
+
     // 1. Find the target user (whose outbox we are viewing)
     const targetUser = await db.query.users.findFirst({
         where: eq(users.username, username),
@@ -142,7 +142,7 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
 
     // 2. Check if this is a request for the root collection or a specific page
     const pageParam = url.searchParams.get('page');
-    
+
     if (!pageParam) {
         // Return root OrderedCollection (Task 2.2.1)
         // Get total count of activities for this user
@@ -150,9 +150,9 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
             where: eq(activities.actorId, targetUser.id),
             columns: { id: true }
         });
-        
+
         const totalItems = allActivities.length;
-        
+
         return json({
             '@context': 'https://www.w3.org/ns/activitystreams',
             id: `${actorUri}/outbox`,
@@ -168,7 +168,7 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
 
     // 3. Return paginated OrderedCollectionPage (Task 2.2.2)
     const page = parseInt(pageParam);
-    const limit = parseInt(url.searchParams.get('limit') || '20');
+    const limit = parseInt(url.searchParams.get('limit') || '3');
     const offset = (page - 1) * limit;
 
     // Validate page number
@@ -179,7 +179,7 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
     // 4. Determine requestor's access level (User Story 2.3)
     const requestor = locals.user;
     const isOwner = requestor?.username === username;
-    
+
     // Check if requestor is a follower
     let isFollower = false;
     if (requestor && !isOwner) {
@@ -204,7 +204,7 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
 
     // 6. Filter based on privacy (User Story 2.3.3)
     const followersUri = `${actorUri}/followers`;
-    
+
     const filteredItems = allActivities.filter(record => {
         const act = record.activity as any;
         const to = act.to || [];
@@ -216,23 +216,23 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
 
         // Owner sees everything
         if (isOwner) return true;
-        
+
         // Public posts visible to everyone
         if (isPublic) return true;
-        
+
         // Followers-only posts visible to followers
         if (isFollower && isFollowersOnly) return true;
-        
+
         return false;
     });
 
     // Apply limit after filtering
     const items = filteredItems.slice(0, limit);
-    
+
     // 7. Calculate pagination links
     const hasMore = filteredItems.length > limit;
     const hasPrev = page > 1;
-    
+
     // 8. Construct OrderedCollectionPage
     const response: Record<string, unknown> = {
         '@context': 'https://www.w3.org/ns/activitystreams',
