@@ -36,7 +36,7 @@
 <div class="flex min-h-screen justify-center bg-background p-6">
 	<Card class="w-full max-w-xl overflow-hidden shadow-lg">
 		<!-- Banner -->
-		<div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+		<div class="h-32 bg-linear-to-r from-indigo-500 to-purple-600"></div>
 
 		<div class="-mt-12 flex flex-col items-center">
 			<!-- Avatar -->

@@ -1,13 +1,16 @@
 import { error } from '@sveltejs/kit';
+import { db } from '$lib/server/db';
+import { users, followers, activities } from '$lib/server/db/schema';
+import { eq, and, count } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { users, activities } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params }) => {
 	const username = params.username;
 
-	// fetch user from database
+	// Fetch user from database
 	const user = await db.query.users.findFirst({
 		where: eq(users.username, username),
 		columns: {
@@ -16,60 +19,53 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			displayName: true,
 			bio: true,
 			avatarUrl: true,
-			createdAt: true,
 			didDocument: true,
+			createdAt: true
 		}
 	});
 
 	if (!user) {
-		throw error(404, 'User not found');
+		error(404, 'User not found');
 	}
 
-	// Extract info from DID document if database fields are empty as fallback (or purely rely on DB fields as source of truth for UI)
-	// The schema says `displayName`, `bio` are in the table. Let's use them.
+	// Extract profile data from DID document (fallback to direct fields)
+	const didDoc = user.didDocument as any;
+	const displayName = user.displayName || didDoc?.name || username;
+	const bio = user.bio || didDoc?.summary || '';
+	const avatarUrl = user.avatarUrl || didDoc?.icon?.url || '';
 
-	// Fetch recent activities (posts)
-	let userActivities: any[] = [];
-	let mappedActivities: any[] = [];
+	// Count followers (users who follow this user)
+	const followersResult = await db
+		.select({ count: count() })
+		.from(followers)
+		.where(eq(followers.userId, user.id));
+	const followersCount = followersResult[0]?.count || 0;
 
-	try {
-		userActivities = await db.query.activities.findMany({
-			where: eq(activities.actorId, user.id),
-			orderBy: (activities, { desc }) => [desc(activities.publishedAt)],
-			limit: 20,
-		});
+	// Count following (users this user follows)
+	const followingResult = await db
+		.select({ count: count() })
+		.from(followers)
+		.where(eq(followers.followerId, user.id));
+	const followingCount = followingResult[0]?.count || 0;
 
-		mappedActivities = userActivities.map(a => {
-			try {
-				return {
-					id: a.id,
-					content: (a.activityJson as any).object.content,
-					publishedAt: a.publishedAt,
-				};
-			} catch (e) {
-				console.error('Failed to map activity:', e);
-				return null;
-			}
-		}).filter(a => a !== null);
-
-	} catch (e) {
-		console.error('Failed to fetch activities:', e);
-		// Fallback to empty array
-	}
+	// Count posts (activities created by this user)
+	const postsResult = await db
+		.select({ count: count() })
+		.from(activities)
+		.where(eq(activities.actorId, user.id));
+	const postsCount = postsResult[0]?.count || 0;
 
 	return {
 		profile: {
 			username: user.username,
-			displayName: user.displayName || user.username,
-			bio: user.bio || '',
-			avatarUrl: user.avatarUrl || '',
+			displayName,
+			bio,
+			avatarUrl,
 			handle: `@${user.username}`,
 			createdAt: user.createdAt,
-			followersCount: 0, // Placeholder
-			followingCount: 0, // Placeholder
-			postsCount: mappedActivities.length
-		},
-		activities: mappedActivities,
-		isOwner: locals.user?.username === user.username
+			followersCount,
+			followingCount,
+			postsCount
+		}
 	};
 };
