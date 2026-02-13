@@ -168,7 +168,7 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
 
     // 3. Return paginated OrderedCollectionPage (Task 2.2.2)
     const page = parseInt(pageParam);
-    const limit = parseInt(url.searchParams.get('limit') || '3');
+    const limit = parseInt(url.searchParams.get('limit') || '5');
     const offset = (page - 1) * limit;
 
     // Validate page number
