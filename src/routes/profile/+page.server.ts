@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, activities, followers } from '$lib/server/db/schema';
+import { eq, count } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
@@ -33,6 +33,34 @@ export const load: PageServerLoad = async ({ locals }) => {
     const did = (user.didDocument as { id: string }).id;
     const domain = env.DOMAIN!;
 
+    // Fetch recent activities for the logged-in user
+    const recentActivities = await db.query.activities.findMany({
+        where: eq(activities.actorId, user.id),
+        orderBy: (activities, { desc }) => [desc(activities.createdAt)],
+        limit: 20
+    });
+
+    // Count followers
+    const followersResult = await db
+        .select({ count: count() })
+        .from(followers)
+        .where(eq(followers.userId, user.id));
+    const followersCount = followersResult[0]?.count || 0;
+
+    // Count following
+    const followingResult = await db
+        .select({ count: count() })
+        .from(followers)
+        .where(eq(followers.followerId, user.id));
+    const followingCount = followingResult[0]?.count || 0;
+
+    // Count posts
+    const postsResult = await db
+        .select({ count: count() })
+        .from(activities)
+        .where(eq(activities.actorId, user.id));
+    const postsCount = postsResult[0]?.count || 0;
+
     return {
         user: {
             id: user.id,
@@ -44,6 +72,14 @@ export const load: PageServerLoad = async ({ locals }) => {
             domain: domain,
             handle: `@${user.username}@${domain}`,
             createdAt: user.createdAt,
-        }
+            followersCount,
+            followingCount,
+            postsCount
+        },
+        activities: recentActivities.map((a) => ({
+            ...a,
+            content: (a.activity as any).object?.content || (a.activity as any).content || '',
+            publishedAt: a.createdAt
+        }))
     };
 };
