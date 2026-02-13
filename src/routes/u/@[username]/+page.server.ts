@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { users, followers, activities } from '$lib/server/db/schema';
 import { eq, and, count } from 'drizzle-orm';
+import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -54,15 +55,54 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	// Fetch recent activities for the feed
 	// We'll fetch the last 20 activities for this user
-	const recentActivities = await db.query.activities.findMany({
+	// Determine requestor's access level
+	const requestor = locals.user;
+	// Check if the current user is the owner of this profile
+	const isOwner = requestor?.username === username;
+
+	// Check if requestor is a follower
+	let isFollower = false;
+	if (requestor && !isOwner) {
+		const followRecord = await db.query.followers.findFirst({
+			where: and(
+				eq(followers.userId, user.id),
+				eq(followers.followerId, requestor.userId)
+			)
+		});
+		isFollower = !!followRecord;
+	}
+
+	const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
+	const followersUri = `https://${env.DOMAIN}/users/${username}/followers`;
+
+	// Fetch recent activities (fetch more to filter)
+	const recentActivitiesRaw = await db.query.activities.findMany({
 		where: eq(activities.actorId, user.id),
 		orderBy: (activities, { desc }) => [desc(activities.createdAt)],
-		limit: 5
+		limit: 20 // Fetch more than needed to account for filtering
 	});
 
-	// Check if the current user is the owner of this profile
-	// We need to check locals.user.userId against user.id
-	const isOwner = locals.user?.username === username;
+	// Filter based on privacy
+	const recentActivities = recentActivitiesRaw.filter(record => {
+		const act = record.activity as any;
+		const to = act.to || [];
+		const cc = act.cc || [];
+		const audiences = [...to, ...cc];
+
+		const isPublic = audiences.includes(PUBLIC_URI);
+		const isFollowersOnly = audiences.includes(followersUri);
+
+		// Owner sees everything
+		if (isOwner) return true;
+
+		// Public posts visible to everyone
+		if (isPublic) return true;
+
+		// Followers-only posts visible to followers
+		if (isFollower && isFollowersOnly) return true;
+
+		return false;
+	}).slice(0, 5);
 
 	return {
 		profile: {
