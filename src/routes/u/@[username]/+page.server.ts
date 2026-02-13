@@ -3,11 +3,8 @@ import { db } from '$lib/server/db';
 import { users, followers, activities } from '$lib/server/db/schema';
 import { eq, and, count } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
-import { db } from '$lib/server/db';
-import { users, activities } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
 	const username = params.username;
 
 	// Fetch user from database
@@ -55,6 +52,18 @@ export const load: PageServerLoad = async ({ params }) => {
 		.where(eq(activities.actorId, user.id));
 	const postsCount = postsResult[0]?.count || 0;
 
+	// Fetch recent activities for the feed
+	// We'll fetch the last 20 activities for this user
+	const recentActivities = await db.query.activities.findMany({
+		where: eq(activities.actorId, user.id),
+		orderBy: (activities, { desc }) => [desc(activities.createdAt)],
+		limit: 20
+	});
+
+	// Check if the current user is the owner of this profile
+	// We need to check locals.user.userId against user.id
+	const isOwner = locals.user?.username === username;
+
 	return {
 		profile: {
 			username: user.username,
@@ -66,6 +75,13 @@ export const load: PageServerLoad = async ({ params }) => {
 			followersCount,
 			followingCount,
 			postsCount
-		}
+		},
+		activities: recentActivities.map((a) => ({
+			...a,
+			// Simplified content extraction for now - assuming Note type has content
+			content: (a.activity as any).object?.content || (a.activity as any).content || '',
+			publishedAt: a.createdAt
+		})),
+		isOwner
 	};
 };

@@ -14,6 +14,14 @@
 
 	let profile = $derived(data.profile);
 
+	// Local state for posts to allow optimistic updates
+	let posts = $state(data.activities || []);
+
+	// Sync posts when data changes (e.g. navigation)
+	$effect(() => {
+		posts = data.activities || [];
+	});
+
 	// Get initials for avatar fallback
 	function getInitials(name: string): string {
 		return name
@@ -22,6 +30,18 @@
 			.join('')
 			.toUpperCase()
 			.slice(0, 2);
+	}
+
+	function handleNewPost(newActivity: any) {
+		// Transform the new activity to match the structure expected by the UI
+		const mappedPost = {
+			...newActivity,
+			content: newActivity.object?.content || '',
+			publishedAt: newActivity.published || new Date().toISOString()
+		};
+
+		// Optimistically add to the top of the list
+		posts = [mappedPost, ...posts];
 	}
 </script>
 
@@ -97,10 +117,10 @@
 			<TabsContent value="posts">
 				<div class="mt-4 space-y-3">
 					{#if data.isOwner}
-						<Composer />
+						<Composer username={profile.username} onPostCreated={handleNewPost} />
 					{/if}
-					{#if data.activities && data.activities.length > 0}
-						{#each data.activities as activity}
+					{#if posts && posts.length > 0}
+						{#each posts as activity}
 							<Card class="p-4">
 								<p class="text-base whitespace-pre-wrap">{activity.content}</p>
 								<p class="mt-2 text-xs text-muted-foreground">

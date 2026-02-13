@@ -7,12 +7,23 @@
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
+	import Composer from '$lib/components/Composer.svelte';
 
 	// Get data from server load function (Svelte 5 syntax)
 	let { data } = $props();
 
 	// User data from server
 	const user = data.user;
+
+	// Local state for posts to allow optimistic updates
+	let posts = $state(data.activities || []);
+	let postsCount = $state(user.postsCount || 0);
+
+	// Sync posts when data changes
+	$effect(() => {
+		posts = data.activities || [];
+		postsCount = user.postsCount || 0;
+	});
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
@@ -38,12 +49,25 @@
 		await navigator.clipboard.writeText(user.handle);
 		toast.success('Handle copied!');
 	}
+
+	function handleNewPost(newActivity: any) {
+		// Transform the new activity to match the structure expected by the UI
+		const mappedPost = {
+			...newActivity,
+			content: newActivity.object?.content || '',
+			publishedAt: newActivity.published || new Date().toISOString()
+		};
+
+		// Optimistically add to the top of the list
+		posts = [mappedPost, ...posts];
+		postsCount += 1;
+	}
 </script>
 
 <div class="flex min-h-screen justify-center bg-muted p-6">
 	<Card class="w-full max-w-xl overflow-hidden shadow-lg">
 		<!-- Banner -->
-		<div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+		<div class="h-32 bg-linear-to-r from-indigo-500 to-purple-600"></div>
 
 		<div class="-mt-12 flex flex-col items-center">
 			<!-- Avatar -->
@@ -90,17 +114,17 @@
 		<!-- Stats Section (placeholder for now - will be implemented in later epics) -->
 		<div class="mt-6 grid grid-cols-3 border-t py-6 text-center select-none">
 			<div>
-				<p class="text-xl font-semibold">0</p>
+				<p class="text-xl font-semibold">{user.followersCount || 0}</p>
 				<p class="text-sm text-muted-foreground">Followers</p>
 			</div>
 
 			<div>
-				<p class="text-xl font-semibold">0</p>
+				<p class="text-xl font-semibold">{user.followingCount || 0}</p>
 				<p class="text-sm text-muted-foreground">Following</p>
 			</div>
 
 			<div>
-				<p class="text-xl font-semibold">0</p>
+				<p class="text-xl font-semibold">{postsCount}</p>
 				<p class="text-sm text-muted-foreground">Posts</p>
 			</div>
 		</div>
@@ -115,9 +139,22 @@
 
 			<TabsContent value="posts">
 				<div class="mt-4 space-y-3">
-					<Card class="p-4 text-center text-muted-foreground">
-						No posts yet. Start sharing on the Fediverse!
-					</Card>
+					<Composer username={user.username} onPostCreated={handleNewPost} />
+
+					{#if posts && posts.length > 0}
+						{#each posts as activity}
+							<Card class="p-4">
+								<p class="text-base whitespace-pre-wrap">{activity.content}</p>
+								<p class="mt-2 text-xs text-muted-foreground">
+									{new Date(activity.publishedAt).toLocaleString()}
+								</p>
+							</Card>
+						{/each}
+					{:else}
+						<Card class="p-4 text-center text-muted-foreground">
+							No posts yet. Start sharing on the Fediverse!
+						</Card>
+					{/if}
 				</div>
 			</TabsContent>
 
