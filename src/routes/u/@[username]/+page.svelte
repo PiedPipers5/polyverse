@@ -124,7 +124,15 @@
 							<Card class="p-4">
 								<p class="text-base whitespace-pre-wrap">{activity.content}</p>
 								<p class="mt-2 text-xs text-muted-foreground">
-									{new Date(activity.publishedAt).toLocaleString()}
+									{new Date(activity.publishedAt).toLocaleString('en-IN', {
+										day: '2-digit',
+										month: '2-digit',
+										year: 'numeric',
+										hour: '2-digit',
+										minute: '2-digit',
+										hour12: true,
+										timeZone: 'Asia/Kolkata'
+									})} IST
 								</p>
 							</Card>
 						{/each}
