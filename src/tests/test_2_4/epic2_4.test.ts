@@ -1,14 +1,22 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 import type { RequestEvent } from "@sveltejs/kit";
 
-// Define strict types for our test usages
+/**
+ * Route parameters for the user outbox endpoint.
+ */
 interface RouteParams extends Record<string, string> {
     username: string;
 }
 
-// The specific RequestEvent type expected by the handler
+/**
+ * The specific RequestEvent type expected by the POST handler.
+ * Includes strictly typed route parameters and route ID.
+ */
 type OutboxEvent = RequestEvent<RouteParams, "/users/[username]/outbox">;
 
+/**
+ * Structure of the 'object' field within an ActivityPub activity.
+ */
 interface ActivityObject {
     id: string;
     content: string;
@@ -16,19 +24,27 @@ interface ActivityObject {
     cc: string[];
 }
 
+/**
+ * Mock representation of an ActivityPub activity.
+ */
 interface MockActivity {
     id: string;
     object: ActivityObject;
 }
 
+/**
+ * Structure of an activity record as stored in the database.
+ */
 interface DbActivity {
     id: string;
     activity: MockActivity;
     type: string;
 }
 
-// Mock DB interactions to prevent real DB writes
-// We use mock.module to intercept imports of $lib/server/db
+/**
+ * Mock database interactions to prevent real DB writes.
+ * We use mock.module to intercept imports of $lib/server/db.
+ */
 const mockInsert = mock(() => ({ values: mock(() => Promise.resolve()) }));
 const mockUpdate = mock(() => ({ set: mock(() => ({ where: mock(() => Promise.resolve()) })) }));
 const mockFindMany = mock(() => Promise.resolve<DbActivity[]>([]));
@@ -67,6 +83,10 @@ mock.module("$lib/server/db/schema", () => ({
 // Import the handler dynamically to ensure mocks are applied first
 const { POST } = await import("../../routes/users/[username]/outbox/+server");
 
+/**
+ * Test Suite for Epic 2.4: Outbox Actions (Edit/Delete).
+ * Verifies that the outbox endpoint correctly handles ActivityPub Edit and Delete activities.
+ */
 describe("Epic 2.4: Outbox Actions (Edit/Delete)", () => {
     // Setup request context
     const user = { userId: "user-123", username: "alice" };
@@ -74,13 +94,24 @@ describe("Epic 2.4: Outbox Actions (Edit/Delete)", () => {
     const params: RouteParams = { username: "alice" };
 
     beforeEach(() => {
-        // Clear mocks before each test
+        /**
+         * Clear all mock usage data before each test to ensure isolation.
+         */
         mockInsert.mockClear();
         mockUpdate.mockClear();
         mockFindMany.mockClear();
         mockTransaction.mockClear();
     });
 
+    /**
+     * Test case: Should process 'edit' action correctly.
+     * 
+     * Verifies that:
+     * 1. The original post is found.
+     * 2. A transaction is started.
+     * 3. The original post is updated.
+     * 4. A new 'Update' activity is inserted.
+     */
     it("should process 'edit' action correctly", async () => {
         const objectId = "https://polyverse.local/users/alice/statuses/note-1";
 
@@ -113,8 +144,6 @@ describe("Epic 2.4: Outbox Actions (Edit/Delete)", () => {
         });
 
         // Construct event with proper typing
-        // We cast to unknown first because RequestEvent is complex to fully mock, 
-        // but we ensure params matches RouteParams and the route ID matches expected type
         const event = { request, locals, params } as unknown as OutboxEvent;
         const response = await POST(event);
 
@@ -129,6 +158,14 @@ describe("Epic 2.4: Outbox Actions (Edit/Delete)", () => {
         expect(mockInsert).toHaveBeenCalled();
     });
 
+    /**
+     * Test case: Should process 'delete' action correctly.
+     * 
+     * Verifies that:
+     * 1. The target post is found.
+     * 2. The original post is updated to a Tombstone.
+     * 3. A new 'Delete' activity is inserted.
+     */
     it("should process 'delete' action correctly", async () => {
         const objectId = "https://polyverse.local/users/alice/statuses/note-to-delete";
 
@@ -171,6 +208,11 @@ describe("Epic 2.4: Outbox Actions (Edit/Delete)", () => {
         expect(mockInsert).toHaveBeenCalled();
     });
 
+    /**
+     * Test case: Should throw error if trying to edit someone else's post.
+     * 
+     * Verifies that access control prevents modifying objects not owned by the actor.
+     */
     it("should throw error if trying to edit someone else's post", async () => {
         const objectId = "https://polyverse.local/users/bob/statuses/bob-note";
 
