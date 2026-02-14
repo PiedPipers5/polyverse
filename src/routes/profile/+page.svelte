@@ -8,6 +8,7 @@
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import Composer from '$lib/components/Composer.svelte';
+	import Post from '$lib/components/Post.svelte';
 
 	// Get data from server load function (Svelte 5 syntax)
 	let { data } = $props();
@@ -61,6 +62,19 @@
 		// Optimistically add to the top of the list
 		posts = [mappedPost, ...posts];
 		postsCount += 1;
+	}
+
+	function handleDeletePost(id: string) {
+		posts = posts.filter((p) => (p.object?.id || p.id) !== id);
+		postsCount -= 1;
+	}
+
+	function handleUpdatePost(updatedActivity: any) {
+		posts = posts.map((p) => {
+			const pId = p.object?.id || p.id;
+			const uId = updatedActivity.object?.id || updatedActivity.id;
+			return pId === uId ? updatedActivity : p;
+		});
 	}
 </script>
 
@@ -142,21 +156,14 @@
 					<Composer username={user.username} onPostCreated={handleNewPost} />
 
 					{#if posts && posts.length > 0}
-						{#each posts as activity}
-							<Card class="p-4">
-								<p class="text-base whitespace-pre-wrap">{activity.content}</p>
-								<p class="mt-2 text-xs text-muted-foreground">
-									{new Date(activity.publishedAt).toLocaleString('en-IN', {
-										day: '2-digit',
-										month: '2-digit',
-										year: 'numeric',
-										hour: '2-digit',
-										minute: '2-digit',
-										hour12: true,
-										timeZone: 'Asia/Kolkata'
-									})} IST
-								</p>
-							</Card>
+						{#each posts as activity (activity.id || activity.object?.id)}
+							<Post
+								{activity}
+								isOwner={true}
+								username={user.username}
+								onDelete={handleDeletePost}
+								onUpdate={handleUpdatePost}
+							/>
 						{/each}
 					{:else}
 						<Card class="p-4 text-center text-muted-foreground">

@@ -19,6 +19,10 @@
 	let isMenuOpen = $state(false);
 	let isDeleting = $state(false);
 
+	// Handle both flat ActivityPub objects and DB-wrapped rows
+	let apActivity = $derived(activity.activity || activity);
+	let targetObjectId = $derived(apActivity.object?.id || apActivity.id);
+
 	// Close menu when clicking outside (simple implementation)
 	function toggleMenu() {
 		isMenuOpen = !isMenuOpen;
@@ -34,13 +38,13 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					action: 'delete',
-					objectId: activity.object.id
+					objectId: targetObjectId
 				})
 			});
 
 			if (response.ok) {
 				toast.success('Post deleted');
-				onDelete(activity.object.id);
+				onDelete(targetObjectId);
 			} else {
 				toast.error('Failed to delete post');
 			}
@@ -88,7 +92,7 @@
 			mode="edit"
 			{username}
 			initialContent={activity.content || activity.object?.content}
-			objectId={activity.object?.id || activity.id}
+			objectId={targetObjectId}
 			onCancel={() => (isEditing = false)}
 			onPostUpdated={handleUpdate}
 		/>

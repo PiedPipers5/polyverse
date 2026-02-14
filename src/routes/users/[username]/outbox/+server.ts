@@ -176,28 +176,26 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         // 1. Insert Update activity
         // 2. Update the original Create activity's object in DB so GET /outbox returns new content
 
-        await db.transaction(async (tx) => {
-            // Insert Update
-            await tx.insert(activities).values({
-                actorId: user.userId,
-                activity: updateActivity,
-                type: 'Update',
-                createdAt: new Date()
-            });
-
-            // Update original Create record
-            // We modify the 'activity' JSONB. 
-            // Deep merge or replacement of the object field.
-            // Simplified: Update the entire activity structure with the new object
-            const newCreateActivity = {
-                ...originalActivity,
-                object: updatedObject
-            };
-
-            await tx.update(activities)
-                .set({ activity: newCreateActivity })
-                .where(eq(activities.id, originalRecord.id));
+        // Insert Update
+        await db.insert(activities).values({
+            actorId: user.userId,
+            activity: updateActivity,
+            type: 'Update',
+            createdAt: new Date()
         });
+
+        // Update original Create record
+        // We modify the 'activity' JSONB. 
+        // Deep merge or replacement of the object field.
+        // Simplified: Update the entire activity structure with the new object
+        const newCreateActivity = {
+            ...originalActivity,
+            object: updatedObject
+        };
+
+        await db.update(activities)
+            .set({ activity: newCreateActivity })
+            .where(eq(activities.id, originalRecord.id));
 
         return json(updateActivity, { status: 201 });
     }
@@ -214,6 +212,8 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
             orderBy: [desc(activities.createdAt)],
             limit: 100
         });
+
+
 
         const originalRecord = allUserActivities.find(r => (r.activity as any).object?.id === objectId);
 
@@ -242,24 +242,22 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
             object: tombstone
         };
 
-        await db.transaction(async (tx) => {
-            await tx.insert(activities).values({
-                actorId: user.userId,
-                activity: deleteActivity,
-                type: 'Delete',
-                createdAt: new Date()
-            });
-
-            // Update original record to contain Tombstone
-            const newCreateActivity = {
-                ...originalActivity,
-                object: tombstone
-            };
-
-            await tx.update(activities)
-                .set({ activity: newCreateActivity })
-                .where(eq(activities.id, originalRecord.id));
+        await db.insert(activities).values({
+            actorId: user.userId,
+            activity: deleteActivity,
+            type: 'Delete',
+            createdAt: new Date()
         });
+
+        // Update original record to contain Tombstone
+        const newCreateActivity = {
+            ...originalActivity,
+            object: tombstone
+        };
+
+        await db.update(activities)
+            .set({ activity: newCreateActivity })
+            .where(eq(activities.id, originalRecord.id));
 
         return json(deleteActivity, { status: 200 });
     }

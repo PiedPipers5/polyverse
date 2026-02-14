@@ -34,8 +34,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     } catch (err) {
         console.error('Media upload error:', err);
         if (err && typeof err === 'object' && 'status' in err) {
-            throw err; // Re-throw SvelteKit errors
+            // If it's a SvelteKit error (like the one from blob.ts), re-throw it
+            throw err;
         }
-        throw error(500, 'Internal Server Error during file upload.');
+        const message = err instanceof Error ? err.message : String(err);
+        throw error(500, `Internal Server Error during file upload: ${message}`);
     }
 };
