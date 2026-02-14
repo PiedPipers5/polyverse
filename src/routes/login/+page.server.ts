@@ -24,8 +24,8 @@ export const actions: Actions = {
 
         // Validate input exists
         if (!username || !password) {
-            return fail(400, { 
-                error: 'Username and password are required' 
+            return fail(400, {
+                error: 'Username and password are required'
             });
         }
 
@@ -43,8 +43,8 @@ export const actions: Actions = {
 
             // Generic error message to prevent user enumeration
             if (!user) {
-                return fail(401, { 
-                    error: 'Invalid username or password' 
+                return fail(401, {
+                    error: 'Invalid username or password'
                 });
             }
 
@@ -52,8 +52,8 @@ export const actions: Actions = {
             const passwordValid = await argon2.verify(user.passwordHash, password);
 
             if (!passwordValid) {
-                return fail(401, { 
-                    error: 'Invalid username or password' 
+                return fail(401, {
+                    error: 'Invalid username or password'
                 });
             }
 
@@ -75,13 +75,15 @@ export const actions: Actions = {
 
         } catch (error) {
             // Re-throw redirects (SvelteKit 2 uses Redirect class)
+            // Verify if error is a redirect object
             if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
                 throw error;
             }
 
             console.error('Login error:', error);
-            return fail(500, { 
-                error: 'An error occurred during login' 
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return fail(500, {
+                error: `An error occurred during login: ${errorMessage}`
             });
         }
     }
