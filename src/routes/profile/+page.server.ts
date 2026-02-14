@@ -57,12 +57,21 @@ export const load: PageServerLoad = async ({ locals }) => {
         .where(eq(followers.followerId, user.id));
     const followingCount = followingResult[0]?.count || 0;
 
-    // Count posts
-    const postsResult = await db
-        .select({ count: count() })
-        .from(activities)
-        .where(eq(activities.actorId, user.id));
-    const postsCount = postsResult[0]?.count || 0;
+    // Count posts (only Create activities with non-Tombstone objects)
+    const allUserActivities = await db.query.activities.findMany({
+        where: and(
+            eq(activities.actorId, user.id),
+            eq(activities.type, 'Create')
+        )
+    });
+
+    // Filter out tombstones
+    const nonDeletedPosts = allUserActivities.filter((a) => {
+        const obj = (a.activity as any).object;
+        return obj && obj.type !== 'Tombstone';
+    });
+
+    const postsCount = nonDeletedPosts.length;
 
     return {
         user: {
