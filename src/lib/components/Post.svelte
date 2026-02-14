@@ -3,7 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
 	import Composer from './Composer.svelte';
-	import { EllipsisVertical, Trash2, Pencil } from 'lucide-svelte';
+	import { EllipsisVertical, Trash2, Pencil, X } from 'lucide-svelte';
 
 	interface Props {
 		activity: any;
@@ -18,10 +18,17 @@
 	let isEditing = $state(false);
 	let isMenuOpen = $state(false);
 	let isDeleting = $state(false);
+	let lightboxOpen = $state(false);
+	let lightboxIndex = $state(0);
 
 	// Handle both flat ActivityPub objects and DB-wrapped rows
 	let apActivity = $derived(activity.activity || activity);
 	let targetObjectId = $derived(apActivity.object?.id || apActivity.id);
+	let attachments = $derived(
+		(apActivity.object?.attachment || apActivity.attachment || []).filter(
+			(a: any) => a.type === 'Image'
+		)
+	);
 
 	// Close menu when clicking outside (simple implementation)
 	function toggleMenu() {
@@ -84,6 +91,27 @@
 		onUpdate(optimizedUpdate);
 		isEditing = false;
 	}
+
+	function openLightbox(index: number) {
+		lightboxIndex = index;
+		lightboxOpen = true;
+	}
+
+	function closeLightbox() {
+		lightboxOpen = false;
+	}
+
+	function nextImage() {
+		if (lightboxIndex < attachments.length - 1) {
+			lightboxIndex++;
+		}
+	}
+
+	function prevImage() {
+		if (lightboxIndex > 0) {
+			lightboxIndex--;
+		}
+	}
 </script>
 
 {#if isEditing}
@@ -92,6 +120,7 @@
 			mode="edit"
 			{username}
 			initialContent={activity.content || activity.object?.content}
+			initialMedia={attachments.map((a: any) => ({ url: a.url, type: a.mediaType }))}
 			objectId={targetObjectId}
 			onCancel={() => (isEditing = false)}
 			onPostUpdated={handleUpdate}
@@ -151,6 +180,30 @@
 
 		<p class="pr-8 text-base whitespace-pre-wrap">{activity.content || activity.object?.content}</p>
 
+		<!-- Media Gallery -->
+		{#if attachments.length > 0}
+			<div
+				class="mt-3 {attachments.length === 1
+					? ''
+					: attachments.length === 2
+						? 'grid grid-cols-2 gap-2'
+						: 'grid grid-cols-2 gap-2'}"
+			>
+				{#each attachments as attachment, index}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+					<img
+						src={attachment.url}
+						alt="Post image {index + 1}"
+						class="{attachments.length === 1
+							? 'max-h-96 w-full'
+							: 'aspect-square'} cursor-pointer rounded-md object-cover transition-opacity hover:opacity-90"
+						onclick={() => openLightbox(index)}
+					/>
+				{/each}
+			</div>
+		{/if}
+
 		<div class="mt-2 flex items-center justify-between">
 			<p class="text-xs text-muted-foreground">
 				{new Date(activity.publishedAt || activity.published).toLocaleString('en-IN', {
@@ -168,4 +221,64 @@
 			</p>
 		</div>
 	</Card>
+{/if}
+
+<!-- Lightbox -->
+{#if lightboxOpen}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+		onclick={closeLightbox}
+	>
+		<button
+			class="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+			onclick={closeLightbox}
+			aria-label="Close"
+		>
+			<X class="h-6 w-6" />
+		</button>
+
+		{#if attachments.length > 1}
+			<button
+				class="absolute left-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+				onclick={(e) => {
+					e.stopPropagation();
+					prevImage();
+				}}
+				disabled={lightboxIndex === 0}
+				aria-label="Previous"
+			>
+				←
+			</button>
+			<button
+				class="absolute right-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+				onclick={(e) => {
+					e.stopPropagation();
+					nextImage();
+				}}
+				disabled={lightboxIndex === attachments.length - 1}
+				aria-label="Next"
+			>
+				→
+			</button>
+		{/if}
+
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<img
+			src={attachments[lightboxIndex].url}
+			alt="Full size image"
+			class="max-h-[90vh] max-w-[90vw] object-contain"
+			onclick={(e) => e.stopPropagation()}
+		/>
+
+		{#if attachments.length > 1}
+			<div
+				class="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white"
+			>
+				{lightboxIndex + 1} / {attachments.length}
+			</div>
+		{/if}
+	</div>
 {/if}
