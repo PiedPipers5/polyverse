@@ -4,10 +4,27 @@
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 
-	let { username, onPostCreated }: { username: string; onPostCreated?: (post: any) => void } =
-		$props();
+	interface Props {
+		username: string;
+		initialContent?: string;
+		mode?: 'create' | 'edit';
+		objectId?: string; // Required for edit mode
+		onPostCreated?: (post: any) => void;
+		onPostUpdated?: (post: any) => void;
+		onCancel?: () => void;
+	}
 
-	let content = $state('');
+	let {
+		username,
+		initialContent = '',
+		mode = 'create',
+		objectId,
+		onPostCreated,
+		onPostUpdated,
+		onCancel
+	}: Props = $props();
+
+	let content = $state(initialContent);
 	let isSubmitting = $state(false);
 	const charLimit = 500;
 
@@ -18,31 +35,37 @@
 		isSubmitting = true;
 
 		try {
-			// Optimistic update logic would go here if we had a globally managed store for the feed.
-			// For now, we'll just submit to the endpoint.
+			const body = {
+				content,
+				action: mode,
+				objectId: mode === 'edit' ? objectId : undefined
+			};
+
 			const response = await fetch(`/users/${username}/outbox`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({ content })
+				body: JSON.stringify(body)
 			});
 
 			if (response.ok) {
-				const newActivity = await response.json();
-				toast.success('Note published!');
-				content = '';
+				const result = await response.json();
 
-				// Optimistic update: notify parent
-				if (onPostCreated) {
-					onPostCreated(newActivity);
+				if (mode === 'create') {
+					toast.success('Note published!');
+					content = '';
+					if (onPostCreated) onPostCreated(result);
+				} else {
+					toast.success('Note updated!');
+					if (onPostUpdated) onPostUpdated(result);
 				}
 			} else {
 				const error = await response.text();
-				toast.error(`Failed to publish: ${error}`);
+				toast.error(`Failed to ${mode}: ${error}`);
 			}
 		} catch (e) {
-			toast.error('An error occurred while publishing.');
+			toast.error(`An error occurred while ${mode === 'create' ? 'publishing' : 'updating'}.`);
 			console.error(e);
 		} finally {
 			isSubmitting = false;
@@ -63,12 +86,23 @@
 			<span class="text-sm text-muted-foreground {charsRemaining < 0 ? 'text-destructive' : ''}">
 				{charsRemaining} characters remaining
 			</span>
-			<Button
-				onclick={handleSubmit}
-				disabled={isSubmitting || !content.trim() || charsRemaining < 0}
-			>
-				{isSubmitting ? 'Publishing...' : 'Publish'}
-			</Button>
+			<div class="flex gap-2">
+				{#if mode === 'edit'}
+					<Button variant="ghost" onclick={onCancel} disabled={isSubmitting}>Cancel</Button>
+				{/if}
+				<Button
+					onclick={handleSubmit}
+					disabled={isSubmitting || !content.trim() || charsRemaining < 0}
+				>
+					{isSubmitting
+						? mode === 'create'
+							? 'Publishing...'
+							: 'Updating...'
+						: mode === 'create'
+							? 'Publish'
+							: 'Update'}
+				</Button>
+			</div>
 		</div>
 	</div>
 </div>
