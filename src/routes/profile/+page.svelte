@@ -8,22 +8,21 @@
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import Composer from '$lib/components/Composer.svelte';
+	import Post from '$lib/components/Post.svelte';
+
+	import { untrack } from 'svelte';
 
 	// Get data from server load function (Svelte 5 syntax)
 	let { data } = $props();
 
 	// User data from server
-	const user = data.user;
+	// Use $derived.by to create reactive values that only update when we navigate/refresh
+	let user = $derived(data.user);
 
 	// Local state for posts to allow optimistic updates
-	let posts = $state(data.activities || []);
-	let postsCount = $state(user.postsCount || 0);
-
-	// Sync posts when data changes
-	$effect(() => {
-		posts = data.activities || [];
-		postsCount = user.postsCount || 0;
-	});
+	// Initialize from data but don't sync on every change (prevents resetting optimistic updates)
+	let posts = $state(untrack(() => data.activities || []));
+	let postsCount = $state(untrack(() => data.user.postsCount || 0));
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
@@ -61,6 +60,42 @@
 		// Optimistically add to the top of the list
 		posts = [mappedPost, ...posts];
 		postsCount += 1;
+	}
+
+	function handleDeletePost(id: string) {
+		console.log('[Profile] handleDeletePost called with id:', id);
+		console.log('[Profile] Current posts count:', posts.length);
+		console.log('[Profile] Current postsCount state:', postsCount);
+
+		const beforeLength = posts.length;
+		posts = posts.filter((p) => {
+			const apActivity = (p as any).activity || p;
+			const objectId = (apActivity as any).object?.id || (apActivity as any).id;
+			const keep = objectId !== id;
+			if (!keep) {
+				console.log('[Profile] Removing post with id:', objectId);
+			}
+			return keep;
+		});
+
+		console.log(
+			'[Profile] Posts after filter:',
+			posts.length,
+			'(removed:',
+			beforeLength - posts.length,
+			')'
+		);
+		postsCount -= 1;
+		console.log('[Profile] New postsCount:', postsCount);
+	}
+
+	function handleUpdatePost(updatedActivity: any) {
+		posts = posts.map((p) => {
+			const pActivity = (p as any).activity || p;
+			const pId = (pActivity as any).object?.id || (pActivity as any).id;
+			const uId = updatedActivity.object?.id || updatedActivity.id;
+			return pId === uId ? updatedActivity : p;
+		});
 	}
 </script>
 
@@ -142,21 +177,14 @@
 					<Composer username={user.username} onPostCreated={handleNewPost} />
 
 					{#if posts && posts.length > 0}
-						{#each posts as activity}
-							<Card class="p-4">
-								<p class="text-base whitespace-pre-wrap">{activity.content}</p>
-								<p class="mt-2 text-xs text-muted-foreground">
-									{new Date(activity.publishedAt).toLocaleString('en-IN', {
-										day: '2-digit',
-										month: '2-digit',
-										year: 'numeric',
-										hour: '2-digit',
-										minute: '2-digit',
-										hour12: true,
-										timeZone: 'Asia/Kolkata'
-									})} IST
-								</p>
-							</Card>
+						{#each posts as activity (activity.id || (activity as any).object?.id)}
+							<Post
+								{activity}
+								isOwner={true}
+								username={user.username}
+								onDelete={handleDeletePost}
+								onUpdate={handleUpdatePost}
+							/>
 						{/each}
 					{:else}
 						<Card class="p-4 text-center text-muted-foreground">
