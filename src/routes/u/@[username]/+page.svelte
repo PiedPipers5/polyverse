@@ -3,6 +3,7 @@
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
 	import Composer from '$lib/components/Composer.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import type { PageData } from './$types';
 
 	/* =========================================
@@ -120,21 +121,22 @@
 						<Composer username={profile.username} onPostCreated={handleNewPost} />
 					{/if}
 					{#if posts && posts.length > 0}
-						{#each posts as activity}
-							<Card class="p-4">
-								<p class="text-base whitespace-pre-wrap">{activity.content}</p>
-								<p class="mt-2 text-xs text-muted-foreground">
-									{new Date(activity.publishedAt).toLocaleString('en-IN', {
-										day: '2-digit',
-										month: '2-digit',
-										year: 'numeric',
-										hour: '2-digit',
-										minute: '2-digit',
-										hour12: true,
-										timeZone: 'Asia/Kolkata'
-									})} IST
-								</p>
-							</Card>
+						{#each posts as activity (activity.id || activity.object?.id)}
+							<Post
+								{activity}
+								isOwner={data.isOwner}
+								username={profile.username}
+								onDelete={(id) => {
+									posts = posts.filter((p) => (p.object?.id || p.id) !== id);
+								}}
+								onUpdate={(updatedPost) => {
+									posts = posts.map((p) =>
+										(p.object?.id || p.id) === (updatedPost.object?.id || updatedPost.id)
+											? updatedPost
+											: p
+									);
+								}}
+							/>
 						{/each}
 					{:else}
 						<Card class="p-4 text-center text-sm text-muted-foreground">
