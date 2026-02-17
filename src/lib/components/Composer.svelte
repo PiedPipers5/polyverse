@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { toast } from 'svelte-sonner';
-	import { Image as ImageIcon, X, Loader2 } from 'lucide-svelte';
+	import { Image as ImageIcon, X, Loader2, Globe, Lock, Users } from 'lucide-svelte';
 
 	interface MediaItem {
 		url: string;
