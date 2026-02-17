@@ -120,6 +120,12 @@
 		media.splice(index, 1);
 	}
 
+	const privacyOptions = [
+		{ value: 'public', label: 'Public', icon: Globe },
+		{ value: 'unlisted', label: 'Unlisted', icon: Lock },
+		{ value: 'followers', label: 'Followers', icon: Users }
+	];
+
 	async function handleSubmit() {
 		if (!content.trim() && media.length === 0) {
 			toast.error('Please add some content or media');
