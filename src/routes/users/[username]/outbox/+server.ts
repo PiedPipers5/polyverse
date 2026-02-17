@@ -42,79 +42,227 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 
     const domain = env.DOMAIN!;
     const body = await request.json();
-    const { content, privacy = 'public', media = [] } = body;
+    // Default to 'create' if no action specified
+    const { action = 'create', content, privacy = 'public', media = [], objectId } = body;
 
-    if (!content && media.length === 0) {
-        throw error(400, 'Content or media is required.');
-    }
-
-    // 3. Determine Audience (to/cc)
     const actorUri = getActorUri(domain, username);
-    const followersUri = `${actorUri}/followers`;
-
-    let to: string[] = [];
-    let cc: string[] = [];
-
-    switch (privacy) {
-        case 'public':
-            to = [PUBLIC_URI];
-            cc = [followersUri];
-            break;
-        case 'unlisted':
-            to = [followersUri];
-            cc = [PUBLIC_URI];
-            break;
-        case 'followers':
-            to = [followersUri];
-            cc = [];
-            break;
-        default:
-            to = [PUBLIC_URI];
-            cc = [followersUri];
-    }
-
-    // 4. Construct Note Object
-    const noteId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
     const published = new Date().toISOString();
 
-    const note = {
-        id: noteId,
-        type: 'Note',
-        published,
-        attributedTo: actorUri,
-        content,
-        to,
-        cc,
-        attachment: media
-    };
-
-    // 5. Construct Create Activity
-    const createId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`; // Using new UUID for activity
-    const createActivity = {
-        id: createId,
-        type: 'Create',
-        actor: actorUri,
-        published,
-        to,
-        cc,
-        object: note
-    };
-
-    // 6. Save to Database
-    await db.insert(activities).values({
-        actorId: user.userId, // We need the UUID from locals (populated from JWT)
-        activity: createActivity,
-        type: 'Create',
-        createdAt: new Date()
-    });
-
-    // 7. Return 201 Created
-    return json(createActivity, {
-        status: 201,
-        headers: {
-            'Location': createId
+    if (action === 'create') {
+        if (!content && media.length === 0) {
+            throw error(400, 'Content or media is required.');
         }
-    });
+
+        // 3. Determine Audience (to/cc)
+        const followersUri = `${actorUri}/followers`;
+        let to: string[] = [];
+        let cc: string[] = [];
+
+        switch (privacy) {
+            case 'public':
+                to = [PUBLIC_URI];
+                cc = [followersUri];
+                break;
+            case 'unlisted':
+                to = [followersUri];
+                cc = [PUBLIC_URI];
+                break;
+            case 'followers':
+                to = [followersUri];
+                cc = [];
+                break;
+            default:
+                to = [PUBLIC_URI];
+                cc = [followersUri];
+        }
+
+        // 4. Construct Note Object
+        const noteId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
+
+        const note = {
+            id: noteId,
+            type: 'Note',
+            published,
+            attributedTo: actorUri,
+            content,
+            to,
+            cc,
+            attachment: media
+        };
+
+        // 5. Construct Create Activity
+        const createId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
+        const createActivity = {
+            id: createId,
+            type: 'Create',
+            actor: actorUri,
+            published,
+            to,
+            cc,
+            object: note
+        };
+
+        // 6. Save to Database
+        await db.insert(activities).values({
+            actorId: user.userId,
+            activity: createActivity,
+            type: 'Create',
+            createdAt: new Date()
+        });
+
+        return json(createActivity, {
+            status: 201,
+            headers: { 'Location': createId }
+        });
+    }
+
+    if (action === 'edit') {
+        if (!objectId) throw error(400, 'objectId is required for editing');
+        if (!content && media.length === 0) throw error(400, 'Content or media is required for editing');
+
+        // Find original Create activity for this object
+        // We need to fetch it to ensure ownership and get current audience
+        // Since we store Activity in jsonb, we search where activity->>'object'->>'id' = objectId
+        // But our schema is activities(id, actorId, activity, type, createdAt).
+        // A 'Create' activity has the object embedded. 
+
+        // Optimization: In a real app we might have a separate Objects table. 
+        // Here we have to query safely.
+
+        const allUserActivities = await db.query.activities.findMany({
+            where: and(
+                eq(activities.actorId, user.userId),
+                eq(activities.type, 'Create')
+            ),
+            orderBy: [desc(activities.createdAt)],
+            limit: 100 // Search recent history or improve query with SQL if needed
+        });
+
+        // Find the specific activity that created this object
+        const originalRecord = allUserActivities.find(r => (r.activity as any).object?.id === objectId);
+
+        if (!originalRecord) {
+            throw error(404, 'Post not found or you do not have permission to edit it.');
+        }
+
+        const originalActivity = originalRecord.activity as any;
+        const originalObject = originalActivity.object;
+
+        // Construct Update Activity
+        const updateId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
+
+        // Preserve original audience
+        const to = originalObject.to;
+        const cc = originalObject.cc;
+
+        const updatedObject = {
+            ...originalObject,
+            content,
+            attachment: media, // Replace media
+            updated: published // Add updated timestamp
+        };
+
+        const updateActivity = {
+            id: updateId,
+            type: 'Update',
+            actor: actorUri,
+            published,
+            to,
+            cc,
+            object: updatedObject
+        };
+
+        // Transactional update:
+        // 1. Insert Update activity
+        // 2. Update the original Create activity's object in DB so GET /outbox returns new content
+
+        // Insert Update
+        await db.insert(activities).values({
+            actorId: user.userId,
+            activity: updateActivity,
+            type: 'Update',
+            createdAt: new Date()
+        });
+
+        // Update original Create record
+        // We modify the 'activity' JSONB. 
+        // Deep merge or replacement of the object field.
+        // Simplified: Update the entire activity structure with the new object
+        const newCreateActivity = {
+            ...originalActivity,
+            object: updatedObject
+        };
+
+        await db.update(activities)
+            .set({ activity: newCreateActivity })
+            .where(eq(activities.id, originalRecord.id));
+
+        return json(updateActivity, { status: 201 });
+    }
+
+    if (action === 'delete') {
+        if (!objectId) throw error(400, 'objectId is required for deletion');
+
+        // Verify ownership same as edit
+        const allUserActivities = await db.query.activities.findMany({
+            where: and(
+                eq(activities.actorId, user.userId),
+                eq(activities.type, 'Create')
+            ),
+            orderBy: [desc(activities.createdAt)],
+            limit: 100
+        });
+
+
+
+        const originalRecord = allUserActivities.find(r => (r.activity as any).object?.id === objectId);
+
+        if (!originalRecord) {
+            throw error(404, 'Post not found or you do not have permission to delete it.');
+        }
+
+        const originalActivity = originalRecord.activity as any;
+
+        // Create Tombstone
+        const tombstone = {
+            id: objectId,
+            type: 'Tombstone',
+            formerType: 'Note',
+            deleted: published
+        };
+
+        const deleteId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
+        const deleteActivity = {
+            id: deleteId,
+            type: 'Delete',
+            actor: actorUri,
+            published,
+            to: originalActivity.to || [PUBLIC_URI], // Notify same audience
+            cc: originalActivity.cc || [],
+            object: tombstone
+        };
+
+        await db.insert(activities).values({
+            actorId: user.userId,
+            activity: deleteActivity,
+            type: 'Delete',
+            createdAt: new Date()
+        });
+
+        // Update original record to contain Tombstone
+        const newCreateActivity = {
+            ...originalActivity,
+            object: tombstone
+        };
+
+        await db.update(activities)
+            .set({ activity: newCreateActivity })
+            .where(eq(activities.id, originalRecord.id));
+
+        return json(deleteActivity, { status: 200 });
+    }
+
+    throw error(400, 'Invalid action');
 };
 
 /**

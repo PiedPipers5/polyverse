@@ -43,7 +43,7 @@
 
 			newTheme === 'dark'
 		);
-		// document.getElementById('BODY')?.classList.toggle('dark', newTheme === 'dark');
+		document.getElementById('BODY')?.classList.toggle('dark', newTheme === 'dark');
 	}
 </script>
 
