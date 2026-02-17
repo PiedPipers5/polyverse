@@ -3,7 +3,7 @@
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
 	import Composer from '$lib/components/Composer.svelte';
-	import Feed from '$lib/components/Feed.svelte';
+	import Post from '$lib/components/Post.svelte';
 	import type { PageData } from './$types';
 
 	/* =========================================
@@ -120,7 +120,29 @@
 					{#if data.isOwner}
 						<Composer username={profile.username} onPostCreated={handleNewPost} />
 					{/if}
-					<Feed {posts} next={`/users/${profile.username}/outbox?page=2`} />
+					{#if posts && posts.length > 0}
+						{#each posts as activity (activity.id || activity.object?.id)}
+							<Post
+								{activity}
+								isOwner={data.isOwner}
+								username={profile.username}
+								onDelete={(id) => {
+									posts = posts.filter((p) => (p.object?.id || p.id) !== id);
+								}}
+								onUpdate={(updatedPost) => {
+									posts = posts.map((p) =>
+										(p.object?.id || p.id) === (updatedPost.object?.id || updatedPost.id)
+											? updatedPost
+											: p
+									);
+								}}
+							/>
+						{/each}
+					{:else}
+						<Card class="p-4 text-center text-sm text-muted-foreground">
+							No posts yet. Check back later!
+						</Card>
+					{/if}
 				</div>
 			</TabsContent>
 

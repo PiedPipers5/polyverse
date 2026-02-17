@@ -1,0 +1,6 @@
+[test]
+# preload = ["./src/tests/setup.ts"]
+
+[test.map]
+# $lib alias needed for bun
+"$lib" = "./src/lib"
