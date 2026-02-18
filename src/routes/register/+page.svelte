@@ -11,20 +11,20 @@
 </script>
 
 <section
-	class="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-indigo-500/10 via-background to-purple-500/10 p-6 select-none"
+	class="relative flex min-h-screen w-full items-center justify-center bg-linear-to-br from-indigo-500/10 via-background to-purple-500/10 p-6 select-none"
 >
 	<!-- Overlay Alert -->
 	{#if form?.errors || form?.success}
-		<div class="absolute inset-0 z-20 flex items-center justify-center bg-background/40 backdrop-blur">
-			<Alert.Root class="w-full max-w-md shadow-2xl border">
+		<div
+			class="absolute inset-0 z-20 flex items-center justify-center bg-background/40 backdrop-blur"
+		>
+			<Alert.Root class="w-full max-w-md border shadow-2xl">
 				<Alert.Title class={form?.errors ? 'text-red-500' : 'text-green-500'}>
 					{form?.errors ? 'Error Occurred' : 'Registration Successful'}
 				</Alert.Title>
 
 				{#if form?.success}
-					<Alert.Description class="font-semibold mt-2">
-						Your DID Web Token:
-					</Alert.Description>
+					<Alert.Description class="mt-2 font-semibold">Your DID Web Token:</Alert.Description>
 				{/if}
 
 				<Alert.Description class="mt-2 break-all">
@@ -40,12 +40,10 @@
 
 	<!-- Registration Card -->
 	<Card.Root
-		class="relative z-10 w-full max-w-md border bg-card/90 backdrop-blur-xl shadow-xl rounded-2xl"
+		class="relative z-10 w-full max-w-md rounded-2xl border bg-card/90 shadow-xl backdrop-blur-xl"
 	>
 		<Card.Header class="space-y-2 text-center">
-			<Card.Title class="text-2xl font-bold tracking-tight">
-				Join PolyVerse
-			</Card.Title>
+			<Card.Title class="text-2xl font-bold tracking-tight">Join PolyVerse</Card.Title>
 			<Card.Description class="text-sm text-muted-foreground">
 				Create your decentralized identity and step into the future
 			</Card.Description>
@@ -67,9 +65,14 @@
 
 				<div class="space-y-2">
 					<Label for="password">Create a Password</Label>
+					<Input id="password" name="password" type="password" required class="h-11" />
+				</div>
+
+				<div class="space-y-2">
+					<Label for="confirmPassword">Confirm Password</Label>
 					<Input
-						id="password"
-						name="password"
+						id="confirmPassword"
+						name="confirmPassword"
 						type="password"
 						required
 						class="h-11"
@@ -79,11 +82,7 @@
 		</Card.Content>
 
 		<Card.Footer class="flex flex-col gap-3">
-			<Button
-				type="submit"
-				form="register-form"
-				class="w-full h-11 text-base font-semibold"
-			>
+			<Button type="submit" form="register-form" class="h-11 w-full text-base font-semibold">
 				Join the PolyVerse
 			</Button>
 
@@ -91,12 +90,11 @@
 				By registering, you create a decentralized web identity
 			</p>
 			<p class="text-center text-xs text-muted-foreground">
-	Already have an account?
-	<a href="/login" class="ml-1 underline underline-offset-4 hover:text-foreground">
-		Sign in
-	</a>
-</p>
-
+				Already have an account?
+				<a href="/login" class="ml-1 underline underline-offset-4 hover:text-foreground">
+					Sign in
+				</a>
+			</p>
 		</Card.Footer>
 	</Card.Root>
 </section>
