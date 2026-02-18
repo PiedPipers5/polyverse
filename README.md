@@ -2,6 +2,8 @@
 
 A **federated social network** built on [ActivityPub](https://www.w3.org/TR/activitypub/), featuring decentralized identity (DID), cryptographic key management, and data autonomy.
 
+**Live**: [polyverse-pp.vercel.app](https://polyverse-pp.vercel.app)
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -51,48 +53,34 @@ bun run dev
 | `bun run db:push` | Push schema directly (dev only) |
 | `bun run db:studio` | Open Drizzle Studio |
 
+## Docker
+
+```bash
+# Build and run
+docker compose up --build
+
+# App runs at http://localhost:3000
+```
+
+Secrets are loaded from `.env` at runtime. See `.env.example` for required variables.
+
 ## CI/CD
 
 Automated via GitHub Actions:
 
-- **CI** (`.github/workflows/ci.yml`) — runs on every PR to `main`:
-  - Lint & format check
-  - Type checking (svelte-check)
-  - Production build verification
-  - Unit tests (Vitest)
-  - DB migration consistency check
+- **CI** — lint, type-check, build, unit tests, and migration check on every PR to `main`
+- **CodeQL** — security vulnerability scanning on PRs and weekly
+- **Smoke Tests** — manually triggered post-deploy health checks
+- **Dependabot** — weekly dependency update PRs
 
-- **CodeQL** (`.github/workflows/codeql.yml`) — security scanning on PRs and weekly
-
-- **Smoke Tests** (`.github/workflows/smoke-tests.yml`) — manually triggered post-deploy health checks
-
-- **Dependabot** (`.github/dependabot.yml`) — weekly dependency update PRs
-
-Deployment to Vercel is automatic on push to `main`.
+Production deployment to Vercel is automatic on push to `main`.
 
 ## Environment Variables
 
-See `.env.example` for required variables. **Never commit `.env` files.**
+See `.env.example` for all required variables. **Never commit `.env` files.**
 
-Store secrets in:
-- **Local dev**: `.env` file
-- **Vercel**: Settings → Environment Variables
-- **CI**: GitHub Repository Secrets
-
-## Project Structure
-
-```
-src/
-├── lib/
-│   ├── components/     # Svelte components
-│   ├── server/
-│   │   ├── db/         # Drizzle schema & connection
-│   │   ├── auth.ts     # JWT auth
-│   │   ├── encryption.ts # AES-256-GCM encryption
-│   │   └── didServer.ts  # DID document generation
-│   └── utils/          # Shared utilities
-├── routes/             # SvelteKit pages & API routes
-└── tests/              # Unit tests
-e2e/                    # Playwright E2E tests
-drizzle/                # Generated DB migrations
-```
+| Where | Purpose |
+|---|---|
+| `.env` | Local development |
+| Vercel Env Vars | Production & preview deployments |
+| GitHub Secrets | CI workflows |
