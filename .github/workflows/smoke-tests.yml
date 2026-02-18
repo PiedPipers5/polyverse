@@ -1,0 +1,59 @@
+name: Post-Deploy Smoke Tests
+
+on:
+  # Triggered by Vercel deployment via webhook, or run manually
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: "Deployed URL to test (e.g. https://polyverse.vercel.app)"
+        required: true
+        type: string
+
+jobs:
+  smoke-test:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deployment to stabilize
+        run: sleep 10
+
+      - name: Check landing page
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ inputs.deployment_url }}")
+          echo "Landing page status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "❌ Landing page returned $STATUS"
+            exit 1
+          fi
+          echo "✅ Landing page OK"
+
+      - name: Check WebFinger endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ inputs.deployment_url }}/.well-known/webfinger?resource=acct:test@localhost")
+          echo "WebFinger status: $STATUS"
+          # 400 or 404 is acceptable (no user), 500 means broken
+          if [ "$STATUS" -eq 500 ]; then
+            echo "❌ WebFinger returned 500"
+            exit 1
+          fi
+          echo "✅ WebFinger endpoint responding"
+
+      - name: Check login page
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ inputs.deployment_url }}/login")
+          echo "Login page status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "❌ Login page returned $STATUS"
+            exit 1
+          fi
+          echo "✅ Login page OK"
+
+      - name: Check register page
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ inputs.deployment_url }}/register")
+          echo "Register page status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "❌ Register page returned $STATUS"
+            exit 1
+          fi
+          echo "✅ Register page OK"
