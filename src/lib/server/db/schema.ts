@@ -177,3 +177,49 @@ export const followers = pgTable(
 		};
 	}
 );
+
+/**
+ * Remote Actors Table
+ * Caches Actor JSON-LD objects fetched from remote Fediverse instances.
+ * Used to avoid repeated network calls when looking up remote users.
+ * Cache is refreshed if older than 24 hours (handled in application logic).
+ */
+export const remoteActors = pgTable('remote_actors', {
+	/**
+	 * Unique identifier for this cached actor record.
+	 */
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	/**
+	 * The full handle of the remote user (e.g., "gargron@mastodon.social").
+	 * Unique so we don't store duplicates.
+	 */
+	handle: text('handle').notNull().unique(),
+
+	/**
+	 * The canonical Actor URI / ID (e.g., "https://mastodon.social/users/Gargron").
+	 */
+	actorUri: text('actor_uri').notNull().unique(),
+
+	/**
+	 * The domain of the remote instance (e.g., "mastodon.social").
+	 * Indexed for efficient per-instance queries.
+	 */
+	domain: text('domain').notNull(),
+
+	/**
+	 * The full Actor JSON-LD object, cached as JSONB.
+	 */
+	actorJson: jsonb('actor_json').notNull(),
+
+	/**
+	 * When this actor was last fetched from the remote server.
+	 * Used to determine if the cache needs refreshing (24h TTL).
+	 */
+	fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+
+	/**
+	 * When this record was first created.
+	 */
+	createdAt: timestamp('created_at').defaultNow().notNull()
+});

@@ -3,7 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
 	import Composer from './Composer.svelte';
-	import { EllipsisVertical, Trash2, Pencil, X } from 'lucide-svelte';
+	import { EllipsisVertical, Trash2, Pencil, X, Globe, Lock, Users } from 'lucide-svelte';
 
 	interface Props {
 		activity: any;
@@ -29,6 +29,17 @@
 			(a: any) => a.type === 'Image'
 		)
 	);
+
+	// Derive privacy level from ActivityPub to/cc fields
+	const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
+	let privacyLevel = $derived.by(() => {
+		const obj = apActivity.object || apActivity;
+		const to: string[] = obj.to || [];
+		const cc: string[] = obj.cc || [];
+		if (to.includes(PUBLIC_URI)) return 'public';
+		if (cc.includes(PUBLIC_URI)) return 'unlisted';
+		return 'followers';
+	});
 
 	// Close menu when clicking outside (simple implementation)
 	function toggleMenu() {
@@ -121,6 +132,7 @@
 			{username}
 			initialContent={activity.content || activity.object?.content}
 			initialMedia={attachments.map((a: any) => ({ url: a.url, type: a.mediaType }))}
+			initialPrivacy={privacyLevel}
 			objectId={targetObjectId}
 			onCancel={() => (isEditing = false)}
 			onPostUpdated={handleUpdate}
@@ -205,7 +217,14 @@
 		{/if}
 
 		<div class="mt-2 flex items-center justify-between">
-			<p class="text-xs text-muted-foreground">
+			<p class="flex items-center gap-1.5 text-xs text-muted-foreground">
+				{#if privacyLevel === 'public'}
+					<Globe class="h-3.5 w-3.5" />
+				{:else if privacyLevel === 'unlisted'}
+					<Lock class="h-3.5 w-3.5" />
+				{:else}
+					<Users class="h-3.5 w-3.5" />
+				{/if}
 				{new Date(activity.publishedAt || activity.published).toLocaleString('en-IN', {
 					day: '2-digit',
 					month: '2-digit',

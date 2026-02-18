@@ -40,7 +40,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             eq(activities.type, 'Create')
         ),
         orderBy: (activities, { desc }) => [desc(activities.createdAt)],
-        limit: 20
+        limit: 5
     });
 
     // Count followers
