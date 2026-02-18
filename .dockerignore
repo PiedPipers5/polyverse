@@ -1,0 +1,16 @@
+node_modules
+.svelte-kit
+build
+.env
+.env.*
+!.env.example
+*.log
+.git
+.github
+drizzle
+e2e
+scripts
+Epics
+*.md
+!README.md
+.vscode
