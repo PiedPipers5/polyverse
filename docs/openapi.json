@@ -1,0 +1,1660 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "PolyVerse API",
+        "description": "API documentation for PolyVerse — a federated, decentralized social media platform built on ActivityPub and W3C DID standards.\n\n## Tech Stack\n- **Runtime:** Bun\n- **Framework:** SvelteKit (Svelte 5)\n- **Database:** PostgreSQL (Neon DB) with Drizzle ORM\n- **Blob Storage:** Vercel Blob\n- **Auth:** JWT (HS256) + Argon2 password hashing\n- **Identity:** `did:web` + Ed25519 key pairs\n\n## Authentication\nMost mutating endpoints require a JWT stored in an `HttpOnly` cookie named `auth_token`. The token is issued on login and contains `userId`, `did`, and `username`. It expires after 7 days.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "PolyVerse Team"
+        },
+        "license": {
+            "name": "MIT"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://{domain}",
+            "description": "PolyVerse Instance",
+            "variables": {
+                "domain": {
+                    "default": "polyverse.social",
+                    "description": "Your instance domain"
+                }
+            }
+        }
+    ],
+    "tags": [
+        {
+            "name": "Authentication",
+            "description": "Account registration, login, and logout (Epic 1 — US 1.1, 1.4)"
+        },
+        {
+            "name": "Identity & Discovery",
+            "description": "DID Documents, WebFinger, and Actor profiles (Epic 1 — US 1.1, 1.2, 1.3)"
+        },
+        {
+            "name": "Profile",
+            "description": "View and update the authenticated user's profile (Epic 1 — US 1.5)"
+        },
+        {
+            "name": "Outbox & Notes",
+            "description": "Publish, view, edit, and delete Notes (Epic 2 — US 2.1, 2.2, 2.3, 2.4)"
+        },
+        {
+            "name": "Media",
+            "description": "Upload media attachments and avatars (Epic 1 — US 1.5, Epic 2 — US 2.5)"
+        },
+        {
+            "name": "Search & Federation",
+            "description": "Federated user search via WebFinger (Epic 3 — US 3.1, Tasks 3.1.2, 3.1.3, 3.1.4)"
+        }
+    ],
+    "paths": {
+        "/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new account",
+                "description": "Creates a new user account with a cryptographic `did:web` identity. Generates an Ed25519 key pair, builds a W3C DID Document, hashes the password with Argon2, and encrypts the private key with AES-256-GCM.\n\n**Epic Ref:** Tasks 1.1.1, 1.1.2",
+                "operationId": "registerUser",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "username",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "type": "string",
+                                        "minLength": 5,
+                                        "pattern": "^[a-zA-Z0-9_]+$",
+                                        "description": "Alphanumeric + underscores, min 5 chars",
+                                        "example": "alice_01"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 8,
+                                        "description": "Min 8 chars, must include uppercase, number, and special character (!@#$%^&*-+)",
+                                        "example": "SecureP@ss1"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Account created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "did": {
+                                            "type": "string",
+                                            "example": "did:web:polyverse.social:u:alice_01"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "errors": {
+                                            "oneOf": [
+                                                {
+                                                    "type": "object",
+                                                    "description": "Zod validation errors by field"
+                                                },
+                                                {
+                                                    "type": "string"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                },
+                                "example": {
+                                    "errors": {
+                                        "username": [
+                                            "Username must be at least 5 characters"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Username already taken",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "errors": {
+                                            "type": "string",
+                                            "example": "Username already taken"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login and receive JWT",
+                "description": "Authenticates a user with username/password. On success, issues a signed JWT (7-day expiry) via an `HttpOnly` cookie named `auth_token` and redirects to `/profile`.\n\nUses a generic error message (\"Invalid username or password\") to prevent username enumeration.\n\n**Epic Ref:** Task 1.4.1",
+                "operationId": "loginUser",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "username",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "type": "string",
+                                        "example": "alice_01"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "SecureP@ss1"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "302": {
+                        "description": "Login successful — redirects to `/profile` with `Set-Cookie: auth_token=<JWT>`",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "auth_token JWT cookie (HttpOnly, Secure, SameSite=Lax, Max-Age=604800)",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "Location": {
+                                "description": "Redirect target",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "/profile"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing username or password",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Username and password are required"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid username or password"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout (clear session)",
+                "description": "Clears the `auth_token` cookie and redirects to `/`. Both GET (direct navigation) and POST (form action) are supported.\n\n**Epic Ref:** Part of Task 1.4",
+                "operationId": "logoutUser",
+                "responses": {
+                    "302": {
+                        "description": "Session cleared — redirects to `/`",
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "type": "string",
+                                    "example": "/"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/webfinger": {
+            "get": {
+                "tags": [
+                    "Identity & Discovery"
+                ],
+                "summary": "WebFinger discovery (RFC 7033)",
+                "description": "Allows external Fediverse instances (e.g., Mastodon) to discover the ActivityPub Actor URL for a given handle. Returns a JRD (JSON Resource Descriptor) object.\n\n> **Note:** Typically served at `/.well-known/webfinger`, routed here via reverse proxy.\n\n**Epic Ref:** Tasks 1.2.1, 1.2.2",
+                "operationId": "webfinger",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "description": "Account identifier in `acct:` URI format",
+                        "schema": {
+                            "type": "string",
+                            "example": "acct:alice@polyverse.social"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "JRD response with Actor links",
+                        "headers": {
+                            "Content-Type": {
+                                "schema": {
+                                    "type": "string",
+                                    "example": "application/jrd+json"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/jrd+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "subject": {
+                                            "type": "string",
+                                            "example": "acct:alice@polyverse.social"
+                                        },
+                                        "links": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "rel": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "href": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "example": {
+                                    "subject": "acct:alice@polyverse.social",
+                                    "links": [
+                                        {
+                                            "rel": "self",
+                                            "type": "application/activity+json",
+                                            "href": "https://polyverse.social/users/alice"
+                                        },
+                                        {
+                                            "rel": "http://webfinger.net/rel/profile-page",
+                                            "type": "text/html",
+                                            "href": "https://polyverse.social/users/alice"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing/invalid `resource` param or domain mismatch"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/u/{username}/did.json": {
+            "get": {
+                "tags": [
+                    "Identity & Discovery"
+                ],
+                "summary": "Resolve DID Document",
+                "description": "Serves the user's W3C DID Document. This is the resolution endpoint for `did:web:{domain}:u:{username}`.\n\n**Epic Ref:** Task 1.1.5",
+                "operationId": "getDIDDocument",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "alice"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DID Document",
+                        "content": {
+                            "application/did+ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DIDDocument"
+                                },
+                                "example": {
+                                    "@context": [
+                                        "https://www.w3.org/ns/did/v1",
+                                        "https://w3id.org/security/suites/jws-2020/v1"
+                                    ],
+                                    "id": "did:web:polyverse.social:u:alice",
+                                    "verificationMethod": [
+                                        {
+                                            "id": "did:web:polyverse.social:u:alice#owner",
+                                            "type": "JsonWebKey2020",
+                                            "controller": "did:web:polyverse.social:u:alice",
+                                            "publicKeyJwk": {
+                                                "kty": "OKP",
+                                                "crv": "Ed25519",
+                                                "x": "..."
+                                            }
+                                        }
+                                    ],
+                                    "authentication": [
+                                        "did:web:polyverse.social:u:alice#owner"
+                                    ],
+                                    "assertionMethod": [
+                                        "did:web:polyverse.social:u:alice#owner"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/users/{username}": {
+            "get": {
+                "tags": [
+                    "Identity & Discovery"
+                ],
+                "summary": "Actor profile (content negotiation)",
+                "description": "Returns the ActivityPub Actor JSON-LD object when `Accept: application/activity+json` is set. Otherwise redirects to the HTML profile page at `/u/{username}`.\n\nIncludes `id`, `type`, `preferredUsername`, `inbox`, `outbox`, `followers`, `following`, optional `name`, `summary`, `icon`, `publicKey`, and `alsoKnownAs` (DID link).\n\n**Epic Ref:** Tasks 1.3.1, 1.3.2, 1.3.3, 1.5.3",
+                "operationId": "getActor",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "alice"
+                        }
+                    },
+                    {
+                        "name": "Accept",
+                        "in": "header",
+                        "required": false,
+                        "description": "Set to `application/activity+json` or `application/ld+json` for JSON response; otherwise 302 redirect to HTML profile",
+                        "schema": {
+                            "type": "string",
+                            "example": "application/activity+json"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Actor JSON-LD object (when ActivityPub Accept header)",
+                        "content": {
+                            "application/activity+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Actor"
+                                },
+                                "example": {
+                                    "@context": [
+                                        "https://www.w3.org/ns/activitystreams",
+                                        "https://w3id.org/security/v1"
+                                    ],
+                                    "id": "https://polyverse.social/users/alice",
+                                    "type": "Person",
+                                    "preferredUsername": "alice",
+                                    "name": "Alice Smith",
+                                    "summary": "Hello, I'm Alice!",
+                                    "inbox": "https://polyverse.social/users/alice/inbox",
+                                    "outbox": "https://polyverse.social/users/alice/outbox",
+                                    "followers": "https://polyverse.social/users/alice/followers",
+                                    "following": "https://polyverse.social/users/alice/following",
+                                    "icon": {
+                                        "type": "Image",
+                                        "mediaType": "image/jpeg",
+                                        "url": "https://blob.vercel-storage.com/avatars/..."
+                                    },
+                                    "publicKey": {
+                                        "id": "https://polyverse.social/users/alice#main-key",
+                                        "owner": "https://polyverse.social/users/alice",
+                                        "publicKeyJwk": {
+                                            "kty": "OKP",
+                                            "crv": "Ed25519",
+                                            "x": "..."
+                                        }
+                                    },
+                                    "alsoKnownAs": [
+                                        "did:web:polyverse.social:u:alice"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to HTML profile (when browser Accept header)",
+                        "headers": {
+                            "Location": {
+                                "schema": {
+                                    "type": "string",
+                                    "example": "/u/alice"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/users/{username}/outbox": {
+            "get": {
+                "tags": [
+                    "Outbox & Notes"
+                ],
+                "summary": "View outbox (OrderedCollection)",
+                "description": "Returns the user's outbox as an ActivityPub `OrderedCollection`. Without a `page` param, returns the root collection with `totalItems` and `first` link. With `page=N`, returns an `OrderedCollectionPage` with paginated activities.\n\n**Privacy filtering (Task 2.3.3):** Activities are filtered based on the requestor's identity:\n- **Owner** sees all posts\n- **Follower** sees public + unlisted + followers-only\n- **Anonymous** sees public + unlisted only\n\n**Epic Ref:** Tasks 2.2.1, 2.2.2, 2.3.3",
+                "operationId": "getOutbox",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "alice"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "description": "Page number. Omit to get root OrderedCollection.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "description": "Number of items per page",
+                        "schema": {
+                            "type": "integer",
+                            "default": 5,
+                            "example": 5
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OrderedCollection or OrderedCollectionPage",
+                        "content": {
+                            "application/activity+json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/OrderedCollection"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/OrderedCollectionPage"
+                                        }
+                                    ]
+                                },
+                                "examples": {
+                                    "root": {
+                                        "summary": "Root collection (no page param)",
+                                        "value": {
+                                            "@context": "https://www.w3.org/ns/activitystreams",
+                                            "id": "https://polyverse.social/users/alice/outbox",
+                                            "type": "OrderedCollection",
+                                            "totalItems": 42,
+                                            "first": "https://polyverse.social/users/alice/outbox?page=1"
+                                        }
+                                    },
+                                    "page": {
+                                        "summary": "Paginated page",
+                                        "value": {
+                                            "@context": "https://www.w3.org/ns/activitystreams",
+                                            "id": "https://polyverse.social/users/alice/outbox?page=1",
+                                            "type": "OrderedCollectionPage",
+                                            "partOf": "https://polyverse.social/users/alice/outbox",
+                                            "orderedItems": [],
+                                            "next": "https://polyverse.social/users/alice/outbox?page=2"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid page number"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Outbox & Notes"
+                ],
+                "summary": "Publish / Edit / Delete a Note",
+                "description": "Multi-action endpoint. The `action` field determines the operation:\n\n- **`create`** (default): Creates a Note wrapped in a `Create` activity\n- **`edit`**: Updates an existing Note with an `Update` activity\n- **`delete`**: Replaces a Note with a `Tombstone` via a `Delete` activity\n\n**Privacy Mapping (Task 2.3.2):**\n| Privacy | `to` | `cc` |\n|---------|------|------|\n| public | `[as:Public]` | `[followers]` |\n| unlisted | `[followers]` | `[as:Public]` |\n| followers | `[followers]` | `[]` |\n\n**Epic Ref:** Tasks 2.1.2, 2.1.3, 2.3.2, 2.4.2, 2.4.3",
+                "operationId": "postToOutbox",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "path",
+                        "required": true,
+                        "description": "Must match the authenticated user",
+                        "schema": {
+                            "type": "string",
+                            "example": "alice"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "action": {
+                                        "type": "string",
+                                        "enum": [
+                                            "create",
+                                            "edit",
+                                            "delete"
+                                        ],
+                                        "default": "create",
+                                        "description": "Operation type"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "description": "Post text content (required for create/edit)",
+                                        "example": "Hello, Fediverse! 🌐"
+                                    },
+                                    "privacy": {
+                                        "type": "string",
+                                        "enum": [
+                                            "public",
+                                            "unlisted",
+                                            "followers"
+                                        ],
+                                        "default": "public",
+                                        "description": "Audience scoping (create only)"
+                                    },
+                                    "media": {
+                                        "type": "array",
+                                        "description": "Media attachments from /api/media/upload",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "url": {
+                                                    "type": "string"
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "example": "Image"
+                                                },
+                                                "mediaType": {
+                                                    "type": "string",
+                                                    "example": "image/jpeg"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "objectId": {
+                                        "type": "string",
+                                        "description": "Note ID to edit or delete (required for edit/delete)",
+                                        "example": "https://polyverse.social/users/alice/statuses/abc-123"
+                                    }
+                                }
+                            },
+                            "examples": {
+                                "create": {
+                                    "summary": "Create a public note",
+                                    "value": {
+                                        "action": "create",
+                                        "content": "Hello, Fediverse! 🌐",
+                                        "privacy": "public",
+                                        "media": []
+                                    }
+                                },
+                                "edit": {
+                                    "summary": "Edit a note",
+                                    "value": {
+                                        "action": "edit",
+                                        "objectId": "https://polyverse.social/users/alice/statuses/abc-123",
+                                        "content": "Updated content!",
+                                        "media": []
+                                    }
+                                },
+                                "delete": {
+                                    "summary": "Delete a note",
+                                    "value": {
+                                        "action": "delete",
+                                        "objectId": "https://polyverse.social/users/alice/statuses/abc-123"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Delete successful — returns Delete activity",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Activity"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Create or Edit successful — returns the activity",
+                        "headers": {
+                            "Location": {
+                                "description": "URI of the created activity (create only)",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Activity"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing content/objectId or invalid action"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    },
+                    "403": {
+                        "description": "Cannot post to another user's outbox"
+                    },
+                    "404": {
+                        "description": "Post not found (edit/delete)"
+                    }
+                }
+            }
+        },
+        "/users/{username}/statuses/{uuid}": {
+            "get": {
+                "tags": [
+                    "Outbox & Notes"
+                ],
+                "summary": "Get a single Note",
+                "description": "Retrieves a single Note by its ID. Returns `410 Gone` for deleted posts (Tombstones). Enforces privacy/visibility checks based on the requestor's identity.\n\n**Visibility order:**\n1. Tombstone → 410\n2. Owner or Public → 200\n3. Directly addressed to requestor → 200\n4. Followers-only + requestor is follower → 200\n5. Otherwise → 403\n\n**Epic Ref:** Task 2.4.4",
+                "operationId": "getNote",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "alice"
+                        }
+                    },
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Note object",
+                        "content": {
+                            "application/activity+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to view this post"
+                    },
+                    "404": {
+                        "description": "Post not found"
+                    },
+                    "410": {
+                        "description": "Post was deleted (Tombstone)"
+                    }
+                }
+            }
+        },
+        "/api/users/me": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Get own profile",
+                "description": "Returns the authenticated user's profile information including username, display name, bio, avatar URL, DID, and creation date.\n\n**Epic Ref:** Part of Task 1.5",
+                "operationId": "getMyProfile",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                },
+                                "example": {
+                                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                                    "username": "alice",
+                                    "displayName": "Alice Smith",
+                                    "bio": "Exploring the Fediverse ✨",
+                                    "avatarUrl": "https://blob.vercel-storage.com/avatars/...",
+                                    "did": "did:web:polyverse.social:u:alice",
+                                    "createdAt": "2026-01-15T10:30:00.000Z"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Update own profile",
+                "description": "Updates the authenticated user's profile. Supports partial updates — only include fields you want to change. HTML tags are stripped from `displayName` and `bio` to prevent XSS.\n\nPassing `null` clears a field.\n\n**Epic Ref:** Task 1.5.2",
+                "operationId": "updateMyProfile",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "displayName": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 50,
+                                        "description": "Display name (max 50 chars, HTML stripped)",
+                                        "example": "Alice S."
+                                    },
+                                    "bio": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 500,
+                                        "description": "Bio text (max 500 chars, HTML stripped)",
+                                        "example": "Exploring the Fediverse ✨"
+                                    },
+                                    "avatarUrl": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "format": "uri",
+                                        "description": "Must be valid http(s) URL",
+                                        "example": "https://blob.vercel-storage.com/avatars/..."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/UserProfileCompact"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid JSON, bad avatar URL, or no valid fields"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    }
+                }
+            }
+        },
+        "/api/media/upload": {
+            "post": {
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Upload media attachment",
+                "description": "Generic media upload for post attachments. Validates file type and size, uploads to Vercel Blob, and returns an object matching the ActivityPub `attachment` format.\n\nThe response can be passed directly into the `media` array when creating a Note via `POST /users/{username}/outbox`.\n\n**Epic Ref:** Task 2.5.1",
+                "operationId": "uploadMedia",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "description": "Image file (JPEG, PNG, GIF, WebP). Max 4.5MB."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Upload successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MediaUploadResult"
+                                },
+                                "example": {
+                                    "url": "https://abcdef.public.blob.vercel-storage.com/1700000000-photo.jpg",
+                                    "type": "Image",
+                                    "mediaType": "image/jpeg"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No file, unsupported type, or exceeds 4.5MB"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    },
+                    "500": {
+                        "description": "Blob storage upload failure"
+                    }
+                }
+            }
+        },
+        "/api/upload/avatar": {
+            "post": {
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Upload avatar image",
+                "description": "Uploads a user's avatar image to Vercel Blob storage. Replaces the previous avatar (old blob is deleted) and updates the user's `avatar_url` in the database.\n\nFile is stored at `avatars/{userId}/{timestamp}.{ext}` with public access.\n\n**Epic Ref:** Task 1.5.1, 1.5.2",
+                "operationId": "uploadAvatar",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "avatar"
+                                ],
+                                "properties": {
+                                    "avatar": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "description": "Avatar image file (JPEG, PNG, GIF, WebP). Max 5MB."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Avatar uploaded and profile updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "url": {
+                                            "type": "string",
+                                            "example": "https://abcdef.public.blob.vercel-storage.com/avatars/550e8400-.../1700000000.jpg"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No file, invalid type, or exceeds 5MB"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    },
+                    "500": {
+                        "description": "Blob storage not configured or upload failure"
+                    }
+                }
+            }
+        },
+        "/api/search": {
+            "get": {
+                "tags": [
+                    "Search & Federation"
+                ],
+                "summary": "Federated user search",
+                "description": "Searches for users by Fediverse handle (`@user@domain`). Supports:\n- **Local lookup:** queries the database directly\n- **Remote lookup:** performs WebFinger \u2192 Actor fetch with 24h caching in `remote_actors` table (Tasks 3.1.2, 3.1.3, 3.1.4)\n\nIf the query doesn't match a handle pattern, returns `no_results`.\n\n**Epic Ref:** Epic 3 \u2014 US 3.1 (Remote User Lookup)",
+                "operationId": "searchUsers",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "description": "Fediverse handle to search for",
+                        "schema": {
+                            "type": "string",
+                            "example": "@gargron@mastodon.social"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results (type varies)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/SearchNoResults"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/SearchLocalUser"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/SearchRemoteActor"
+                                        }
+                                    ],
+                                    "discriminator": {
+                                        "propertyName": "type"
+                                    }
+                                },
+                                "examples": {
+                                    "no_results": {
+                                        "summary": "Not a handle pattern",
+                                        "value": {
+                                            "type": "no_results",
+                                            "query": "random text",
+                                            "message": "Search term does not match a Fediverse handle pattern (@user@domain). Try using the full handle."
+                                        }
+                                    },
+                                    "local_user": {
+                                        "summary": "Local user found",
+                                        "value": {
+                                            "type": "local_user",
+                                            "user": {
+                                                "username": "alice",
+                                                "displayName": "Alice Smith",
+                                                "bio": "Hello!",
+                                                "avatarUrl": "https://blob.vercel-storage.com/avatars/...",
+                                                "profileUrl": "/u/alice"
+                                            }
+                                        }
+                                    },
+                                    "remote_actor": {
+                                        "summary": "Remote actor resolved",
+                                        "value": {
+                                            "type": "remote_actor",
+                                            "actor": {
+                                                "id": "https://mastodon.social/users/Gargron",
+                                                "type": "Person",
+                                                "preferredUsername": "Gargron",
+                                                "name": "Eugen Rochko",
+                                                "summary": "Founder of Mastodon",
+                                                "icon": null,
+                                                "url": "https://mastodon.social/@Gargron",
+                                                "inbox": "https://mastodon.social/users/Gargron/inbox",
+                                                "outbox": "https://mastodon.social/users/Gargron/outbox",
+                                                "followers": "https://mastodon.social/users/Gargron/followers",
+                                                "following": "https://mastodon.social/users/Gargron/following"
+                                            },
+                                            "handle": "Gargron@mastodon.social",
+                                            "cached": true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing `q` parameter"
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    },
+                    "404": {
+                        "description": "User not found (local or remote)"
+                    },
+                    "500": {
+                        "description": "Remote lookup error"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "cookieAuth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "auth_token",
+                "description": "JWT cookie issued on login. Contains userId, did, and username. Expires in 7 days."
+            }
+        },
+        "schemas": {
+            "ServerError": {
+                "type": "object",
+                "properties": {
+                    "errors": {
+                        "type": "string",
+                        "example": "Internal Server Error"
+                    }
+                }
+            },
+            "DIDDocument": {
+                "type": "object",
+                "properties": {
+                    "@context": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "verificationMethod": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string"
+                                },
+                                "controller": {
+                                    "type": "string"
+                                },
+                                "publicKeyJwk": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "authentication": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "assertionMethod": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "Actor": {
+                "type": "object",
+                "required": [
+                    "@context",
+                    "id",
+                    "type",
+                    "preferredUsername",
+                    "inbox",
+                    "outbox"
+                ],
+                "properties": {
+                    "@context": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "Person"
+                        ]
+                    },
+                    "preferredUsername": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "summary": {
+                        "type": "string"
+                    },
+                    "inbox": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "outbox": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "followers": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "following": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "icon": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "example": "Image"
+                            },
+                            "mediaType": {
+                                "type": "string",
+                                "example": "image/jpeg"
+                            },
+                            "url": {
+                                "type": "string",
+                                "format": "uri"
+                            }
+                        }
+                    },
+                    "publicKey": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "owner": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "publicKeyJwk": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "alsoKnownAs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "Note": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "Note"
+                        ]
+                    },
+                    "published": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "attributedTo": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "to": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "cc": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "attachment": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "updated": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Activity": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "Create",
+                            "Update",
+                            "Delete"
+                        ]
+                    },
+                    "actor": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "published": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "cc": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "object": {
+                        "type": "object"
+                    }
+                }
+            },
+            "OrderedCollection": {
+                "type": "object",
+                "properties": {
+                    "@context": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "OrderedCollection"
+                        ]
+                    },
+                    "totalItems": {
+                        "type": "integer"
+                    },
+                    "first": {
+                        "type": "string",
+                        "format": "uri"
+                    }
+                }
+            },
+            "OrderedCollectionPage": {
+                "type": "object",
+                "properties": {
+                    "@context": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "OrderedCollectionPage"
+                        ]
+                    },
+                    "partOf": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "orderedItems": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "next": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "prev": {
+                        "type": "string",
+                        "format": "uri"
+                    }
+                }
+            },
+            "UserProfile": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "bio": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "avatarUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri"
+                    },
+                    "did": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "UserProfileCompact": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "bio": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "avatarUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri"
+                    }
+                }
+            },
+            "MediaUploadResult": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "Image"
+                    },
+                    "mediaType": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    }
+                }
+            },
+            "SearchNoResults": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "no_results"
+                        ]
+                    },
+                    "query": {
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SearchLocalUser": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "local_user"
+                        ]
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "username": {
+                                "type": "string"
+                            },
+                            "displayName": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "bio": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "avatarUrl": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "profileUrl": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "SearchRemoteActor": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "remote_actor"
+                        ]
+                    },
+                    "actor": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "preferredUsername": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "summary": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "icon": {
+                                "type": "object",
+                                "nullable": true
+                            },
+                            "url": {
+                                "type": "string"
+                            },
+                            "inbox": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "outbox": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "followers": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "following": {
+                                "type": "string",
+                                "format": "uri"
+                            }
+                        }
+                    },
+                    "handle": {
+                        "type": "string"
+                    },
+                    "cached": {
+                        "type": "boolean"
+                    }
+                }
+            }
+        }
+    }
+}

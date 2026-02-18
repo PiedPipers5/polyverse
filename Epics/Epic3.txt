@@ -1,0 +1,51 @@
+Epic 3: The Network – Federation and Interoperability
+Objective: This is the core engineering challenge. Epic 3 transforms the standalone application into a networked node. It involves implementing the "Inbox" to receive messages from other servers, the "Delivery" system to send messages out, and the "WebFinger Client" to find remote users.
+User Story 3.1: Remote User Lookup
+Client Perspective: "As a user, I want to search for a friend on a Mastodon server (e.g., @gargron@mastodon.social) and see their profile, so I can decide whether to follow them."
+Context: The system must act as a client, querying the remote server's WebFinger and then fetching the Actor object. This introduces external network dependency.20
+Task 3.1.1 (FE): Create a global search bar. Implement logic to detect if the search term matches the handle pattern (@user@domain or user@domain).
+Task 3.1.2 (BE): Implement the lookup service.
+Parse the domain.
+Query https://domain/.well-known/webfinger?resource=acct:user@domain.
+Extract the application/activity+json link.
+Task 3.1.3 (BE): Fetch the remote Actor. Perform a GET request to the extracted link. Crucially, sign this GET request with the system actor's HTTP Signature (if required by "Secure Mode" instances) or send standard Accept headers.
+Task 3.1.4 (BE): Cache the remote Actor. Create a remote_users table (or reuse users with a domain column). Store the Actor JSON to prevent repeated network calls. Update this cache if it's older than 24 hours.
+Task 3.1.5 (QA): Use Nock or similar HTTP mocking libraries to simulate a Mastodon server's response. Test edge cases: 404 User Not Found, 500 Remote Server Error, and timeout handling.
+User Story 3.2: Following Remote Users
+Client Perspective: "As a user, I want to click 'Follow' on a remote profile so that I can subscribe to their posts."
+Context: Following requires a 3-step handshake: 1. Send Follow activity. 2. Remote server receives it. 3. Remote server sends back Accept activity. Only then is the follow confirmed.
+Task 3.2.1 (BE): Construct the Follow activity. actor: local user URI, object: remote actor URI.
+Task 3.2.2 (BE - Queue): Do not send synchronously. Push the activity to the Redis delivery_queue. This decoupling is vital for reliability.
+Task 3.2.3 (BE - Worker): Create a background worker (BullMQ) that processes the queue. It resolves the remote actor's inbox, signs the request (HTTP Signature), and POSTs the Follow activity.
+Task 3.2.4 (BE): Record the relationship in a follows table with status: pending.
+Task 3.2.5 (FE): Update the UI button to show "Requested" or "Pending" state until the Accept signal is processed (Epic 3.3).
+User Story 3.3: Processing the Inbox (Incoming Federation)
+Client Perspective: "As a user, I want to receive posts from people I follow on other servers in my home feed."
+Context: The Inbox is the listening port of the server. It receives Create, Update, Delete, Follow, Accept, Undo activities from the world.
+Task 3.3.1 (BE): Implement POST /users/:username/inbox. It must accept JSON-LD.
+Task 3.3.2 (BE): Implement HTTP Signature Verification (see Epic 5 for full security, but basic structural validation starts here).
+Task 3.3.3 (BE - Dispatcher): Create a handler for the Create activity.
+Verify the actor matches the attributedTo of the object.
+Check if the local user actually follows the actor (spam prevention).
+Save the Note to the activities table.
+Task 3.3.4 (BE - Dispatcher): Create a handler for the Accept activity. When received, find the corresponding "pending" follow request in the database and upgrade it to "accepted".
+Task 3.3.5 (QA): Use the Fedify CLI (fedify inbox) or activitypub.academy to send a mock Create activity to the local server. Verify it appears in the database.
+User Story 3.4: Shared Inbox Optimization
+Client Perspective: "As a user, I want the system to handle popular threads without crashing, ensuring reliable service."
+Context: Without a Shared Inbox, if you follow 100 people on mastodon.social, that server sends 100 identical messages to your server. A Shared Inbox receives one message, and the local server distributes it internally.
+Task 3.4.1 (BE): Implement the POST /inbox (Global Shared Inbox) endpoint.
+Task 3.4.2 (BE): Update the Actor generation to include the endpoints: { sharedInbox: "https://domain/inbox" } property.
+Task 3.4.3 (BE): Implement "Fan-out" logic. When a message arrives at the Shared Inbox:
+Identify the sender.
+Query the follows table to find all local users following this sender.
+Insert the activity into the feed/inbox of those specific users.
+Task 3.4.4 (DO): Monitor the Shared Inbox queue depth. If fan-out is slow, increase the number of Redis worker processes.
+Task 3.4.5 (QA): Load test the fan-out logic. Simulate a payload with 500 local recipients and measure the time to consistency (TTC) for all feeds.
+User Story 3.5: The Aggregated Timeline
+Client Perspective: "As a user, I want to see a mixed stream of my own posts and posts from people I follow, sorted by time."
+Context: This requires a complex SQL query merging local activities and the cached remote activities ingested via the Inbox.
+Task 3.5.1 (BE): Optimize the SQL query. SELECT * FROM activities WHERE actor_id IN (list_of_followed_ids) ORDER BY published DESC. Use database indexes on published and actor_id.13
+Task 3.5.2 (BE): Handle "Announce" (Boost) activities in the timeline. If User A boosts a post by User B, show User B's post with a "Boosted by A" header.
+Task 3.5.3 (FE): Update the Feed UI to distinctively mark remote posts (e.g., show the full handle).
+Task 3.5.4 (BE): Implement "Context Fetching". If a remote post is a reply to a post the server doesn't have, the backend should attempt to fetch the parent post URL to fill the gap (backfilling).
+Task 3.5.5 (QA): verify that the timeline strictly respects the published date, handling time zone differences correctly (store everything as UTC).
