@@ -5,6 +5,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 
+	import bgImage from '$lib/assets/register_page.jpg';
+
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
@@ -13,6 +15,10 @@
 <section
 	class="relative flex min-h-screen w-full items-center justify-center bg-linear-to-br from-indigo-500/10 via-background to-purple-500/10 p-6 select-none"
 >
+	<div class="absolute inset-0 z-0">
+		<img src={bgImage} alt="Polyverse Background" class="h-full w-full object-cover" />
+		<div class="absolute inset-0 bg-black/25"></div>
+	</div>
 	<!-- Overlay Alert -->
 	{#if form?.errors || form?.success}
 		<div

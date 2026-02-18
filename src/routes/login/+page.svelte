@@ -1,6 +1,6 @@
 <script lang="ts">
-	import bgImage from '$lib/assets/back_login.avif';
-	import ppLogo from '$lib/assets/pp.png';
+	import bgImage from '$lib/assets/loginPage.jpg';
+	import ppLogo from '$lib/assets/pied-piper-logo.png';
 
 	import { enhance } from '$app/forms';
 
@@ -26,7 +26,7 @@
 	<!-- Background Image -->
 	<div class="absolute inset-0 z-0">
 		<img src={bgImage} alt="Polyverse Background" class="h-full w-full object-cover" />
-		<div class="absolute inset-0 bg-background/60 backdrop-blur-[2px]"></div>
+		<div class="absolute inset-0 bg-black/25"></div>
 	</div>
 
 	<!-- Login Form Card -->
