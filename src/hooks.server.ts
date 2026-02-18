@@ -1,6 +1,14 @@
 import type { Handle } from '@sveltejs/kit';
 import { verifyToken, AUTH_COOKIE_NAME } from '$lib/server/auth';
+import * as Sentry from '@sentry/sveltekit';
+import { env } from '$env/dynamic/private';
 
+Sentry.init({
+     dsn: env.SENTRY_DSN,
+     tracesSampleRate: 1.0,
+});
+
+export const handleError = Sentry.handleErrorWithSentry();
 /**
  * Server hooks for authentication middleware.
  * Extracts and verifies JWT from cookies, attaches user to locals.
