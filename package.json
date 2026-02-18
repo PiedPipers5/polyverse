@@ -62,7 +62,7 @@
 		"vitest-browser-svelte": "^2.0.2"
 	},
 	"dependencies": {
-		"@fedify/fedify": "^1.5.9",
+		"@fedify/fedify": "^1.10.3",
 		"@js-temporal/polyfill": "^0.5.1",
 		"@neondatabase/serverless": "^1.0.2",
 		"@sentry/sveltekit": "^10.39.0",
