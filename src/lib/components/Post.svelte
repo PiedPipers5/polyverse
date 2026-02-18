@@ -31,6 +31,8 @@
 	);
 
 	// Helper function to normalize ActivityPub to/cc fields (can be string or array)
+	// Note: Per ActivityPub spec, these fields can be strings, arrays, or objects.
+	// This implementation handles strings and arrays of strings (the most common cases).
 	function normalizeToArray(value: string | string[] | undefined): string[] {
 		if (!value) return [];
 		return Array.isArray(value) ? value : [value];
