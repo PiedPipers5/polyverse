@@ -11,7 +11,7 @@ jobs:
     name: Lint & Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -27,7 +27,7 @@ jobs:
     name: Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -51,7 +51,7 @@ jobs:
       ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
       JWT_SECRET: 0000000000000000000000000000000000000000000000000000000000000000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -73,7 +73,7 @@ jobs:
       ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
       JWT_SECRET: 0000000000000000000000000000000000000000000000000000000000000000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -92,7 +92,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://dummy:dummy@localhost/dummy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
         with:
