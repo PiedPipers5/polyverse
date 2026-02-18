@@ -30,12 +30,18 @@
 		)
 	);
 
+	// Helper function to normalize ActivityPub to/cc fields (can be string or array)
+	function normalizeToArray(value: string | string[] | undefined): string[] {
+		if (!value) return [];
+		return Array.isArray(value) ? value : [value];
+	}
+
 	// Derive privacy level from ActivityPub to/cc fields
 	const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
 	let privacyLevel = $derived.by(() => {
 		const obj = apActivity.object || apActivity;
-		const to: string[] = obj.to || [];
-		const cc: string[] = obj.cc || [];
+		const to = normalizeToArray(obj.to);
+		const cc = normalizeToArray(obj.cc);
 		if (to.includes(PUBLIC_URI)) return 'public';
 		if (cc.includes(PUBLIC_URI)) return 'unlisted';
 		return 'followers';
