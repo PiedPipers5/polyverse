@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { toast } from 'svelte-sonner';
-	import { Image as ImageIcon, X, Loader2, Globe, Lock, Users } from 'lucide-svelte';
+	import { Image as ImageIcon, X, Loader2, Globe, Lock, Users, ChevronDown } from 'lucide-svelte';
 
 	interface MediaItem {
 		url: string;
@@ -15,6 +15,7 @@
 		username: string;
 		initialContent?: string;
 		initialMedia?: MediaItem[];
+		initialPrivacy?: 'public' | 'unlisted' | 'followers';
 		mode?: 'create' | 'edit';
 		objectId?: string; // Required for edit mode
 		onPostCreated?: (post: any) => void;
@@ -26,6 +27,7 @@
 		username,
 		initialContent = '',
 		initialMedia = [],
+		initialPrivacy = 'public',
 		mode = 'create',
 		objectId,
 		onPostCreated,
@@ -36,6 +38,8 @@
 	let content = $state(initialContent);
 	let isSubmitting = $state(false);
 	let media = $state<MediaItem[]>(initialMedia);
+	let privacy = $state<'public' | 'unlisted' | 'followers'>(initialPrivacy);
+	let privacyDropdownOpen = $state(false);
 	let fileInput: HTMLInputElement;
 
 	const charLimit = 500;
@@ -150,6 +154,7 @@
 			const body = {
 				content,
 				action: mode,
+				privacy,
 				objectId: mode === 'edit' ? objectId : undefined,
 				media: media.map((m) => ({
 					url: m.url,
@@ -173,6 +178,7 @@
 					toast.success('Note published!');
 					content = '';
 					media = [];
+					privacy = 'public';
 					if (onPostCreated) onPostCreated(result);
 				} else {
 					toast.success('Note updated!');
@@ -241,7 +247,7 @@
 					</span>
 				{/if}
 			</div>
-			<div class="flex gap-2">
+			<div class="flex items-center gap-2">
 				<!-- Media Upload Button -->
 				<Button
 					variant="ghost"
@@ -252,6 +258,58 @@
 				>
 					<ImageIcon class="h-5 w-5" />
 				</Button>
+
+				<!-- Privacy Selector -->
+				<div class="relative">
+					<Button
+						variant="ghost"
+						size="sm"
+						onclick={() => (privacyDropdownOpen = !privacyDropdownOpen)}
+						disabled={isSubmitting}
+						class="flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
+					>
+						{#if privacy === 'public'}
+							<Globe class="h-4 w-4" />
+						{:else if privacy === 'unlisted'}
+							<Lock class="h-4 w-4" />
+						{:else}
+							<Users class="h-4 w-4" />
+						{/if}
+						<span class="text-xs">{privacyOptions.find((o) => o.value === privacy)?.label}</span>
+						<ChevronDown class="h-3 w-3" />
+					</Button>
+
+					{#if privacyDropdownOpen}
+						<!-- Backdrop -->
+						<button
+							class="fixed inset-0 z-10 h-full w-full cursor-default"
+							onclick={() => (privacyDropdownOpen = false)}
+							type="button"
+							aria-label="Close privacy menu"
+						></button>
+
+						<div
+							class="absolute bottom-full left-0 z-20 mb-1 w-44 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+						>
+							{#each privacyOptions as option}
+								<button
+									type="button"
+									class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground {privacy ===
+									option.value
+										? 'bg-accent/50 font-medium'
+										: ''}"
+									onclick={() => {
+										privacy = option.value as typeof privacy;
+										privacyDropdownOpen = false;
+									}}
+								>
+									<option.icon class="h-4 w-4" />
+									<span>{option.label}</span>
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</div>
 
 				{#if mode === 'edit'}
 					<Button variant="ghost" onclick={onCancel} disabled={isSubmitting}>Cancel</Button>
