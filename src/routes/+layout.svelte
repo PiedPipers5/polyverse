@@ -22,7 +22,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" type="image/svg" href="/pied-piper.svg" />
 </svelte:head>
 
 {#if $auth.loading}
