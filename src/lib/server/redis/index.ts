@@ -35,3 +35,6 @@ export type { TypeGuard } from './serializer.js';
 
 // Cache service
 export { RedisCacheService } from './cacheService.js';
+
+// Application singleton
+export { getActorCache, disconnectRedis, isRedisConfigured, getActorCacheTtlSeconds } from './instance.js';
