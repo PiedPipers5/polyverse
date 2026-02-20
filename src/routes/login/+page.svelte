@@ -1,6 +1,7 @@
 <script lang="ts">
 	import bgImage from '$lib/assets/loginPage.jpg';
 	import ppLogo from '$lib/assets/pied-piper-logo.png';
+	import { Eye, EyeOff } from 'lucide-svelte';
 
 	import { enhance } from '$app/forms';
 
@@ -20,6 +21,8 @@
 	import { Label } from '$lib/components/ui/label';
 
 	let { form } = $props();
+
+	let showPassword = $state(false);
 </script>
 
 <div class="relative flex min-h-screen w-full items-center justify-center overflow-hidden">
@@ -70,17 +73,31 @@
 						<Label for="password">Password</Label>
 						<!-- Add forgot password link here if needed later -->
 					</div>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-						placeholder="Enter your password"
-						required
-						class="bg-background"
-					/>
+					<div class="relative">
+						<Input
+							id="password"
+							name="password"
+							type={showPassword ? 'text' : 'password'}
+							placeholder="Enter your password"
+							required
+							class="bg-background pr-10"
+						/>
+						<button
+							type="button"
+							onclick={() => (showPassword = !showPassword)}
+							class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+							aria-label={showPassword ? 'Hide password' : 'Show password'}
+						>
+							{#if showPassword}
+								<EyeOff class="h-4 w-4" />
+							{:else}
+								<Eye class="h-4 w-4" />
+							{/if}
+						</button>
+					</div>
 				</div>
 
-				<Button type="submit" class="w-full">Sign In</Button>
+				<Button type="submit" class="w-full cursor-pointer">Sign In</Button>
 			</form>
 		</CardContent>
 		<CardFooter>

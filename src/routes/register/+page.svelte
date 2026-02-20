@@ -4,12 +4,16 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
+	import { Eye, EyeOff } from 'lucide-svelte';
 
 	import bgImage from '$lib/assets/register_page.jpg';
 
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
+
+	let showPassword = $state(false);
+	let showConfirm = $state(false);
 </script>
 
 <section
@@ -71,24 +75,62 @@
 
 				<div class="space-y-2">
 					<Label for="password">Create a Password</Label>
-					<Input id="password" name="password" type="password" required class="h-11" />
+					<div class="relative">
+						<Input
+							id="password"
+							name="password"
+							type={showPassword ? 'text' : 'password'}
+							required
+							class="h-11 pr-10"
+						/>
+						<button
+							type="button"
+							onclick={() => (showPassword = !showPassword)}
+							class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+							aria-label={showPassword ? 'Hide password' : 'Show password'}
+						>
+							{#if showPassword}
+								<EyeOff class="h-4 w-4" />
+							{:else}
+								<Eye class="h-4 w-4" />
+							{/if}
+						</button>
+					</div>
 				</div>
 
 				<div class="space-y-2">
 					<Label for="confirmPassword">Confirm Password</Label>
-					<Input
-						id="confirmPassword"
-						name="confirmPassword"
-						type="password"
-						required
-						class="h-11"
-					/>
+					<div class="relative">
+						<Input
+							id="confirmPassword"
+							name="confirmPassword"
+							type={showConfirm ? 'text' : 'password'}
+							required
+							class="h-11 pr-10"
+						/>
+						<button
+							type="button"
+							onclick={() => (showConfirm = !showConfirm)}
+							class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+							aria-label={showConfirm ? 'Hide password' : 'Show password'}
+						>
+							{#if showConfirm}
+								<EyeOff class="h-4 w-4" />
+							{:else}
+								<Eye class="h-4 w-4" />
+							{/if}
+						</button>
+					</div>
 				</div>
 			</form>
 		</Card.Content>
 
 		<Card.Footer class="flex flex-col gap-3">
-			<Button type="submit" form="register-form" class="h-11 w-full text-base font-semibold">
+			<Button
+				type="submit"
+				form="register-form"
+				class="h-11 w-full cursor-pointer text-base font-semibold"
+			>
 				Join the PolyVerse
 			</Button>
 
