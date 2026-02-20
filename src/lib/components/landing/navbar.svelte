@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import ThemeToggle from '$lib/components/ui/theme-toggle.svelte';
+	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
 
 	type User = {
 		username: string;
@@ -68,6 +69,9 @@
 
 			<!-- Theme Toggle & CTA Buttons -->
 			<div class="hidden items-center space-x-4 md:flex">
+				{#if user}
+					<GlobalSearch />
+				{/if}
 				<ThemeToggle />
 				{#if user}
 					<!-- Logged in: Show profile avatar -->
@@ -141,6 +145,11 @@
 							{link.label}
 						</a>
 					{/each}
+					{#if user}
+						<div class="pt-4 pb-2">
+							<GlobalSearch />
+						</div>
+					{/if}
 					<div class="flex flex-col space-y-2 border-t border-border pt-4">
 						{#if user}
 							<!-- Logged in: Show profile link -->
