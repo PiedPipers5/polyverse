@@ -7,7 +7,7 @@
 
 	type Theme = 'light' | 'dark';
 
-	let currentTheme = $state<Theme>('dark');
+	let currentTheme = $state<Theme>('light');
 
 	// Run once when component mounts (client only)
 
