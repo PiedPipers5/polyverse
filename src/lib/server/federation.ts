@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { remoteActors } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { getActorCache, getActorCacheTtlSeconds } from '$lib/server/redis/instance';
 
 // Cache TTL: 24 hours in milliseconds
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -144,7 +145,21 @@ export async function resolveRemoteActor(handle: string): Promise<{
 	const { username, domain } = parsed;
 	const normalizedHandle = `${username}@${domain}`;
 
-	// 1. Check cache
+	// ── L1: Redis cache (fast, optional) ──────────────────────────
+	const redisCache = getActorCache();
+
+	if (redisCache) {
+		try {
+			const redisHit = await redisCache.get(normalizedHandle);
+			if (redisHit) {
+				return { actor: redisHit, handle: normalizedHandle, cached: true };
+			}
+		} catch {
+			// Redis error — fall through to DB silently
+		}
+	}
+
+	// ── L2: Database cache ────────────────────────────────────────
 	const cached = await db.query.remoteActors.findFirst({
 		where: eq(remoteActors.handle, normalizedHandle)
 	});
@@ -152,38 +167,33 @@ export async function resolveRemoteActor(handle: string): Promise<{
 	if (cached) {
 		const age = Date.now() - cached.fetchedAt.getTime();
 		if (age < CACHE_TTL_MS) {
-			// Cache is still fresh
-			return {
-				actor: cached.actorJson as Record<string, unknown>,
-				handle: normalizedHandle,
-				cached: true
-			};
+			const actorData = cached.actorJson as Record<string, unknown>;
+
+			// Backfill Redis so the next hit is faster
+			if (redisCache) {
+				redisCache.set(normalizedHandle, actorData, getActorCacheTtlSeconds()).catch(() => { });
+			}
+
+			return { actor: actorData, handle: normalizedHandle, cached: true };
 		}
 		// Cache is stale, will refresh below
 	}
 
-	// 2. WebFinger lookup
+	// ── L3: Network — WebFinger + Actor fetch ─────────────────────
 	const actorUrl = await lookupWebFinger(username, domain);
 	if (!actorUrl) return null;
 
-	// 3. Fetch Actor JSON
 	const actor = await fetchRemoteActor(actorUrl);
 	if (!actor) return null;
 
-	// 4. Upsert into cache
+	// ── Write-through: store in both DB and Redis ─────────────────
 	const now = new Date();
 
 	if (cached) {
-		// Update existing cache entry
 		await db.update(remoteActors)
-			.set({
-				actorJson: actor,
-				actorUri: actorUrl,
-				fetchedAt: now
-			})
+			.set({ actorJson: actor, actorUri: actorUrl, fetchedAt: now })
 			.where(eq(remoteActors.handle, normalizedHandle));
 	} else {
-		// Insert new cache entry
 		await db.insert(remoteActors).values({
 			handle: normalizedHandle,
 			actorUri: actorUrl,
@@ -193,9 +203,10 @@ export async function resolveRemoteActor(handle: string): Promise<{
 		});
 	}
 
-	return {
-		actor,
-		handle: normalizedHandle,
-		cached: false
-	};
+	// Write to Redis (fire-and-forget, best-effort)
+	if (redisCache) {
+		redisCache.set(normalizedHandle, actor, getActorCacheTtlSeconds()).catch(() => { });
+	}
+
+	return { actor, handle: normalizedHandle, cached: false };
 }
