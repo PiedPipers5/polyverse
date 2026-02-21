@@ -15,7 +15,7 @@
 	let { user = null }: Props = $props();
 </script>
 
-<section class="relative flex min-h-screen items-center justify-center overflow-hidden pt-20">
+<section class="relative flex min-h-screen items-center justify-center overflow-hidden pt-26">
 	<!-- Animated Gradient Background -->
 	<div
 		class="animate-gradient absolute inset-0 bg-gradient-to-br from-violet-500/20 via-purple-500/20 to-fuchsia-500/20 dark:from-violet-900/30 dark:via-purple-900/30 dark:to-fuchsia-900/30"

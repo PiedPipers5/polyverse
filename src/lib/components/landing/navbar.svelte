@@ -36,12 +36,12 @@
 </script>
 
 <nav
-	class="fixed top-0 right-0 left-0 z-50 transition-all duration-300 {scrolled
-		? 'glass-card bg-background/80 shadow-lg'
-		: 'bg-transparent'}"
+	class="fixed top-0 right-0 left-0 z-50 border-b border-border/60 backdrop-blur-xl transition-all duration-300 {scrolled
+		? 'bg-white/90 shadow-sm dark:bg-[#0d0a1a]/92 dark:shadow-lg dark:shadow-violet-950/40'
+		: 'bg-white/70 dark:bg-[#0d0a1a]/75'}"
 >
-	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
-		<div class="flex h-16 items-center justify-between md:h-20">
+	<div class="container mx-auto px-6 sm:px-8 lg:px-12">
+		<div class="relative flex h-18 items-center justify-between md:h-20">
 			<!-- Logo -->
 			<a href="/" class="group flex items-center space-x-2">
 				<div
@@ -53,7 +53,7 @@
 			</a>
 
 			<!-- Desktop Navigation -->
-			<div class="hidden items-center space-x-10 md:flex">
+			<div class="absolute left-1/2 hidden -translate-x-1/2 items-center space-x-14 md:flex">
 				{#each navLinks as link}
 					<a
 						href={link.href}
