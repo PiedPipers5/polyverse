@@ -49,19 +49,6 @@
 		toast.success('Handle copied!');
 	}
 
-	function handleNewPost(newActivity: any) {
-		// Transform the new activity to match the structure expected by the UI
-		const mappedPost = {
-			...newActivity,
-			content: newActivity.object?.content || '',
-			publishedAt: newActivity.published || new Date().toISOString()
-		};
-
-		// Optimistically add to the top of the list
-		posts = [mappedPost, ...posts];
-		postsCount += 1;
-	}
-
 	function handleDeletePost(id: string) {
 		console.log('[Profile] handleDeletePost called with id:', id);
 		console.log('[Profile] Current posts count:', posts.length);
@@ -174,7 +161,11 @@
 
 			<TabsContent value="posts">
 				<div class="mt-4 space-y-3">
-					<Composer username={user.username} onPostCreated={handleNewPost} />
+					<div class="mb-4 text-center">
+						<Button onclick={() => goto('/create')} variant="outline" class="w-full">
+							Create New Post
+						</Button>
+					</div>
 
 					{#if posts && posts.length > 0}
 						{#each posts as activity (activity.id || (activity as any).object?.id)}
