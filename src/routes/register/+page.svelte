@@ -218,6 +218,40 @@
 						</div>
 					</div>
 
+					<div class="group space-y-2">
+						<Label for="confirmPassword" class="ml-1 text-sm font-medium text-zinc-300"
+							>Confirm Keyphrase</Label
+						>
+						<div class="relative">
+							<Input
+								id="confirmPassword"
+								name="confirmPassword"
+								type="password"
+								placeholder="••••••••"
+								required
+								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
+							/>
+							<div
+								class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-purple-400"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="20"
+									height="20"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path
+										d="M7 11V7a5 5 0 0 1 10 0v4"
+									></path></svg
+								>
+							</div>
+						</div>
+					</div>
+
 					<div class="pt-4">
 						<Button
 							type="submit"
