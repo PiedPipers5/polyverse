@@ -5,7 +5,7 @@
 	import { auth } from '$lib/stores/auth';
 	import { page } from '$app/stores';
 
-	import Navigation from '$lib/components/Navigation.svelte';
+	import AppleStyleDock from '$lib/components/ui/apple-style-dock.svelte';
 
 	let { children } = $props();
 
@@ -32,8 +32,8 @@
 {:else}
 	<div class="flex min-h-screen bg-background text-foreground">
 		{#if $auth.user && $page.url.pathname !== '/' && $page.url.pathname !== '/login' && $page.url.pathname !== '/register'}
-			<Navigation />
-			<main class="flex-1 pb-16 md:pb-0 md:pl-20 lg:pl-64">
+			<AppleStyleDock currentPath={$page.url.pathname} />
+			<main class="flex-1 pb-20">
 				{@render children()}
 			</main>
 		{:else}
