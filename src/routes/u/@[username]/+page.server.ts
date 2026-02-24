@@ -46,12 +46,23 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.where(eq(followers.followerId, user.id));
 	const followingCount = followingResult[0]?.count || 0;
 
-	// Count posts (activities created by this user)
-	const postsResult = await db
-		.select({ count: count() })
-		.from(activities)
-		.where(eq(activities.actorId, user.id));
-	const postsCount = postsResult[0]?.count || 0;
+	// BUG FIX: Post count was incorrectly incrementing on edits and deletes.
+	// We now only count top-level 'Create' activities and filter out those that
+	// have been marked as 'Tombstone' (deleted).
+	const allUserActivitiesCount = await db.query.activities.findMany({
+		where: and(
+			eq(activities.actorId, user.id),
+			eq(activities.type, 'Create')
+		)
+	});
+
+	// Filter out tombstones to get accurate active post count
+	const nonDeletedPostsCount = allUserActivitiesCount.filter((a) => {
+		const obj = (a.activity as any).object;
+		return obj && obj.type !== 'Tombstone';
+	});
+
+	const postsCount = nonDeletedPostsCount.length;
 
 	// Fetch recent activities for the feed
 	// We'll fetch the last 20 activities for this user
@@ -77,7 +88,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	// Fetch recent activities (fetch more to filter)
 	const recentActivitiesRaw = await db.query.activities.findMany({
-		where: eq(activities.actorId, user.id),
+		where: and(
+			eq(activities.actorId, user.id),
+			eq(activities.type, 'Create')
+		),
 		orderBy: (activities, { desc }) => [desc(activities.createdAt)],
 		limit: 20 // Fetch more than needed to account for filtering
 	});
@@ -85,6 +99,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	// Filter based on privacy
 	const recentActivities = recentActivitiesRaw.filter(record => {
 		const act = record.activity as any;
+
+		// Filter out Tombstones (deleted posts)
+		if (act.object?.type === 'Tombstone' || act.type === 'Tombstone') {
+			return false;
+		}
+
 		const to = act.to || [];
 		const cc = act.cc || [];
 		const audiences = [...to, ...cc];

@@ -4,6 +4,7 @@
 	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
 	import Composer from '$lib/components/Composer.svelte';
 	import Post from '$lib/components/Post.svelte';
+	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	/* =========================================
@@ -43,6 +44,10 @@
 
 		// Optimistically add to the top of the list
 		posts = [mappedPost, ...posts];
+
+		// UI SYNC: Refresh all data (including the server-calculated post count) from the server.
+		// This ensures the counter stays in sync without a manual page reload.
+		invalidateAll();
 	}
 </script>
 
@@ -128,6 +133,8 @@
 								username={profile.username}
 								onDelete={(id) => {
 									posts = posts.filter((p) => (p.object?.id || p.id) !== id);
+									// UI SYNC: Refresh all data (including the server-calculated post count) from the server.
+									invalidateAll();
 								}}
 								onUpdate={(updatedPost) => {
 									posts = posts.map((p) =>

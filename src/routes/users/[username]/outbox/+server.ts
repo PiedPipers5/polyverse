@@ -292,14 +292,21 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
     const pageParam = url.searchParams.get('page');
 
     if (!pageParam) {
-        // Return root OrderedCollection (Task 2.2.1)
-        // Get total count of activities for this user
-        const allActivities = await db.query.activities.findMany({
-            where: eq(activities.actorId, targetUser.id),
-            columns: { id: true }
+        // BUG FIX: Ensure the OrderedCollection totalItems only reflects valid, active posts.
+        // We filter for 'Create' activities and exclude those that are tombstones.
+        const allCreateActivities = await db.query.activities.findMany({
+            where: and(
+                eq(activities.actorId, targetUser.id),
+                eq(activities.type, 'Create')
+            ),
+            columns: { id: true, activity: true }
         });
 
-        const totalItems = allActivities.length;
+        // Filter out tombstones from count to match profile stats
+        const totalItems = allCreateActivities.filter(record => {
+            const act = record.activity as any;
+            return act.object?.type !== 'Tombstone';
+        }).length;
 
         return json({
             '@context': 'https://www.w3.org/ns/activitystreams',
@@ -355,6 +362,12 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
 
     const filteredItems = allActivities.filter(record => {
         const act = record.activity as any;
+
+        // BUG FIX: Filter out Tombstones (deleted posts) so they don't appear in the feed
+        if (act.object?.type === 'Tombstone' || act.type === 'Tombstone') {
+            return false;
+        }
+
         const to = act.to || [];
         const cc = act.cc || [];
         const audiences = [...to, ...cc];
