@@ -4,8 +4,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { fade, fly } from 'svelte/transition';
+	import { Eye, EyeOff } from 'lucide-svelte';
 
 	let { form } = $props();
+	let showPassword = $state(false);
 </script>
 
 <div class="starfield">
@@ -170,12 +172,11 @@
 						<Input
 							id="password"
 							name="password"
-							type="password"
+							type={showPassword ? 'text' : 'password'}
 							placeholder="••••••••"
 							required
-							class="h-14 rounded-2xl border-border bg-muted/30 pl-12 text-foreground transition-all placeholder:text-muted-foreground/50 focus:border-purple-500/50 focus:ring-purple-500/10"
+							class="h-14 rounded-2xl border-border bg-muted/30 pr-12 pl-12 text-foreground transition-all placeholder:text-muted-foreground/50 focus:border-purple-500/50 focus:ring-purple-500/10"
 						/>
-
 						<div
 							class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-700 transition-colors group-focus-within:text-purple-500"
 						>
@@ -194,6 +195,17 @@
 								></path></svg
 							>
 						</div>
+						<button
+							type="button"
+							class="absolute top-1/2 right-4 -translate-y-1/2 text-zinc-700 transition-colors hover:text-purple-500"
+							onclick={() => (showPassword = !showPassword)}
+						>
+							{#if showPassword}
+								<EyeOff size={20} />
+							{:else}
+								<Eye size={20} />
+							{/if}
+						</button>
 					</div>
 				</div>
 

@@ -5,10 +5,13 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { fade, fly } from 'svelte/transition';
+	import { Eye, EyeOff } from 'lucide-svelte';
 
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
+	let showPassword = $state(false);
+	let showConfirmPassword = $state(false);
 </script>
 
 <div class="starfield">
@@ -192,10 +195,10 @@
 							<Input
 								id="password"
 								name="password"
-								type="password"
+								type={showPassword ? 'text' : 'password'}
 								placeholder="••••••••"
 								required
-								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
+								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pr-12 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
 							/>
 							<div
 								class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-purple-400"
@@ -215,6 +218,17 @@
 									></path></svg
 								>
 							</div>
+							<button
+								type="button"
+								class="absolute top-1/2 right-4 -translate-y-1/2 text-zinc-500 transition-colors hover:text-purple-400"
+								onclick={() => (showPassword = !showPassword)}
+							>
+								{#if showPassword}
+									<EyeOff size={20} />
+								{:else}
+									<Eye size={20} />
+								{/if}
+							</button>
 						</div>
 					</div>
 
@@ -226,10 +240,10 @@
 							<Input
 								id="confirmPassword"
 								name="confirmPassword"
-								type="password"
+								type={showConfirmPassword ? 'text' : 'password'}
 								placeholder="••••••••"
 								required
-								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
+								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pr-12 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
 							/>
 							<div
 								class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-purple-400"
@@ -249,6 +263,17 @@
 									></path></svg
 								>
 							</div>
+							<button
+								type="button"
+								class="absolute top-1/2 right-4 -translate-y-1/2 text-zinc-500 transition-colors hover:text-purple-400"
+								onclick={() => (showConfirmPassword = !showConfirmPassword)}
+							>
+								{#if showConfirmPassword}
+									<EyeOff size={20} />
+								{:else}
+									<Eye size={20} />
+								{/if}
+							</button>
 						</div>
 					</div>
 
