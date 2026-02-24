@@ -353,7 +353,6 @@
 		background-size: cover;
 		background-position: center;
 		opacity: 0.25;
-		filter: blur(8px);
 	}
 
 	.floating-card {

@@ -29,7 +29,8 @@
 	<!-- Left Side - Epic Visual -->
 	<div class="relative hidden h-full flex-col overflow-hidden p-12 text-white lg:flex">
 		<div class="hero-bg absolute inset-0">
-			<div class="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px]"></div>
+			<div class="absolute inset-0 bg-zinc-950/60"></div>
+
 			<div
 				class="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent"
 			></div>
