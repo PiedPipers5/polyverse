@@ -33,25 +33,29 @@
 		bind:this={dialog}
 		onclose={handleClose}
 		onclick={handleOutsideClick}
-		class="animate-fade-in-up fixed inset-0 z-50 m-auto flex h-fit w-full max-w-sm flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+		class="animate-fade-in-up fixed inset-0 z-50 m-auto flex h-fit w-full max-w-sm flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm dark:border-white/10 dark:bg-zinc-950/90"
 	>
 		<div class="flex flex-col items-center p-8 text-center">
 			<div
-				class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 ring-4 ring-red-100 dark:bg-red-900/20 dark:ring-red-900/30"
+				class="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 ring-8 ring-red-500/5 dark:bg-red-500/20 dark:ring-red-500/10"
 			>
-				<LogOut class="h-8 w-8 text-red-500 dark:text-red-400" />
+				<div
+					class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20 dark:bg-red-500/30"
+				>
+					<LogOut class="h-6 w-6 text-red-600 dark:text-red-400" />
+				</div>
 			</div>
 
-			<h2 class="mb-2 text-xl font-bold">Logout Confirmation</h2>
-			<p class="text-sm text-muted-foreground">
+			<h2 class="mb-2 text-xl font-bold tracking-tight text-foreground">Logout Confirmation</h2>
+			<p class="text-sm leading-relaxed text-muted-foreground">
 				Are you sure you want to log out? You'll need to log back in to access your account.
 			</p>
 		</div>
 
-		<div class="flex border-t border-border">
+		<div class="flex border-t border-border/50 dark:border-white/5">
 			<button
 				type="button"
-				class="flex-1 border-r border-border/50 px-4 py-4 text-sm font-medium transition-colors hover:bg-muted/50"
+				class="flex-1 border-r border-border/50 px-4 py-4 text-sm font-semibold transition-all hover:bg-muted/50 dark:border-white/5 dark:text-zinc-400 dark:hover:bg-white/5"
 				onclick={handleClose}
 			>
 				Cancel
@@ -60,7 +64,7 @@
 			<form method="POST" action="/logout" use:enhance class="flex-1">
 				<button
 					type="submit"
-					class="w-full px-4 py-4 text-sm font-bold text-red-600 transition-colors hover:bg-red-50/50 dark:hover:bg-red-900/20"
+					class="w-full px-4 py-4 text-sm font-bold text-red-600 transition-all hover:bg-red-50/50 dark:text-red-500 dark:hover:bg-red-500/10"
 				>
 					Logout
 				</button>
