@@ -99,7 +99,7 @@
 
 						{#if !form?.success}
 							<button
-								on:click={() => window.location.reload()}
+								onclick={() => window.location.reload()}
 								class="text-sm text-zinc-500 underline underline-offset-4 hover:text-white"
 							>
 								Dismiss
@@ -255,7 +255,7 @@
 					<div class="pt-4">
 						<Button
 							type="submit"
-							class="h-14 w-full rounded-2xl border-none bg-gradient-to-r from-purple-600 to-blue-600 text-lg font-bold text-white shadow-lg shadow-purple-500/25 transition-all hover:from-purple-500 hover:to-blue-500 active:scale-[0.98]"
+							class="h-14 w-full rounded-2xl border-none bg-gradient-to-r from-purple-600 to-blue-600 text-lg font-bold text-primary-foreground shadow-lg shadow-purple-500/25 transition-all hover:from-purple-500 hover:to-blue-500 active:scale-[0.98]"
 						>
 							Generate Identity
 						</Button>
@@ -276,11 +276,11 @@
 						data remains yours, always encrypted and decentralized.
 					</p>
 
-					<p class="text-sm text-zinc-400">
+					<p class="text-sm text-muted-foreground">
 						Already part of the Verse?
 						<a
 							href="/login"
-							class="ml-1 font-bold text-white underline underline-offset-4 transition-colors hover:text-purple-400"
+							class="ml-1 font-bold text-foreground underline underline-offset-4 transition-colors hover:text-purple-500"
 						>
 							Sign In
 						</a>
@@ -298,16 +298,16 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 100%);
+		background: radial-gradient(circle at center, var(--background) 0%, oklch(0 0 0 / 10%) 100%);
 		overflow: hidden;
 		z-index: -1;
 	}
 
 	.star {
 		position: absolute;
-		background: white;
+		background: var(--foreground);
 		border-radius: 50%;
-		opacity: 0.5;
+		opacity: 0.1;
 		animation: blink var(--duration) infinite;
 	}
 

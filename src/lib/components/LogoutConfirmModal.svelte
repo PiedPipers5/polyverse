@@ -5,7 +5,7 @@
 
 	let { open = $bindable(false) } = $props();
 
-	let dialog: HTMLDialogElement;
+	let dialog = $state<HTMLDialogElement>();
 
 	$effect(() => {
 		if (open) {
