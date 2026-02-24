@@ -9,6 +9,7 @@
 	import { enhance } from '$app/forms';
 	import Composer from '$lib/components/Composer.svelte';
 	import Post from '$lib/components/Post.svelte';
+	import LogoutConfirmModal from '$lib/components/LogoutConfirmModal.svelte';
 
 	import { untrack } from 'svelte';
 
@@ -23,6 +24,8 @@
 	// Initialize from data but don't sync on every change (prevents resetting optimistic updates)
 	let posts = $state(untrack(() => data.activities || []));
 	let postsCount = $state(untrack(() => data.user.postsCount || 0));
+
+	let showingLogoutConfirm = $state(false);
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
@@ -117,12 +120,10 @@
 				</Button>
 
 				<!-- Logout Button -->
-				<form method="POST" action="/logout" use:enhance>
-					<Button type="submit" variant="outline">
-						<LogOut class="mr-1 h-4 w-4" />
-						Logout
-					</Button>
-				</form>
+				<Button variant="outline" onclick={() => (showingLogoutConfirm = true)}>
+					<LogOut class="mr-1 h-4 w-4" />
+					Logout
+				</Button>
 			</div>
 		</div>
 
@@ -215,3 +216,5 @@
 		</Tabs>
 	</Card>
 </div>
+
+<LogoutConfirmModal bind:open={showingLogoutConfirm} />
