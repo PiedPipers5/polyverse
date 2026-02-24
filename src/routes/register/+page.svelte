@@ -5,10 +5,13 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { fade, fly } from 'svelte/transition';
+	import { Eye, EyeOff } from 'lucide-svelte';
 
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
+	let showPassword = $state(false);
+	let showConfirmPassword = $state(false);
 </script>
 
 <div class="starfield">
@@ -99,7 +102,7 @@
 
 						{#if !form?.success}
 							<button
-								on:click={() => window.location.reload()}
+								onclick={() => window.location.reload()}
 								class="text-sm text-zinc-500 underline underline-offset-4 hover:text-white"
 							>
 								Dismiss
@@ -192,10 +195,10 @@
 							<Input
 								id="password"
 								name="password"
-								type="password"
+								type={showPassword ? 'text' : 'password'}
 								placeholder="••••••••"
 								required
-								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
+								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pr-12 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
 							/>
 							<div
 								class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-purple-400"
@@ -215,6 +218,17 @@
 									></path></svg
 								>
 							</div>
+							<button
+								type="button"
+								class="absolute top-1/2 right-4 -translate-y-1/2 text-zinc-500 transition-colors hover:text-purple-400"
+								onclick={() => (showPassword = !showPassword)}
+							>
+								{#if showPassword}
+									<EyeOff size={20} />
+								{:else}
+									<Eye size={20} />
+								{/if}
+							</button>
 						</div>
 					</div>
 
@@ -226,10 +240,10 @@
 							<Input
 								id="confirmPassword"
 								name="confirmPassword"
-								type="password"
+								type={showConfirmPassword ? 'text' : 'password'}
 								placeholder="••••••••"
 								required
-								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
+								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pr-12 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
 							/>
 							<div
 								class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-purple-400"
@@ -249,13 +263,24 @@
 									></path></svg
 								>
 							</div>
+							<button
+								type="button"
+								class="absolute top-1/2 right-4 -translate-y-1/2 text-zinc-500 transition-colors hover:text-purple-400"
+								onclick={() => (showConfirmPassword = !showConfirmPassword)}
+							>
+								{#if showConfirmPassword}
+									<EyeOff size={20} />
+								{:else}
+									<Eye size={20} />
+								{/if}
+							</button>
 						</div>
 					</div>
 
 					<div class="pt-4">
 						<Button
 							type="submit"
-							class="h-14 w-full rounded-2xl border-none bg-gradient-to-r from-purple-600 to-blue-600 text-lg font-bold text-white shadow-lg shadow-purple-500/25 transition-all hover:from-purple-500 hover:to-blue-500 active:scale-[0.98]"
+							class="h-14 w-full rounded-2xl border-none bg-gradient-to-r from-purple-600 to-blue-600 text-lg font-bold text-primary-foreground shadow-lg shadow-purple-500/25 transition-all hover:from-purple-500 hover:to-blue-500 active:scale-[0.98]"
 						>
 							Generate Identity
 						</Button>
@@ -276,11 +301,11 @@
 						data remains yours, always encrypted and decentralized.
 					</p>
 
-					<p class="text-sm text-zinc-400">
+					<p class="text-sm text-muted-foreground">
 						Already part of the Verse?
 						<a
 							href="/login"
-							class="ml-1 font-bold text-white underline underline-offset-4 transition-colors hover:text-purple-400"
+							class="ml-1 font-bold text-foreground underline underline-offset-4 transition-colors hover:text-purple-500"
 						>
 							Sign In
 						</a>
@@ -298,16 +323,16 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 100%);
+		background: radial-gradient(circle at center, var(--background) 0%, oklch(0 0 0 / 10%) 100%);
 		overflow: hidden;
 		z-index: -1;
 	}
 
 	.star {
 		position: absolute;
-		background: white;
+		background: var(--foreground);
 		border-radius: 50%;
-		opacity: 0.5;
+		opacity: 0.1;
 		animation: blink var(--duration) infinite;
 	}
 
@@ -328,7 +353,6 @@
 		background-size: cover;
 		background-position: center;
 		opacity: 0.25;
-		filter: blur(8px);
 	}
 
 	.floating-card {

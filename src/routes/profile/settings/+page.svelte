@@ -8,6 +8,7 @@
 	import { Copy, LogOut, ArrowLeft } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import LogoutConfirmModal from '$lib/components/LogoutConfirmModal.svelte';
 
 	// Get data from server load function (Svelte 5 syntax)
 	let { data } = $props();
@@ -26,6 +27,8 @@
 	// Avatar upload state
 	let uploading = $state(false);
 	let fileInput: HTMLInputElement;
+
+	let showingLogoutConfirm = $state(false);
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
@@ -133,12 +136,10 @@
 			</div>
 
 			<!-- Logout Button -->
-			<form method="POST" action="/logout" use:enhance>
-				<Button type="submit" variant="outline" size="sm">
-					<LogOut class="mr-1 h-4 w-4" />
-					Logout
-				</Button>
-			</form>
+			<Button variant="outline" size="sm" onclick={() => (showingLogoutConfirm = true)}>
+				<LogOut class="mr-1 h-4 w-4" />
+				Logout
+			</Button>
 		</CardHeader>
 
 		<CardContent class="space-y-8">
@@ -224,3 +225,5 @@
 		</CardContent>
 	</Card>
 </div>
+
+<LogoutConfirmModal bind:open={showingLogoutConfirm} />

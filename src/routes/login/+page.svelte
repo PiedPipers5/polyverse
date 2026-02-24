@@ -4,8 +4,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { fade, fly } from 'svelte/transition';
+	import { Eye, EyeOff } from 'lucide-svelte';
 
 	let { form } = $props();
+	let showPassword = $state(false);
 </script>
 
 <div class="starfield">
@@ -27,7 +29,8 @@
 	<!-- Left Side - Epic Visual -->
 	<div class="relative hidden h-full flex-col overflow-hidden p-12 text-white lg:flex">
 		<div class="hero-bg absolute inset-0">
-			<div class="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px]"></div>
+			<div class="absolute inset-0 bg-zinc-950/60"></div>
+
 			<div
 				class="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent"
 			></div>
@@ -100,10 +103,10 @@
 						>
 					</div>
 				</div>
-				<h1 class="text-center text-4xl font-black tracking-tight text-white lg:text-left">
+				<h1 class="text-center text-4xl font-black tracking-tight text-foreground lg:text-left">
 					Welcome <span class="gradient-text">Back</span>
 				</h1>
-				<p class="text-center text-lg font-light text-zinc-500 lg:text-left">
+				<p class="text-center text-lg font-light text-muted-foreground lg:text-left">
 					Enter your keys to re-enter the Verse.
 				</p>
 			</div>
@@ -132,8 +135,9 @@
 							placeholder="your_handle"
 							autocomplete="username"
 							required
-							class="h-14 rounded-2xl border-zinc-800 bg-zinc-900/50 pl-12 text-white transition-all placeholder:text-zinc-700 focus:border-purple-500/50 focus:ring-purple-500/10"
+							class="h-14 rounded-2xl border-border bg-muted/30 pl-12 text-foreground transition-all placeholder:text-muted-foreground/50 focus:border-purple-500/50 focus:ring-purple-500/10"
 						/>
+
 						<div
 							class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-700 transition-colors group-focus-within:text-purple-500"
 						>
@@ -169,10 +173,10 @@
 						<Input
 							id="password"
 							name="password"
-							type="password"
+							type={showPassword ? 'text' : 'password'}
 							placeholder="••••••••"
 							required
-							class="h-14 rounded-2xl border-zinc-800 bg-zinc-900/50 pl-12 text-white transition-all placeholder:text-zinc-700 focus:border-purple-500/50 focus:ring-purple-500/10"
+							class="h-14 rounded-2xl border-border bg-muted/30 pr-12 pl-12 text-foreground transition-all placeholder:text-muted-foreground/50 focus:border-purple-500/50 focus:ring-purple-500/10"
 						/>
 						<div
 							class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-700 transition-colors group-focus-within:text-purple-500"
@@ -192,23 +196,34 @@
 								></path></svg
 							>
 						</div>
+						<button
+							type="button"
+							class="absolute top-1/2 right-4 -translate-y-1/2 text-zinc-700 transition-colors hover:text-purple-500"
+							onclick={() => (showPassword = !showPassword)}
+						>
+							{#if showPassword}
+								<EyeOff size={20} />
+							{:else}
+								<Eye size={20} />
+							{/if}
+						</button>
 					</div>
 				</div>
 
 				<Button
 					type="submit"
-					class="h-14 w-full rounded-2xl bg-white text-lg font-black text-black shadow-xl shadow-white/5 transition-all hover:bg-zinc-200 active:scale-[0.98]"
+					class="h-14 w-full rounded-2xl bg-primary text-lg font-black text-primary-foreground shadow-xl shadow-primary/5 transition-all hover:bg-primary/90 active:scale-[0.98]"
 				>
 					Sync Account
 				</Button>
 			</form>
 
 			<div class="flex flex-col items-center space-y-6">
-				<p class="text-center text-zinc-500">
+				<p class="text-center text-muted-foreground">
 					New to this dimension?{' '}
 					<a
 						href="/register"
-						class="font-bold text-white underline underline-offset-8 transition-colors hover:text-purple-400"
+						class="font-bold text-foreground underline underline-offset-8 transition-colors hover:text-purple-500"
 					>
 						Forge Identity
 					</a>
@@ -220,7 +235,7 @@
 					{/each}
 				</div>
 
-				<p class="text-[10px] font-bold tracking-[0.3em] text-zinc-700 uppercase">
+				<p class="text-[10px] font-bold tracking-[0.3em] text-muted-foreground/50 uppercase">
 					Decentralized Auth v1.0
 				</p>
 			</div>
@@ -235,16 +250,16 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background: radial-gradient(circle at center, #0a0a14 0%, #000000 100%);
+		background: radial-gradient(circle at center, var(--background) 0%, oklch(0 0 0 / 10%) 100%);
 		overflow: hidden;
 		z-index: -1;
 	}
 
 	.star {
 		position: absolute;
-		background: white;
+		background: var(--foreground);
 		border-radius: 50%;
-		opacity: 0.3;
+		opacity: 0.1;
 		animation: blink var(--duration) infinite;
 	}
 
