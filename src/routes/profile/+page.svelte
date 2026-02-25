@@ -4,7 +4,7 @@
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
 	import { Copy, Settings, LogOut } from 'lucide-svelte';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import Composer from '$lib/components/Composer.svelte';
@@ -54,29 +54,16 @@
 
 	function handleDeletePost(id: string) {
 		console.log('[Profile] handleDeletePost called with id:', id);
-		console.log('[Profile] Current posts count:', posts.length);
-		console.log('[Profile] Current postsCount state:', postsCount);
-
-		const beforeLength = posts.length;
 		posts = posts.filter((p) => {
 			const apActivity = (p as any).activity || p;
 			const objectId = (apActivity as any).object?.id || (apActivity as any).id;
-			const keep = objectId !== id;
-			if (!keep) {
-				console.log('[Profile] Removing post with id:', objectId);
-			}
-			return keep;
+			return objectId !== id;
 		});
 
-		console.log(
-			'[Profile] Posts after filter:',
-			posts.length,
-			'(removed:',
-			beforeLength - posts.length,
-			')'
-		);
 		postsCount -= 1;
-		console.log('[Profile] New postsCount:', postsCount);
+		// UI SYNC: Refresh all data from server (including postsCount)
+		// This ensures the post counter on the profile reflects the latest DB state.
+		invalidateAll();
 	}
 
 	function handleUpdatePost(updatedActivity: any) {
