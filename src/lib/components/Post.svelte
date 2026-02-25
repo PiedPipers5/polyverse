@@ -3,7 +3,18 @@
 	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
 	import Composer from './Composer.svelte';
-	import { EllipsisVertical, Trash2, Pencil, X, Globe, Lock, Users } from 'lucide-svelte';
+	import {
+		EllipsisVertical,
+		Trash2,
+		Pencil,
+		X,
+		Globe,
+		Lock,
+		Users,
+		Languages,
+		Loader2
+	} from 'lucide-svelte';
+	import { languages } from '$lib/constants/languages';
 
 	interface Props {
 		activity: any;
@@ -20,6 +31,10 @@
 	let isDeleting = $state(false);
 	let lightboxOpen = $state(false);
 	let lightboxIndex = $state(0);
+
+	let translatedContent = $state<string | null>(null);
+	let isTranslating = $state(false);
+	let showTranslated = $state(false);
 
 	// Handle both flat ActivityPub objects and DB-wrapped rows
 	let apActivity = $derived(activity.activity || activity);
@@ -40,6 +55,17 @@
 		if (cc.includes(PUBLIC_URI)) return 'unlisted';
 		return 'followers';
 	});
+
+	let postLanguage = $derived.by(() => {
+		const obj = apActivity.object || apActivity;
+		const contentMap = obj.contentMap || {};
+		const codes = Object.keys(contentMap);
+		return codes[0] || 'en';
+	});
+
+	let languageName = $derived(
+		languages.find((l) => l.code === postLanguage)?.nativeName || postLanguage
+	);
 
 	// Close menu when clicking outside (simple implementation)
 	function toggleMenu() {
@@ -123,6 +149,40 @@
 			lightboxIndex--;
 		}
 	}
+
+	async function translatePost() {
+		if (translatedContent) {
+			showTranslated = !showTranslated;
+			return;
+		}
+
+		isTranslating = true;
+		try {
+			const contentToTranslate = activity.content || activity.object?.content;
+			const response = await fetch('/api/ai/translate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					text: contentToTranslate,
+					targetLanguage: 'en' // Default to English for now
+				})
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				translatedContent = result.translatedText;
+				showTranslated = true;
+			} else {
+				const err = await response.json();
+				toast.error(err.message || 'Translation failed. Make sure AI is configured.');
+			}
+		} catch (e) {
+			toast.error('Error during translation');
+			console.error(e);
+		} finally {
+			isTranslating = false;
+		}
+	}
 </script>
 
 {#if isEditing}
@@ -133,6 +193,7 @@
 			initialContent={activity.content || activity.object?.content}
 			initialMedia={attachments.map((a: any) => ({ url: a.url, type: a.mediaType }))}
 			initialPrivacy={privacyLevel}
+			initialLanguage={postLanguage}
 			objectId={targetObjectId}
 			onCancel={() => (isEditing = false)}
 			onPostUpdated={handleUpdate}
@@ -190,7 +251,18 @@
 			</div>
 		{/if}
 
-		<p class="pr-8 text-base whitespace-pre-wrap">{activity.content || activity.object?.content}</p>
+		<div class="space-y-2">
+			<p class="pr-8 text-base whitespace-pre-wrap">
+				{showTranslated ? translatedContent : activity.content || activity.object?.content}
+			</p>
+
+			{#if showTranslated}
+				<p class="flex items-center gap-1 text-[10px] text-muted-foreground italic">
+					<span class="inline-block h-1 w-1 animate-pulse rounded-full bg-primary"></span>
+					Translated by Google Gemini
+				</p>
+			{/if}
+		</div>
 
 		<!-- Media Gallery -->
 		{#if attachments.length > 0}
@@ -236,6 +308,24 @@
 				})} IST
 				{#if activity.object?.updated}
 					<span class="ml-2 italic">(edited)</span>
+				{/if}
+				<span class="ml-2 flex items-center gap-1">
+					<Languages class="h-3 w-3" />
+					{languageName}
+				</span>
+				{#if postLanguage !== 'en'}
+					<button
+						onclick={translatePost}
+						disabled={isTranslating}
+						class="group ml-2 flex items-center gap-1 transition-colors hover:text-primary"
+					>
+						{#if isTranslating}
+							<Loader2 class="h-3 w-3 animate-spin" />
+							<span>Translating...</span>
+						{:else}
+							<span>{showTranslated ? 'Show Original' : 'Translate'}</span>
+						{/if}
+					</button>
 				{/if}
 			</p>
 		</div>

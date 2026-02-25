@@ -43,7 +43,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
     const domain = env.DOMAIN!;
     const body = await request.json();
     // Default to 'create' if no action specified
-    const { action = 'create', content, privacy = 'public', media = [], objectId } = body;
+    const { action = 'create', content, privacy = 'public', media = [], language = 'en', objectId } = body;
 
     const actorUri = getActorUri(domain, username);
     const published = new Date().toISOString();
@@ -85,6 +85,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
             published,
             attributedTo: actorUri,
             content,
+            contentMap: { [language]: content },
             to,
             cc,
             attachment: media
@@ -158,6 +159,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         const updatedObject = {
             ...originalObject,
             content,
+            contentMap: { [language]: content },
             attachment: media, // Replace media
             updated: published // Add updated timestamp
         };

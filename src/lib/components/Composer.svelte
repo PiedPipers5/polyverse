@@ -3,6 +3,7 @@
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { toast } from 'svelte-sonner';
 	import { Image as ImageIcon, X, Loader2, Globe, Lock, Users, ChevronDown } from 'lucide-svelte';
+	import LanguagePicker from './LanguagePicker.svelte';
 
 	interface MediaItem {
 		url: string;
@@ -16,6 +17,7 @@
 		initialContent?: string;
 		initialMedia?: MediaItem[];
 		initialPrivacy?: 'public' | 'unlisted' | 'followers';
+		initialLanguage?: string;
 		mode?: 'create' | 'edit';
 		objectId?: string; // Required for edit mode
 		onPostCreated?: (post: any) => void;
@@ -28,6 +30,7 @@
 		initialContent = '',
 		initialMedia = [],
 		initialPrivacy = 'public',
+		initialLanguage = 'en',
 		mode = 'create',
 		objectId,
 		onPostCreated,
@@ -39,6 +42,7 @@
 	let isSubmitting = $state(false);
 	let media = $state<MediaItem[]>(initialMedia);
 	let privacy = $state<'public' | 'unlisted' | 'followers'>(initialPrivacy);
+	let selectedLanguage = $state(initialLanguage);
 	let privacyDropdownOpen = $state(false);
 	let fileInput: HTMLInputElement;
 
@@ -155,6 +159,7 @@
 				content,
 				action: mode,
 				privacy,
+				language: selectedLanguage,
 				objectId: mode === 'edit' ? objectId : undefined,
 				media: media.map((m) => ({
 					url: m.url,
@@ -179,6 +184,7 @@
 					content = '';
 					media = [];
 					privacy = 'public';
+					selectedLanguage = 'en';
 					if (onPostCreated) onPostCreated(result);
 				} else {
 					toast.success('Note updated!');
@@ -310,6 +316,13 @@
 						</div>
 					{/if}
 				</div>
+
+				<!-- Language Picker -->
+				<LanguagePicker
+					selected={selectedLanguage}
+					onSelect={(code) => (selectedLanguage = code)}
+					disabled={isSubmitting}
+				/>
 
 				{#if mode === 'edit'}
 					<Button variant="ghost" onclick={onCancel} disabled={isSubmitting}>Cancel</Button>

@@ -63,6 +63,7 @@
 	},
 	"dependencies": {
 		"@fedify/fedify": "^1.5.9",
+		"@google/generative-ai": "^0.24.1",
 		"@js-temporal/polyfill": "^0.5.1",
 		"@neondatabase/serverless": "^1.0.2",
 		"@sentry/sveltekit": "^10.39.0",
