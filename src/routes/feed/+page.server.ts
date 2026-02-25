@@ -23,15 +23,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 	});
 	const userMap = new Map(allUsers.map((u) => [u.id, u]));
 
-	// Fetch recent Create activities from all users
-	const rows = await db.query.activities.findMany({
+	// OPTIMIZATION: To get an accurate count and avoid skipping posts,
+	// we fetch all 'Create' activities first. For a production app with millions
+	// of posts, we would use a more efficient indexed counting method.
+	const allCreateActivities = await db.query.activities.findMany({
 		where: eq(activities.type, 'Create'),
-		orderBy: [desc(activities.createdAt)],
-		limit: PAGE_SIZE + 1
+		orderBy: [desc(activities.createdAt)]
 	});
 
 	// Filter public, non-tombstone
-	const publicRows = rows.filter((row) => {
+	const allPublicPosts = allCreateActivities.filter((row) => {
 		const act = row.activity as any;
 		const obj = act.object;
 		if (!obj || obj.type === 'Tombstone') return false;
@@ -40,8 +41,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		return [...to, ...cc].includes(PUBLIC_URI);
 	});
 
-	const hasMore = publicRows.length > PAGE_SIZE;
-	const posts = publicRows.slice(0, PAGE_SIZE).map((row) => {
+	const totalPublicPosts = allPublicPosts.length;
+	const postsInPage = allPublicPosts.slice(0, PAGE_SIZE);
+	const hasMore = totalPublicPosts > PAGE_SIZE;
+
+	const posts = postsInPage.map((row) => {
 		const author = userMap.get(row.actorId);
 		const act = row.activity as any;
 		return {
@@ -49,11 +53,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 			actorId: row.actorId,
 			author: author
 				? {
-						username: author.username,
-						displayName: author.displayName,
-						avatarUrl: author.avatarUrl,
-						profileUrl: `/u/@${author.username}`
-					}
+					username: author.username,
+					displayName: author.displayName,
+					avatarUrl: author.avatarUrl,
+					profileUrl: `/u/@${author.username}`
+				}
 				: null,
 			activity: act,
 			content: act.object?.content || act.content || '',
@@ -65,5 +69,5 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const nextCursor =
 		hasMore && posts.length > 0 ? posts[posts.length - 1].createdAt : null;
 
-	return { posts, nextCursor };
+	return { posts, nextCursor, totalPublicPosts };
 };

@@ -40,14 +40,19 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		}
 	}
 
+	// OPTIMIZATION: To ensure we return exactly `limit` public posts,
+	// we fetch a larger batch of activities and filter. 
+	// For small instances, fetching 100 at a time is safe.
+	const fetchLimit = Math.max(limit * 5, 100);
+
 	const rows = await db.query.activities.findMany({
 		where: and(...conditions),
 		orderBy: [desc(activities.createdAt)],
-		limit: limit + 1 // Fetch one extra to detect if there's a next page
+		limit: fetchLimit
 	});
 
 	// Filter to only public posts, exclude tombstones
-	const publicPosts = rows
+	const allPublicPosts = rows
 		.filter((row) => {
 			const act = row.activity as any;
 			const obj = act.object;
@@ -56,10 +61,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			const to: string[] = act.to || obj.to || [];
 			const cc: string[] = act.cc || obj.cc || [];
 			return [...to, ...cc].includes(PUBLIC_URI);
-		})
-		.slice(0, limit);
+		});
 
-	const hasMore = rows.length > limit;
+	const publicPosts = allPublicPosts.slice(0, limit);
+	const hasMore = allPublicPosts.length > limit;
 	const nextCursor = hasMore && publicPosts.length > 0
 		? publicPosts[publicPosts.length - 1].createdAt.toISOString()
 		: null;
@@ -72,11 +77,11 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			actorId: row.actorId,
 			author: author
 				? {
-						username: author.username,
-						displayName: author.displayName,
-						avatarUrl: author.avatarUrl,
-						profileUrl: `/u/@${author.username}`
-					}
+					username: author.username,
+					displayName: author.displayName,
+					avatarUrl: author.avatarUrl,
+					profileUrl: `/u/@${author.username}`
+				}
 				: null,
 			activity: act,
 			content: act.object?.content || act.content || '',

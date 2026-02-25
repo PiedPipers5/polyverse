@@ -78,7 +78,10 @@
 		</div>
 		<div>
 			<h1 class="text-xl leading-tight font-bold">Local Feed</h1>
-			<p class="text-xs text-muted-foreground">Public posts from everyone on this server</p>
+			<p class="text-xs text-muted-foreground">
+				Public posts from everyone • {data.totalPublicPosts ?? 0}
+				{data.totalPublicPosts === 1 ? 'post' : 'posts'}
+			</p>
 		</div>
 	</div>
 
