@@ -18,7 +18,7 @@
 <section class="relative flex min-h-screen items-center justify-center overflow-hidden pt-26">
 	<!-- Animated Gradient Background -->
 	<div
-		class="animate-gradient absolute inset-0 bg-gradient-to-br from-violet-500/20 via-purple-500/20 to-fuchsia-500/20 dark:from-violet-900/30 dark:via-purple-900/30 dark:to-fuchsia-900/30"
+		class="animate-gradient absolute inset-0 bg-linear-to-br from-violet-500/20 via-purple-500/20 to-fuchsia-500/20 dark:from-violet-900/30 dark:via-purple-900/30 dark:to-fuchsia-900/30"
 	></div>
 
 	<!-- Floating Particles -->
@@ -45,7 +45,7 @@
 			</div>
 
 			<!-- Main Headline -->
-			<h1 class="text-4xl leading-tight font-bold sm:text-5xl md:text-6xl lg:text-7xl">
+			<h1 class="xs:text-4xl text-3xl leading-tight font-bold sm:text-5xl md:text-6xl lg:text-7xl">
 				Own Your Digital Identity in the
 				<span class="gradient-text mt-2 block">"POLYVERSE"</span>
 			</h1>
@@ -63,7 +63,7 @@
 				<a href={user ? '/profile' : '/register'}>
 					<Button
 						size="lg"
-						class="bg-gradient-to-r from-violet-500 to-fuchsia-500 px-8 py-6 text-lg text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:from-violet-600 hover:to-fuchsia-600 hover:shadow-violet-500/50"
+						class="bg-linear-to-r from-violet-500 to-fuchsia-500 px-8 py-6 text-lg text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:from-violet-600 hover:to-fuchsia-600 hover:shadow-violet-500/50"
 					>
 						{user ? 'Go to Profile' : 'Get Started Free'}
 					</Button>
@@ -80,7 +80,7 @@
 			</div>
 
 			<!-- Stats -->
-			<div class="grid grid-cols-2 gap-8 pt-12 pb-16 md:grid-cols-4 md:pb-16">
+			<div class="grid grid-cols-2 gap-4 pt-12 pb-16 md:grid-cols-4 md:gap-8 md:pb-16">
 				{#each [{ value: '100%', label: 'You Own Your Data' }, { value: 'Federated', label: 'Network' }, { value: 'E2E', label: 'Encrypted' }, { value: 'Open', label: 'Source' }] as stat}
 					<div class="space-y-1">
 						<div class="gradient-text text-2xl font-bold md:text-3xl">

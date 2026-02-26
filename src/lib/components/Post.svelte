@@ -266,13 +266,7 @@
 
 		<!-- Media Gallery -->
 		{#if attachments.length > 0}
-			<div
-				class="mt-3 {attachments.length === 1
-					? ''
-					: attachments.length === 2
-						? 'grid grid-cols-2 gap-2'
-						: 'grid grid-cols-2 gap-2'}"
-			>
+			<div class="mt-3 {attachments.length === 1 ? '' : 'grid grid-cols-2 gap-1.5 md:gap-2'}">
 				{#each attachments as attachment, index}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -289,27 +283,29 @@
 		{/if}
 
 		<div class="mt-2 flex items-center justify-between">
-			<p class="flex items-center gap-1.5 text-xs text-muted-foreground">
+			<p class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
 				{#if privacyLevel === 'public'}
-					<Globe class="h-3.5 w-3.5" />
+					<span class="flex items-center gap-1"><Globe class="h-3.5 w-3.5" /> Public</span>
 				{:else if privacyLevel === 'unlisted'}
-					<Lock class="h-3.5 w-3.5" />
+					<span class="flex items-center gap-1"><Lock class="h-3.5 w-3.5" /> Unlisted</span>
 				{:else}
-					<Users class="h-3.5 w-3.5" />
+					<span class="flex items-center gap-1"><Users class="h-3.5 w-3.5" /> Followers</span>
 				{/if}
-				{new Date(activity.publishedAt || activity.published).toLocaleString('en-IN', {
-					day: '2-digit',
-					month: '2-digit',
-					year: 'numeric',
-					hour: '2-digit',
-					minute: '2-digit',
-					hour12: true,
-					timeZone: 'Asia/Kolkata'
-				})} IST
+				<span>
+					{new Date(activity.publishedAt || activity.published).toLocaleString('en-IN', {
+						day: '2-digit',
+						month: '2-digit',
+						year: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit',
+						hour12: true,
+						timeZone: 'Asia/Kolkata'
+					})} IST
+				</span>
 				{#if activity.object?.updated}
-					<span class="ml-2 italic">(edited)</span>
+					<span class="italic">(edited)</span>
 				{/if}
-				<span class="ml-2 flex items-center gap-1">
+				<span class="flex items-center gap-1">
 					<Languages class="h-3 w-3" />
 					{languageName}
 				</span>

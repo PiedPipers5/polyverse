@@ -76,12 +76,12 @@
 	}
 </script>
 
-<div class="flex min-h-screen justify-center bg-muted p-6">
+<div class="flex min-h-screen justify-center bg-muted p-3 sm:p-6">
 	<Card class="w-full max-w-xl overflow-hidden shadow-lg">
 		<!-- Banner -->
 		<div class="h-32 bg-linear-to-r from-indigo-500 to-purple-600"></div>
 
-		<div class="-mt-12 flex flex-col items-center">
+		<div class="-mt-12 flex flex-col items-center px-4">
 			<!-- Avatar -->
 			<Avatar class="h-24 w-24 border-4 border-background">
 				{#if user.avatarUrl}
@@ -91,23 +91,27 @@
 			</Avatar>
 
 			<!-- User Identity -->
-			<h2 class="mt-3 text-2xl font-semibold">{user.displayName || user.username}</h2>
-			<p class="text-muted-foreground">{user.handle}</p>
+			<h2 class="mt-3 text-center text-2xl font-semibold">{user.displayName || user.username}</h2>
+			<p class="text-center text-muted-foreground">{user.handle}</p>
 
 			<!-- Profile Action Buttons -->
-			<div class="mt-3 flex gap-2">
-				<Button onclick={() => goto('/profile/settings')}>
+			<div class="mt-4 flex flex-wrap justify-center gap-2">
+				<Button onclick={() => goto('/profile/settings')} class="flex-1 sm:flex-none">
 					<Settings class="mr-1 h-4 w-4" />
 					Edit
 				</Button>
 
-				<Button variant="secondary" onclick={copyProfile}>
+				<Button variant="secondary" onclick={copyProfile} class="flex-1 sm:flex-none">
 					<Copy class="mr-1 h-4 w-4" />
 					Share
 				</Button>
 
 				<!-- Logout Button -->
-				<Button variant="outline" onclick={() => (showingLogoutConfirm = true)}>
+				<Button
+					variant="outline"
+					onclick={() => (showingLogoutConfirm = true)}
+					class="flex-1 sm:flex-none"
+				>
 					<LogOut class="mr-1 h-4 w-4" />
 					Logout
 				</Button>
@@ -124,18 +128,18 @@
 		<!-- Stats Section (placeholder for now - will be implemented in later epics) -->
 		<div class="mt-6 grid grid-cols-3 border-t py-6 text-center select-none">
 			<div>
-				<p class="text-xl font-semibold">{user.followersCount || 0}</p>
-				<p class="text-sm text-muted-foreground">Followers</p>
+				<p class="text-lg font-semibold sm:text-xl">{user.followersCount || 0}</p>
+				<p class="text-xs text-muted-foreground sm:text-sm">Followers</p>
 			</div>
 
 			<div>
-				<p class="text-xl font-semibold">{user.followingCount || 0}</p>
-				<p class="text-sm text-muted-foreground">Following</p>
+				<p class="text-lg font-semibold sm:text-xl">{user.followingCount || 0}</p>
+				<p class="text-xs text-muted-foreground sm:text-sm">Following</p>
 			</div>
 
 			<div>
-				<p class="text-xl font-semibold">{postsCount}</p>
-				<p class="text-sm text-muted-foreground">Posts</p>
+				<p class="text-lg font-semibold sm:text-xl">{postsCount}</p>
+				<p class="text-xs text-muted-foreground sm:text-sm">Posts</p>
 			</div>
 		</div>
 
