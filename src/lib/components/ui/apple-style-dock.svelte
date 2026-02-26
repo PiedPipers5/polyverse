@@ -11,7 +11,9 @@
 	let showingLogoutConfirm = $state(false);
 </script>
 
-<div class="pointer-events-none fixed right-0 bottom-0 left-0 z-50 flex w-full justify-center pb-4">
+<div
+	class="pointer-events-none fixed right-0 bottom-0 left-0 z-50 flex w-full justify-center pb-2 md:pb-4"
+>
 	<div class="pointer-events-auto">
 		<Dock>
 			<a href="/feed">

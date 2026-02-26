@@ -45,11 +45,11 @@
 			<!-- Logo -->
 			<a href="/" class="group flex items-center space-x-2">
 				<div
-					class="flex h-10 w-10 transform items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 transition-transform group-hover:scale-110"
+					class="flex h-10 w-10 transform items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-fuchsia-500 transition-transform group-hover:scale-110"
 				>
 					<span class="text-xl font-bold text-white">Pp</span>
 				</div>
-				<span class="gradient-text hidden text-xl font-bold sm:inline">POLYVERSE</span>
+				<span class="gradient-text xs:inline hidden text-xl font-bold sm:inline">POLYVERSE</span>
 			</a>
 
 			<!-- Desktop Navigation -->
@@ -84,7 +84,7 @@
 							/>
 						{:else}
 							<div
-								class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-gradient-to-br from-violet-500 to-fuchsia-500 font-semibold text-white transition-transform group-hover:scale-110"
+								class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-linear-to-br from-violet-500 to-fuchsia-500 font-semibold text-white transition-transform group-hover:scale-110"
 							>
 								{(user.displayName || user.username).charAt(0).toUpperCase()}
 							</div>
@@ -98,7 +98,7 @@
 					<a href="/register">
 						<Button
 							size="sm"
-							class="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
+							class="bg-linear-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
 						>
 							Get Started
 						</Button>
@@ -150,6 +150,10 @@
 							<GlobalSearch />
 						</div>
 					{/if}
+					<div class="flex items-center justify-between pt-2">
+						<span class="text-sm font-medium text-foreground/70">Appearance</span>
+						<ThemeToggle />
+					</div>
 					<div class="flex flex-col space-y-2 border-t border-border pt-4">
 						{#if user}
 							<!-- Logged in: Show profile link -->
@@ -166,7 +170,7 @@
 									/>
 								{:else}
 									<div
-										class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-gradient-to-br from-violet-500 to-fuchsia-500 font-semibold text-white"
+										class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-linear-to-br from-violet-500 to-fuchsia-500 font-semibold text-white"
 									>
 										{(user.displayName || user.username).charAt(0).toUpperCase()}
 									</div>
@@ -180,7 +184,7 @@
 							</a>
 							<a href="/register" onclick={() => (mobileMenuOpen = false)}>
 								<Button
-									class="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
+									class="w-full bg-linear-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
 								>
 									Get Started
 								</Button>

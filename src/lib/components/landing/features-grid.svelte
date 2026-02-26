@@ -95,7 +95,7 @@
 		</div>
 
 		<!-- Features Grid -->
-		<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
 			{#each features as feature, index}
 				<div
 					class="feature-card glass-card rounded-2xl p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-violet-500/10 {observer.isVisible
@@ -108,7 +108,7 @@
 				>
 					<!-- Icon -->
 					<div
-						class="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg"
+						class="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-fuchsia-500 shadow-lg"
 					>
 						<svelte:component this={feature.icon} class="h-6 w-6 text-white" />
 					</div>
