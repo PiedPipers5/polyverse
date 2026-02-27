@@ -117,6 +117,7 @@
 			}
 
 			toast.success('Profile saved!');
+			goto('/profile');
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed to save profile');
 		} finally {
@@ -129,14 +130,19 @@
 	<Card class="w-full max-w-2xl shadow-lg">
 		<CardHeader class="flex flex-row items-center justify-between">
 			<div class="flex items-center gap-2">
-				<Button variant="ghost" size="icon" onclick={() => goto('/profile')}>
+				<Button variant="ghost" size="icon" onclick={() => goto('/profile')} class="cursor-pointer">
 					<ArrowLeft class="h-4 w-4" />
 				</Button>
 				<CardTitle>Profile Settings</CardTitle>
 			</div>
 
 			<!-- Logout Button -->
-			<Button variant="outline" size="sm" onclick={() => (showingLogoutConfirm = true)}>
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={() => (showingLogoutConfirm = true)}
+				class="cursor-pointer"
+			>
 				<LogOut class="mr-1 h-4 w-4" />
 				Logout
 			</Button>
@@ -161,7 +167,12 @@
 						onchange={handleAvatarUpload}
 						class="hidden"
 					/>
-					<Button variant="secondary" onclick={() => fileInput?.click()} disabled={uploading}>
+					<Button
+						variant="secondary"
+						onclick={() => fileInput?.click()}
+						disabled={uploading}
+						class="cursor-pointer"
+					>
 						{uploading ? 'Uploading...' : 'Upload Avatar'}
 					</Button>
 				</div>
@@ -196,7 +207,7 @@
 				<p class="font-medium">Your Handle</p>
 				<div class="flex gap-2">
 					<Input readonly value={handle} class="bg-muted" />
-					<Button size="icon" onclick={() => copy(handle)}>
+					<Button size="icon" onclick={() => copy(handle)} class="cursor-pointer">
 						<Copy class="h-4 w-4" />
 					</Button>
 				</div>
@@ -210,7 +221,7 @@
 				<p class="font-medium">Decentralized Identity (DID)</p>
 				<div class="flex gap-2">
 					<Input readonly value={did} class="bg-muted font-mono text-sm" />
-					<Button size="icon" onclick={() => copy(did)}>
+					<Button size="icon" onclick={() => copy(did)} class="cursor-pointer">
 						<Copy class="h-4 w-4" />
 					</Button>
 				</div>
@@ -218,7 +229,7 @@
 
 			<!-- Save Button -->
 			<div class="flex justify-end border-t pt-4">
-				<Button onclick={saveProfile} disabled={saving}>
+				<Button onclick={saveProfile} disabled={saving} class="cursor-pointer">
 					{saving ? 'Saving...' : 'Save Changes'}
 				</Button>
 			</div>

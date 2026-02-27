@@ -283,7 +283,7 @@
 						<p class="font-medium text-foreground">Local users</p>
 						<p class="mt-0.5 text-xs">Search people on this Polyverse instance</p>
 						<code class="mt-2 block rounded bg-muted px-2 py-1 text-xs"
-							>@alice@{$page.url.hostname}</code
+							>@user@polyverse-pp.vercel.app</code
 						>
 					</Card>
 					<Card class="p-4 text-left">
