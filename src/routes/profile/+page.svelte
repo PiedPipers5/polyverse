@@ -56,6 +56,12 @@
 		toast.success('Handle copied!');
 	}
 
+	// Copy DID
+	async function copyDID() {
+		await navigator.clipboard.writeText(user.did);
+		toast.success('DID copied!');
+	}
+
 	function handleDeletePost(id: string) {
 		posts = posts.filter((p) => {
 			const apActivity = (p as any).activity || p;
@@ -85,21 +91,21 @@
 	></div>
 
 	<!-- Hero Banner Section - Reduced height to minimize empty space -->
-	<div class="relative h-32 w-full overflow-hidden md:h-48">
+	<div class="relative h-16 w-full overflow-hidden md:h-24">
 		<div
 			class="animate-gradient absolute inset-0 bg-linear-to-br from-violet-500/40 via-purple-500/40 to-fuchsia-500/40 dark:from-violet-900/50 dark:via-purple-900/50 dark:to-fuchsia-900/50"
 		></div>
 		<div class="absolute inset-0 bg-linear-to-b from-transparent to-background/95"></div>
 	</div>
 
-	<div class="relative z-10 container mx-auto -mt-16 px-4 pb-12 sm:px-6 md:-mt-24 lg:px-8">
+	<div class="relative z-10 container mx-auto -mt-8 px-4 pb-12 sm:px-6 md:-mt-12 lg:px-8">
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
 			<!-- Left Sidebar: User Profile Card -->
 			<div class="lg:col-span-4">
 				<div class="sticky top-20 space-y-6">
 					<Card class="glass-card group animate-fade-in-up overflow-hidden border-none shadow-2xl">
 						<CardContent class="p-0">
-							<div class="flex flex-col items-center px-6 pt-8 pb-6 text-center">
+							<div class="flex flex-col items-center px-6 pt-6 pb-6 text-center">
 								<!-- Larger Avatar for better presence -->
 								<div class="relative mb-6">
 									<div
@@ -200,7 +206,12 @@
 						<div class="space-y-4 text-xs text-foreground/60">
 							<div>
 								<p class="mb-1 font-medium text-foreground/80">DID (Decentralized ID)</p>
-								<p class="font-mono break-all opacity-70">{user.did}</p>
+								<div class="flex items-center justify-between rounded-lg bg-white/5 p-2">
+									<code class="font-mono break-all opacity-70">{user.did}</code>
+									<Button size="icon" variant="ghost" onclick={copyDID} class="h-6 w-6">
+										<Copy class="h-3 w-3" />
+									</Button>
+								</div>
 							</div>
 							<div>
 								<p class="mb-1 font-medium text-foreground/80">Joined</p>
@@ -251,9 +262,7 @@
 								<h2 class="text-xl font-bold">Your Feed</h2>
 								<Button
 									onclick={() => goto('/create')}
-									variant="outline"
-									size="sm"
-									class="glass-card border-white/10 hover:bg-violet-500/10"
+									class="bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.05] hover:shadow-violet-500/25"
 								>
 									Create New Post
 								</Button>
@@ -282,7 +291,7 @@
 									</p>
 									<Button
 										onclick={() => goto('/create')}
-										class="mt-6 bg-violet-500 text-white hover:bg-violet-600"
+										class="mt-6 bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.05] hover:shadow-violet-500/25"
 									>
 										Create First Post
 									</Button>
@@ -325,8 +334,11 @@
 												class="mb-2 block text-xs font-semibold tracking-wider text-foreground/50 uppercase"
 												>Decentralized ID</label
 											>
-											<div class="rounded-lg bg-white/5 p-3">
+											<div class="flex items-center justify-between rounded-lg bg-white/5 p-3">
 												<code class="text-[10px] break-all opacity-70">{user.did}</code>
+												<Button size="icon" variant="ghost" onclick={copyDID} class="h-8 w-8">
+													<Copy class="h-4 w-4" />
+												</Button>
 											</div>
 										</div>
 									</div>
