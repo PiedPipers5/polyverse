@@ -44,7 +44,7 @@
 		return username.slice(0, 2).toUpperCase();
 	}
 
-	// Share Profile Link
+	// Share Profile Link..
 	async function copyProfile() {
 		await navigator.clipboard.writeText(window.location.href);
 		toast.success('Profile link copied!');
