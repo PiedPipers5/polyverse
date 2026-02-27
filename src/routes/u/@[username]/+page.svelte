@@ -105,7 +105,9 @@
 			<!-- Left Sidebar: User Profile Card -->
 			<div class="lg:col-span-3">
 				<div class="sticky top-20 space-y-6">
-					<Card class="glass-card group animate-fade-in-up overflow-hidden border-none shadow-2xl">
+					<Card
+						class="glass-card group animate-fade-in-up overflow-hidden border border-white/10 shadow-2xl ring-1 ring-violet-500/10"
+					>
 						<CardContent class="p-0">
 							<div class="flex flex-col items-center px-6 pt-6 pb-6 text-center">
 								<!-- Avatar -->
@@ -198,7 +200,7 @@
 
 					<!-- Additional Info Card -->
 					<Card
-						class="glass-card animate-fade-in-up hidden border-none p-6 lg:block"
+						class="glass-card animate-fade-in-up hidden border border-white/10 p-6 ring-1 ring-violet-500/10 lg:block"
 						style="animation-delay: 0.1s;"
 					>
 						<h3 class="mb-4 flex items-center font-semibold">
@@ -234,7 +236,7 @@
 				<div class="animate-fade-in-up" style="animation-delay: 0.2s;">
 					<Tabs value="posts" class="w-full">
 						<TabsList
-							class="glass-card mb-6 grid h-14 w-full grid-cols-3 border-none p-1.5 shadow-xl"
+							class="glass-card mb-6 grid h-14 w-full grid-cols-3 border border-white/10 p-1.5 shadow-xl ring-1 ring-violet-500/10"
 						>
 							<TabsTrigger
 								value="posts"
@@ -283,7 +285,9 @@
 									/>
 								{/each}
 							{:else}
-								<Card class="glass-card flex flex-col items-center border-none py-16 text-center">
+								<Card
+									class="glass-card flex flex-col items-center border border-white/10 py-16 text-center ring-1 ring-violet-500/10"
+								>
 									<div
 										class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-500/10"
 									>
@@ -298,7 +302,9 @@
 						</TabsContent>
 
 						<TabsContent value="activity">
-							<Card class="glass-card flex flex-col items-center border-none py-16 text-center">
+							<Card
+								class="glass-card flex flex-col items-center border border-white/10 py-16 text-center ring-1 ring-violet-500/10"
+							>
 								<div
 									class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-fuchsia-500/10"
 								>
@@ -312,7 +318,7 @@
 						</TabsContent>
 
 						<TabsContent value="about">
-							<Card class="glass-card border-none p-8">
+							<Card class="glass-card border border-white/10 p-8 ring-1 ring-violet-500/10">
 								<div class="space-y-8">
 									<div>
 										<h3 class="mb-4 text-xl font-bold">Biography</h3>
@@ -329,7 +335,7 @@
 													>Account Handle</label
 												>
 												<div class="flex items-center justify-between rounded-lg bg-white/5 p-3">
-													<code class="text-sm font-medium">{profile.handle}</code>
+													<code class="text-xs break-all opacity-80">{profile.handle}</code>
 													<Button size="icon" variant="ghost" onclick={copyHandle} class="h-8 w-8">
 														<Copy class="h-4 w-4" />
 													</Button>

@@ -200,7 +200,9 @@
 		/>
 	</div>
 {:else}
-	<Card class="glass-card group relative border-none p-4 shadow-xl transition-all hover:shadow-2xl">
+	<Card
+		class="glass-card group relative border border-white/10 p-4 shadow-xl ring-1 ring-violet-500/10 transition-all hover:shadow-2xl"
+	>
 		{#if isOwner}
 			<div class="absolute top-2 right-2">
 				<Button variant="ghost" size="icon" class="h-8 w-8" onclick={toggleMenu}>
