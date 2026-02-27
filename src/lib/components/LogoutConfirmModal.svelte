@@ -55,7 +55,7 @@
 		<div class="flex border-t border-border/50 dark:border-white/5">
 			<button
 				type="button"
-				class="flex-1 border-r border-border/50 px-4 py-4 text-sm font-semibold transition-all hover:bg-muted/50 dark:border-white/5 dark:text-zinc-400 dark:hover:bg-white/5"
+				class="flex-1 cursor-pointer border-r border-border/50 px-4 py-4 text-sm font-semibold transition-all hover:bg-muted/50 dark:border-white/5 dark:text-zinc-400 dark:hover:bg-white/5"
 				onclick={handleClose}
 			>
 				Cancel
@@ -64,7 +64,7 @@
 			<form method="POST" action="/logout" use:enhance class="flex-1">
 				<button
 					type="submit"
-					class="w-full px-4 py-4 text-sm font-bold text-red-600 transition-all hover:bg-red-50/50 dark:text-red-500 dark:hover:bg-red-500/10"
+					class="w-full cursor-pointer px-4 py-4 text-sm font-bold text-red-600 transition-all hover:bg-red-50/50 dark:text-red-500 dark:hover:bg-red-500/10"
 				>
 					Logout
 				</button>
