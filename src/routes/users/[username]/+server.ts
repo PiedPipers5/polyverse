@@ -19,7 +19,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
     const acceptHeader = request.headers.get('accept') || '';
 
     // Check if requesting ActivityPub JSON
-    const wantsActivityPub = 
+    const wantsActivityPub =
         acceptHeader.includes('application/activity+json') ||
         acceptHeader.includes('application/ld+json');
 
@@ -64,7 +64,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 
     // Build public key for ActivityPub (using the DID verification method)
     const verificationMethod = didDocument.verificationMethod?.[0];
-    
+
     // Construct the Actor JSON-LD object
     const actor: Record<string, unknown> = {
         '@context': [
