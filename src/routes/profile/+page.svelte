@@ -17,6 +17,7 @@
 	import { toast } from 'svelte-sonner';
 	import Post from '$lib/components/Post.svelte';
 	import LogoutConfirmModal from '$lib/components/LogoutConfirmModal.svelte';
+	import RightSidebar from '$lib/components/RightSidebar.svelte';
 	import { untrack } from 'svelte';
 
 	// Get data from server load function (Svelte 5 syntax)
@@ -101,7 +102,7 @@
 	<div class="relative z-10 container mx-auto -mt-8 px-4 pb-12 sm:px-6 md:-mt-12 lg:px-8">
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
 			<!-- Left Sidebar: User Profile Card -->
-			<div class="lg:col-span-4">
+			<div class="lg:col-span-3">
 				<div class="sticky top-20 space-y-6">
 					<Card class="glass-card group animate-fade-in-up overflow-hidden border-none shadow-2xl">
 						<CardContent class="p-0">
@@ -228,7 +229,7 @@
 			</div>
 
 			<!-- Right Content: Tabs and Posts -->
-			<div class="lg:col-span-8">
+			<div class="lg:col-span-6">
 				<div class="animate-fade-in-up" style="animation-delay: 0.2s;">
 					<Tabs value="posts" class="w-full">
 						<TabsList
@@ -371,6 +372,13 @@
 							</Card>
 						</TabsContent>
 					</Tabs>
+				</div>
+			</div>
+
+			<!-- Right Sidebar: Trends and Suggestions -->
+			<div class="hidden lg:col-span-3 lg:block">
+				<div class="animate-fade-in-up" style="animation-delay: 0.3s;">
+					<RightSidebar />
 				</div>
 			</div>
 		</div>
