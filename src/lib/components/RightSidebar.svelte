@@ -47,7 +47,7 @@
 			{/each}
 			<Button
 				variant="ghost"
-				class="mt-2 w-full text-xs text-violet-500 hover:bg-violet-500/5 hover:text-violet-600"
+				class="mt-2 w-full text-xs text-sky-500 hover:bg-sky-500/5 hover:text-sky-600"
 			>
 				Show More
 			</Button>
@@ -58,7 +58,7 @@
 	<Card class="glass-card overflow-hidden border-none shadow-xl">
 		<CardHeader class="pt-5 pb-3">
 			<CardTitle class="flex items-center gap-2 text-lg font-bold">
-				<UserPlus class="h-5 w-5 text-fuchsia-500" />
+				<UserPlus class="h-5 w-5 text-emerald-500" />
 				Who to follow
 			</CardTitle>
 		</CardHeader>
@@ -87,7 +87,7 @@
 			{/each}
 			<Button
 				variant="ghost"
-				class="mt-2 w-full text-xs text-fuchsia-500 hover:bg-fuchsia-500/5 hover:text-fuchsia-600"
+				class="mt-2 w-full text-xs text-emerald-500 hover:bg-emerald-500/5 hover:text-emerald-600"
 			>
 				Find People
 			</Button>
