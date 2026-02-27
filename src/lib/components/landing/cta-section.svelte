@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { ArrowRight } from 'lucide-svelte';
+	import { toast } from 'svelte-sonner';
 
 	type User = {
 		username: string;
@@ -40,15 +41,18 @@
 
 			if (data.success) {
 				submitted = true;
+				toast.success("Thanks! We'll be in touch soon. 🎉");
 				setTimeout(() => {
 					submitted = false;
 					email = '';
 				}, 5000);
 			} else {
 				error = data.error || 'Something went wrong. Please try again.';
+				toast.error(error);
 			}
 		} catch (err) {
 			error = 'Network error. Please check your connection and try again.';
+			toast.error(error);
 			console.error('Newsletter signup error:', err);
 		} finally {
 			loading = false;
