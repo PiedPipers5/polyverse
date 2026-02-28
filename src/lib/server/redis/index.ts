@@ -38,3 +38,6 @@ export { RedisCacheService } from './cacheService.js';
 
 // Application singleton
 export { getActorCache, disconnectRedis, isRedisConfigured, getActorCacheTtlSeconds } from './instance.js';
+
+// Worker
+export { startSharedInboxWorker, stopSharedInboxWorker } from './worker.js';

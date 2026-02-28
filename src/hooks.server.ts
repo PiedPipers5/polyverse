@@ -4,11 +4,17 @@ import * as Sentry from '@sentry/sveltekit';
 import { env } from '$env/dynamic/private';
 
 Sentry.init({
-     dsn: env.SENTRY_DSN,
-     tracesSampleRate: 1.0,
+    dsn: env.SENTRY_DSN,
+    tracesSampleRate: 1.0,
 });
 
 export const handleError = Sentry.handleErrorWithSentry();
+
+// Start background workers
+import { startSharedInboxWorker } from '$lib/server/redis';
+// Start intentionally floating promise since it runs a while loop
+startSharedInboxWorker().catch(err => console.error('Shared inbox worker failed:', err));
+
 /**
  * Server hooks for authentication middleware.
  * Extracts and verifies JWT from cookies, attaches user to locals.

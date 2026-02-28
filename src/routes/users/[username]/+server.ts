@@ -78,6 +78,9 @@ export const GET: RequestHandler = async ({ params, request }) => {
         outbox: `${actorUrl}/outbox`,
         followers: `${actorUrl}/followers`,
         following: `${actorUrl}/following`,
+        endpoints: {
+            sharedInbox: `https://${domain}/inbox`
+        }
     };
 
     // Add optional profile fields
