@@ -61,16 +61,16 @@
 	}
 
 	function handleDeletePost(id: string) {
-		posts = posts.filter((p) => {
-			const pId = p.object?.id || p.id;
+		posts = posts.filter((p: any) => {
+			const pId = p.activity?.object?.id || p.activity?.id || p.object?.id || p.id;
 			return pId !== id;
 		});
 		invalidateAll();
 	}
 
 	function handleUpdatePost(updatedPost: any) {
-		posts = posts.map((p) => {
-			const pId = p.object?.id || p.id;
+		posts = posts.map((p: any) => {
+			const pId = p.activity?.object?.id || p.activity?.id || p.object?.id || p.id;
 			const uId = updatedPost.object?.id || updatedPost.id;
 			return pId === uId ? updatedPost : p;
 		});
@@ -275,9 +275,9 @@
 							{/if}
 
 							{#if posts && posts.length > 0}
-								{#each posts as activity (activity.id || activity.object?.id)}
+								{#each posts as rawActivity ((rawActivity as any).id || (rawActivity as any).activity?.object?.id || (rawActivity as any).object?.id)}
 									<Post
-										{activity}
+										activity={rawActivity}
 										isOwner={data.isOwner}
 										username={profile.username}
 										onDelete={handleDeletePost}

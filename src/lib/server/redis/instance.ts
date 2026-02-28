@@ -58,7 +58,7 @@ export function isRedisConfigured(): boolean {
  * @returns The singleton `RedisClientFactory`.
  * @throws {Error} When Redis is not configured (call {@link isRedisConfigured} first).
  */
-function getFactory(): RedisClientFactory {
+export function getFactory(): RedisClientFactory {
     if (factory === null) {
         const config = loadRedisConfig(env as Record<string, string | undefined>);
         factory = new RedisClientFactory(config, redisLogger);

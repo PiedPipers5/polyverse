@@ -98,12 +98,18 @@ export const activities = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 
 		/**
-		 * The Actor who performed this activity.
-		 * References the users table.
+		 * The local Actor who performed this activity.
+		 * References the users table. Null if performed by a remote actor.
 		 */
 		actorId: uuid('actor_id')
-			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/**
+		 * The remote Actor who performed this activity.
+		 * References the remote_actors table. Null if performed by a local actor.
+		 */
+		remoteActorId: uuid('remote_actor_id')
+			.references(() => remoteActors.id, { onDelete: 'cascade' }),
 
 		/**
 		 * The full JSON-LD Activity object.
@@ -135,7 +141,8 @@ export const activities = pgTable(
 		return {
 			// Composite index for efficient outbox queries (sorted by date for a specific actor)
 			// This is critical for User Story 2.2 - fetching activities by actorId ordered by createdAt
-			actorCreatedAtIdx: index('activities_actor_created_at_idx').on(table.actorId, table.createdAt)
+			actorCreatedAtIdx: index('activities_actor_created_at_idx').on(table.actorId, table.createdAt),
+			remoteActorCreatedAtIdx: index('activities_remote_actor_created_at_idx').on(table.remoteActorId, table.createdAt)
 
 			// Note: GIN index on JSONB column for filtering by to/cc fields
 			// will be created via SQL migration as Drizzle doesn't support .using() in type-safe API
@@ -153,28 +160,38 @@ export const followers = pgTable(
 	'followers',
 	{
 		/**
-		 * The user being followed (the leader/target).
+		 * Internal ID
+		 */
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/**
+		 * The local user being followed (the leader/target).
 		 */
 		userId: uuid('user_id')
-			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),
 
 		/**
-		 * The user who is following (the follower).
+		 * The remote user being followed.
+		 */
+		remoteUserId: uuid('remote_user_id')
+			.references(() => remoteActors.id, { onDelete: 'cascade' }),
+
+		/**
+		 * The local user who is following (the follower).
 		 */
 		followerId: uuid('follower_id')
-			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/**
+		 * The remote user who is following.
+		 */
+		remoteFollowerId: uuid('remote_follower_id')
+			.references(() => remoteActors.id, { onDelete: 'cascade' }),
 
 		/**
 		 * When the follow relationship was established.
 		 */
 		createdAt: timestamp('created_at').defaultNow().notNull()
-	},
-	(table) => {
-		return {
-			pk: { columns: [table.userId, table.followerId] } // Composite primary key
-		};
 	}
 );
 
