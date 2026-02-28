@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -169,13 +169,13 @@
 			mainEl.style.setProperty('padding-bottom', '0', 'important');
 			mainEl.style.setProperty('overflow', 'hidden', 'important');
 		}
-	});
-	onDestroy(() => {
-		const mainEl = document.querySelector<HTMLElement>('main.flex-1');
-		if (mainEl) {
-			mainEl.style.removeProperty('padding-bottom');
-			mainEl.style.removeProperty('overflow');
-		}
+		// Return cleanup — runs only in the browser, never during SSR
+		return () => {
+			if (mainEl) {
+				mainEl.style.removeProperty('padding-bottom');
+				mainEl.style.removeProperty('overflow');
+			}
+		};
 	});
 </script>
 
