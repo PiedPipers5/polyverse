@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, jsonb, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 /**
  * Users Table
@@ -240,3 +240,46 @@ export const remoteActors = pgTable('remote_actors', {
 	 */
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
+
+/**
+ * Interactions Table
+ * Efficiently tracks user votes (upvotes/downvotes) on posts without parsing ActivityPub JSON blobs.
+ */
+export const interactions = pgTable(
+	'interactions',
+	{
+		/**
+		 * Unique identifier for the interaction.
+		 */
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/**
+		 * The URI/ID of the ActivityPub object being interacted with.
+		 */
+		postId: text('post_id').notNull(),
+
+		/**
+		 * The local Actor who performed this interaction.
+		 * References the users table.
+		 */
+		actorId: uuid('actor_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/**
+		 * Type of interaction ('upvote' or 'downvote').
+		 */
+		type: text('type').notNull(),
+
+		/**
+		 * When the interaction occurred.
+		 */
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// Ensure a user can only have one active interaction per post at a time
+			postActorUniqueIdx: uniqueIndex('interactions_post_actor_idx').on(table.postId, table.actorId)
+		};
+	}
+);
