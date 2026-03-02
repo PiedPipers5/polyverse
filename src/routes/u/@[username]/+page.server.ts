@@ -86,18 +86,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
 	const followersUri = `https://${env.DOMAIN}/users/${username}/followers`;
 
-	// Fetch recent activities (fetch more to filter)
+	// Fetch recent activities (fetch 6 to check for hasMore)
 	const recentActivitiesRaw = await db.query.activities.findMany({
 		where: and(
 			eq(activities.actorId, user.id),
 			eq(activities.type, 'Create')
 		),
 		orderBy: (activities, { desc }) => [desc(activities.createdAt)],
-		limit: 20 // Fetch more than needed to account for filtering
+		limit: 30 // Fetch more than needed to account for filtering
 	});
 
-	// Filter based on privacy
-	const recentActivities = recentActivitiesRaw.filter(record => {
+	// Filter based on privacy and tombstones
+	let filteredActivities = recentActivitiesRaw.filter(record => {
 		const act = record.activity as any;
 
 		// Filter out Tombstones (deleted posts)
@@ -122,7 +122,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		if (isFollower && isFollowersOnly) return true;
 
 		return false;
-	}).slice(0, 5);
+	});
+
+	const hasMore = filteredActivities.length > 5;
+	const initialSelection = filteredActivities.slice(0, 5);
+	const nextCursor = hasMore ? initialSelection[initialSelection.length - 1].createdAt : null;
 
 	return {
 		profile: {
@@ -136,12 +140,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			followingCount,
 			postsCount
 		},
-		activities: recentActivities.map((a) => ({
+		activities: initialSelection.map((a) => ({
 			...a,
 			// Simplified content extraction for now - assuming Note type has content
 			content: (a.activity as any).object?.content || (a.activity as any).content || '',
 			publishedAt: a.createdAt
 		})),
-		isOwner
+		isOwner,
+		nextCursor,
+		hasMore
 	};
 };
