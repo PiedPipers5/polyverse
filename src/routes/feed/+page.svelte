@@ -23,7 +23,8 @@
 		Search,
 		ChevronDown,
 		ChevronUp,
-		UserPlus
+		UserPlus,
+		Copy
 	} from 'lucide-svelte';
 	import LogoutConfirmModal from '$lib/components/LogoutConfirmModal.svelte';
 	import { toast } from 'svelte-sonner';
@@ -298,7 +299,7 @@
 								class="glass-card flex-1 border-white/10 text-xs hover:bg-white/5"
 								onclick={copyProfile}
 							>
-								<span class="mr-1.5 text-xs">⎘</span>Share
+								<Copy class="mr-1.5 h-3.5 w-3.5" />Share
 							</Button>
 							<Button
 								variant="ghost"
