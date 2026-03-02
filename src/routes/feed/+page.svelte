@@ -329,7 +329,7 @@
 					>Privacy</a
 				>
 			</div>
-			<p class="mt-1 text-[10px] text-foreground/20">© 2026 POLYVERSE INTEL</p>
+			<p class="mt-1 text-[10px] text-foreground/20">© 2026 Piedpipers.</p>
 		</div>
 	</aside>
 
@@ -636,7 +636,7 @@
 					>Federation</a
 				>
 			</div>
-			<p class="mt-1.5 text-[10px] text-foreground/20">© 2026 POLYVERSE INTEL</p>
+			<p class="mt-1.5 text-[10px] text-foreground/20">© 2026 Piedpipers.</p>
 		</div>
 	</aside>
 </div>

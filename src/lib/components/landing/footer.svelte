@@ -41,7 +41,7 @@
 	];
 
 	const socialLinks = [
-		{ icon: Github, href: 'https://github.com', label: 'GitHub' },
+		{ icon: Github, href: 'https://github.com/PiedPipers5/polyverse', label: 'GitHub' },
 		{ icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
 		{ icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
 		{ icon: Mail, href: 'mailto:hello@polyverse.com', label: 'Email' }
@@ -127,10 +127,10 @@
 </footer>
 <!-- Polyverse Branding - Full Width Hero Text (Outside Container) -->
 <div class="relative w-full overflow-hidden bg-muted/30 py-5">
-<h2
+	<h2
 		class="gradient-text w-full text-center text-[22vw] leading-none font-black uppercase sm:text-[20vw] md:text-[18vw]"
 		style="letter-spacing: -0.1em;"
->
+	>
 		polyverse
-</h2>
+	</h2>
 </div>
