@@ -1,21 +1,22 @@
 <script lang="ts">
-	import { Card, CardContent } from '$lib/components/ui/card';
+	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
 	import {
 		Copy,
-		Users,
-		UserCheck,
 		LayoutGrid,
 		Info,
 		Activity as ActivityIcon,
-		UserPlus
+		UserPlus,
+		Settings,
+		UserCheck,
+		Loader2
 	} from 'lucide-svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import Post from '$lib/components/Post.svelte';
 	import RightSidebar from '$lib/components/RightSidebar.svelte';
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 
 	/* =========================================
@@ -26,13 +27,20 @@
 	let { data }: { data: PageData } = $props();
 
 	let profile = $derived(data.profile);
+	let isOwner = $derived(data.isOwner);
 
-	// Local state for posts to allow optimistic updates
+	// Local state for posts and pagination
 	let posts = $state(data.activities || []);
+	let nextCursor = $state(data.nextCursor);
+	let hasMore = $state(data.hasMore);
+	let isLoadingMore = $state(false);
+	let activeTab = $state('posts');
 
 	// Sync posts when data changes (e.g. navigation)
 	$effect(() => {
 		posts = data.activities || [];
+		nextCursor = data.nextCursor;
+		hasMore = data.hasMore;
 	});
 
 	// Get initials for avatar fallback
@@ -54,27 +62,87 @@
 		toast.success('Profile link copied!');
 	}
 
-	// Copy handle
-	async function copyHandle() {
-		await navigator.clipboard.writeText(profile.handle);
-		toast.success('Handle copied!');
+	// Copy DID
+	async function copyDID() {
+		if (profile.id) {
+			await navigator.clipboard.writeText(profile.id);
+			toast.success('DID copied to clipboard');
+		}
+	}
+
+	// Load more posts
+	async function loadMore() {
+		if (isLoadingMore || !nextCursor) return;
+
+		isLoadingMore = true;
+		try {
+			const res = await fetch(`/api/users/posts?username=${profile.username}&cursor=${nextCursor}`);
+			if (res.ok) {
+				const newData = await res.json();
+				posts = [...posts, ...newData.activities];
+				nextCursor = newData.nextCursor;
+				hasMore = newData.hasMore;
+			}
+		} catch (err) {
+			console.error('Failed to load more posts:', err);
+			toast.error('Failed to load more posts');
+		} finally {
+			isLoadingMore = false;
+		}
 	}
 
 	function handleDeletePost(id: string) {
 		posts = posts.filter((p: any) => {
-			const pId = p.activity?.object?.id || p.activity?.id || p.object?.id || p.id;
+			const pActivity = p.activity || p;
+			const pId = pActivity.object?.id || pActivity.id;
 			return pId !== id;
 		});
 		invalidateAll();
 	}
 
-	function handleUpdatePost(updatedPost: any) {
+	function handleUpdatePost(updatedActivity: any) {
 		posts = posts.map((p: any) => {
-			const pId = p.activity?.object?.id || p.activity?.id || p.object?.id || p.id;
-			const uId = updatedPost.object?.id || updatedPost.id;
-			return pId === uId ? updatedPost : p;
+			const pActivity = (p as any).activity || p;
+			const pId = (pActivity as any).object?.id || (pActivity as any).id;
+			const uId = updatedActivity.object?.id || updatedActivity.id;
+			return pId === uId ? updatedActivity : p;
 		});
 	}
+
+	// Handle layout constraints for full-height scrolling on desktop vs mobile
+	onMount(() => {
+		const mainEl = document.querySelector<HTMLElement>('main.flex-1');
+
+		const updateLayoutStyles = () => {
+			if (!mainEl) return;
+			const isDesktop = window.innerWidth > 1023;
+
+			if (isDesktop) {
+				mainEl.style.setProperty('padding-bottom', '0', 'important');
+				mainEl.style.setProperty('overflow', 'hidden', 'important');
+				mainEl.style.setProperty('height', '100vh', 'important');
+			} else {
+				mainEl.style.removeProperty('padding-bottom');
+				mainEl.style.removeProperty('overflow');
+				mainEl.style.removeProperty('height');
+			}
+		};
+
+		// Initial update
+		updateLayoutStyles();
+
+		// Update on resize
+		window.addEventListener('resize', updateLayoutStyles);
+
+		return () => {
+			window.removeEventListener('resize', updateLayoutStyles);
+			if (mainEl) {
+				mainEl.style.removeProperty('padding-bottom');
+				mainEl.style.removeProperty('overflow');
+				mainEl.style.removeProperty('height');
+			}
+		};
+	});
 </script>
 
 <svelte:head>
@@ -85,292 +153,528 @@
 	/>
 </svelte:head>
 
-<div class="relative min-h-screen overflow-hidden bg-background">
-	<!-- Subtle Background Pattern -->
-	<div
-		class="pointer-events-none absolute inset-0 opacity-[0.05]"
-		style="background-image: radial-gradient(circle at 1px 1px, rgb(139 92 246) 1px, transparent 0); background-size: 32px 32px;"
-	></div>
+<div class="pv-profile">
+	<!-- ══════════════════════════════════════════
+	     COL 1 — Profile cards
+	     ══════════════════════════════════════════ -->
+	<aside class="pv-col-left border-r border-white/10">
+		<div class="pv-left-scroll space-y-4 p-4 pb-24 lg:pb-4">
+			<!-- Main Profile Card -->
+			<div
+				class="glass-card overflow-hidden rounded-2xl border border-white/10 bg-card/70 shadow-xl ring-1 ring-white/5 backdrop-blur-md"
+			>
+				<!-- Subtle banner background -->
+				<div class="relative h-24 overflow-hidden bg-zinc-800/10">
+					<div class="absolute inset-0 bg-linear-to-b from-transparent to-black/20"></div>
+				</div>
 
-	<!-- Hero Banner Section -->
-	<div class="relative h-16 w-full overflow-hidden md:h-24">
-		<div
-			class="animate-gradient absolute inset-0 bg-linear-to-br from-violet-500/40 via-purple-500/40 to-fuchsia-500/40 dark:from-violet-900/50 dark:via-purple-900/50 dark:to-fuchsia-900/50"
-		></div>
-		<div class="absolute inset-0 bg-linear-to-b from-transparent to-background/95"></div>
-	</div>
-
-	<div class="relative z-10 container mx-auto -mt-8 px-4 pb-12 sm:px-6 md:-mt-12 lg:px-8">
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-			<!-- Left Sidebar: User Profile Card -->
-			<div class="lg:col-span-3">
-				<div class="sticky top-20 space-y-6">
-					<Card
-						class="glass-card group animate-fade-in-up overflow-hidden border border-white/10 shadow-2xl ring-1 ring-violet-500/10"
-					>
-						<CardContent class="p-0">
-							<div class="flex flex-col items-center px-6 pt-6 pb-6 text-center">
-								<!-- Avatar -->
-								<div class="relative mb-6">
-									<div
-										class="absolute -inset-1.5 animate-pulse rounded-full bg-linear-to-r from-violet-500 to-fuchsia-500 opacity-60 blur-md"
-									></div>
-									<Avatar
-										class="relative h-32 w-32 border-4 border-background shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
-									>
-										{#if profile.avatarUrl}
-											<AvatarImage src={profile.avatarUrl} alt={profile.displayName} />
-										{/if}
-										<AvatarFallback class="bg-muted text-3xl font-bold"
-											>{getInitials(profile.displayName, profile.username)}</AvatarFallback
-										>
-									</Avatar>
-								</div>
-
-								<!-- Identity -->
-								<h1 class="gradient-text mb-1 text-3xl font-extrabold tracking-tight">
-									{profile.displayName}
-								</h1>
-								<p class="text-sm font-bold tracking-widest text-foreground/40 uppercase">
-									{profile.handle}
-								</p>
-
-								<!-- Bio Section -->
-								{#if profile.bio}
-									<p class="mt-4 px-2 text-sm leading-relaxed text-foreground/70 italic">
-										"{profile.bio}"
-									</p>
-								{/if}
-
-								<!-- Action Buttons -->
-								<div class="mt-6 flex w-full flex-col gap-3">
-									{#if data.isOwner}
-										<Button
-											variant="default"
-											class="w-full bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.02]"
-											href="/profile/settings"
-										>
-											Edit Profile
-										</Button>
-									{:else}
-										<Button
-											class="w-full bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.02]"
-										>
-											<UserPlus class="mr-2 h-4 w-4" />
-											Follow
-										</Button>
-									{/if}
-
-									<Button
-										variant="outline"
-										onclick={copyProfile}
-										class="glass-card w-full border-white/10 hover:bg-white/5"
-									>
-										<Copy class="mr-2 h-4 w-4" />
-										Share Profile
-									</Button>
-								</div>
-							</div>
-
-							<!-- Stats Grid -->
-							<div
-								class="grid grid-cols-3 border-t border-white/10 bg-white/5 py-5 backdrop-blur-md"
+				<div class="-mt-10 flex flex-col items-center px-4 pb-5">
+					<!-- Avatar -->
+					<div class="relative mb-2.5">
+						<Avatar class="relative h-20 w-20 border-4 border-card shadow-xl">
+							{#if profile.avatarUrl}
+								<AvatarImage
+									src={profile.avatarUrl}
+									alt={profile.displayName || profile.username}
+								/>
+							{/if}
+							<AvatarFallback
+								class="bg-linear-to-br from-violet-500/80 to-fuchsia-500/80 text-lg font-bold text-white"
 							>
-								<div class="flex flex-col items-center px-2">
-									<span class="text-2xl font-black">{profile.followersCount}</span>
-									<span class="text-[9px] font-black tracking-widest text-foreground/30 uppercase"
-										>Followers</span
-									>
-								</div>
-								<div class="flex flex-col items-center border-x border-white/10 px-2">
-									<span class="text-2xl font-black">{profile.followingCount}</span>
-									<span class="text-[9px] font-black tracking-widest text-foreground/30 uppercase"
-										>Following</span
-									>
-								</div>
-								<div class="flex flex-col items-center px-2">
-									<span class="text-2xl font-black">{profile.postsCount}</span>
-									<span class="text-[9px] font-black tracking-widest text-foreground/30 uppercase"
-										>Posts</span
-									>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
+								{getInitials(profile.displayName, profile.username)}
+							</AvatarFallback>
+						</Avatar>
+					</div>
 
-					<!-- Additional Info Card -->
-					<Card
-						class="glass-card animate-fade-in-up hidden border border-white/10 p-6 ring-1 ring-violet-500/10 lg:block"
-						style="animation-delay: 0.1s;"
+					<!-- Identity -->
+					<h2 class="text-center text-lg leading-tight font-extrabold text-foreground">
+						{profile.displayName || profile.username}
+					</h2>
+					<p
+						class="mt-1 text-center text-[10px] font-bold tracking-widest text-foreground/40 uppercase"
 					>
-						<h3 class="mb-4 flex items-center font-semibold">
-							<Info class="mr-2 h-4 w-4 text-violet-500" />
-							Account Details
-						</h3>
-						<div class="space-y-4 text-xs text-foreground/60">
-							<div>
-								<p class="mb-1 font-medium text-foreground/80">Member Since</p>
-								<p>
-									{new Date(profile.createdAt).toLocaleDateString('en-IN', {
-										month: 'long',
-										year: 'numeric'
-									})}
+						{profile.handle}
+					</p>
+
+					<!-- Bio -->
+					{#if profile.bio}
+						<p class="mt-3 px-2 text-center text-xs leading-relaxed text-foreground/60">
+							{profile.bio}
+						</p>
+					{/if}
+
+					<!-- Action Buttons -->
+					<div class="mt-4 flex w-full flex-col gap-2">
+						{#if isOwner}
+							<Button
+								onclick={() => goto('/profile/settings')}
+								class="w-full bg-violet-600 text-white shadow-lg shadow-violet-500/20 transition-all hover:scale-[1.02] hover:bg-violet-700 dark:border-0 dark:bg-linear-to-r dark:from-violet-600 dark:to-indigo-600 dark:ring-0 dark:hover:from-violet-500 dark:hover:to-indigo-500"
+							>
+								<Settings class="mr-2 h-4 w-4" />
+								Edit Profile
+							</Button>
+						{:else}
+							<Button
+								class="w-full bg-violet-600 text-white shadow-lg shadow-violet-500/20 transition-all hover:scale-[1.02] hover:bg-violet-700 dark:border-0 dark:bg-linear-to-r dark:from-violet-600 dark:to-indigo-600 dark:ring-0 dark:hover:from-violet-500 dark:hover:to-indigo-500"
+							>
+								<UserPlus class="mr-2 h-4 w-4" />
+								Follow
+							</Button>
+						{/if}
+						<Button
+							variant="outline"
+							onclick={copyProfile}
+							class="glass-card w-full border-white/10 text-xs hover:bg-white/5"
+						>
+							<Copy class="mr-1.5 h-3.5 w-3.5" />Share Profile
+						</Button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Stats Card -->
+			<div
+				class="glass-card overflow-hidden rounded-2xl border border-white/10 bg-card/70 shadow-xl ring-1 ring-white/5 backdrop-blur-md"
+			>
+				<div class="grid grid-cols-3 divide-x divide-white/10 py-4">
+					<div class="flex flex-col items-center gap-0.5">
+						<span class="text-base font-black text-foreground">{profile.followersCount || 0}</span>
+						<span class="text-[8px] font-bold tracking-widest text-foreground/35 uppercase"
+							>Followers</span
+						>
+					</div>
+					<div class="flex flex-col items-center gap-0.5">
+						<span class="text-base font-black text-foreground">{profile.followingCount || 0}</span>
+						<span class="text-[8px] font-bold tracking-widest text-foreground/35 uppercase"
+							>Following</span
+						>
+					</div>
+					<div class="flex flex-col items-center gap-0.5">
+						<span class="text-base font-black text-foreground">{profile.postsCount}</span>
+						<span class="text-[8px] font-bold tracking-widest text-foreground/35 uppercase"
+							>Posts</span
+						>
+					</div>
+				</div>
+			</div>
+
+			<!-- Identity Card (Updated to match Image 2) -->
+			<div
+				class="glass-card rounded-2xl border border-white/10 bg-card/70 p-6 shadow-xl ring-1 ring-white/5 backdrop-blur-md"
+			>
+				<h3 class="mb-5 flex items-center text-lg font-bold tracking-tight">
+					<div
+						class="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500/10 text-violet-500 ring-1 ring-violet-500/20"
+					>
+						<Info class="h-4 w-4" />
+					</div>
+					Account Details
+				</h3>
+				<div class="space-y-6">
+					<div>
+						<p class="mb-1 text-sm font-bold text-foreground">Member Since</p>
+						<p class="text-[13px] text-foreground/60">
+							{new Date(profile.createdAt).toLocaleDateString('en-US', {
+								month: 'long',
+								year: 'numeric'
+							})}
+						</p>
+					</div>
+					<div>
+						<p class="mb-2 text-[10px] font-bold tracking-widest text-foreground/40 uppercase">
+							Privacy Status
+						</p>
+						<div class="flex items-center gap-2 text-[13px] font-medium text-emerald-500">
+							<UserCheck class="h-4 w-4" />
+							Federated & Secure
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</aside>
+
+	<!-- ══════════════════════════════════════════
+	     COL 2 — Tabs + posts
+	     ══════════════════════════════════════════ -->
+	<main class="pv-col-center">
+		<!-- Sticky tabs bar (Updated to match Image 1 gradient) -->
+		<div class="pv-profile-header border-b border-white/10 px-5 py-3">
+			<div
+				class="pv-tabs-bar glass-card grid h-14 w-full grid-cols-3 rounded-xl border border-white/10 p-1 shadow-xl ring-1 ring-violet-500/10"
+			>
+				<button
+					type="button"
+					onclick={() => (activeTab = 'posts')}
+					class="pv-tab {activeTab === 'posts' ? 'pv-tab-active' : ''}"
+				>
+					<LayoutGrid class="mr-2 h-4 w-4" />
+					Posts
+				</button>
+				<button
+					type="button"
+					onclick={() => (activeTab = 'activity')}
+					class="pv-tab {activeTab === 'activity' ? 'pv-tab-active' : ''}"
+				>
+					<ActivityIcon class="mr-2 h-4 w-4" />
+					Activity
+				</button>
+				<button
+					type="button"
+					onclick={() => (activeTab = 'about')}
+					class="pv-tab {activeTab === 'about' ? 'pv-tab-active' : ''}"
+				>
+					<Info class="mr-2 h-4 w-4" />
+					About
+				</button>
+			</div>
+		</div>
+
+		<!-- Scrollable content area -->
+		<div class="pv-feed-scroll">
+			<div class="space-y-4 px-5 py-4 pb-24">
+				<!-- Posts tab -->
+				{#if activeTab === 'posts'}
+					<div class="flex items-center justify-between">
+						<h2 class="text-xl font-bold">{isOwner ? 'Your Feed' : 'Posts'}</h2>
+						{#if isOwner}
+							<Button
+								onclick={() => goto('/create')}
+								class="bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.05]"
+							>
+								Create New Post
+							</Button>
+						{/if}
+					</div>
+
+					{#if posts && posts.length > 0}
+						{#each posts as activity (activity.id || (activity as any).object?.id)}
+							<Post
+								{activity}
+								{isOwner}
+								username={profile.username}
+								onDelete={handleDeletePost}
+								onUpdate={handleUpdatePost}
+							/>
+						{/each}
+
+						{#if hasMore}
+							<div class="flex justify-center pt-4">
+								<Button
+									variant="outline"
+									onclick={loadMore}
+									disabled={isLoadingMore}
+									class="glass-card min-w-[140px] border-white/10 transition-all hover:bg-white/5 active:scale-95"
+								>
+									{#if isLoadingMore}
+										<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+										Loading...
+									{:else}
+										Load More
+									{/if}
+								</Button>
+							</div>
+						{:else if posts.length > 5}
+							<p
+								class="py-8 text-center text-xs font-medium tracking-widest text-foreground/30 uppercase"
+							>
+								End of posts
+							</p>
+						{/if}
+					{:else}
+						<Card
+							class="glass-card flex flex-col items-center border border-white/10 py-16 text-center ring-1 ring-violet-500/10"
+						>
+							<div
+								class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-500/10"
+							>
+								<LayoutGrid class="h-8 w-8 text-violet-500" />
+							</div>
+							<h3 class="mb-2 text-lg font-semibold">No posts yet</h3>
+							<p class="mx-auto max-w-xs text-sm text-foreground/50">
+								{isOwner
+									? 'Share your first post with the federation and start owning your identity.'
+									: `Check back later to see what ${profile.displayName} shares.`}
+							</p>
+							{#if isOwner}
+								<Button
+									onclick={() => goto('/create')}
+									class="mt-6 bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.05]"
+								>
+									Create First Post
+								</Button>
+							{/if}
+						</Card>
+					{/if}
+				{/if}
+
+				<!-- Activity tab -->
+				{#if activeTab === 'activity'}
+					<Card
+						class="glass-card flex flex-col items-center border border-white/10 py-16 text-center ring-1 ring-violet-500/10"
+					>
+						<div
+							class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-fuchsia-500/10"
+						>
+							<ActivityIcon class="h-8 w-8 text-fuchsia-500" />
+						</div>
+						<h3 class="mb-2 text-lg font-semibold">Activity Timeline</h3>
+						<p class="mx-auto max-w-xs text-sm text-foreground/50">
+							Interactions across the federation will appear here soon.
+						</p>
+					</Card>
+				{/if}
+
+				<!-- About / Details tab (Updated to match Image 1) -->
+				{#if activeTab === 'about'}
+					<Card
+						class="glass-card relative overflow-hidden border border-white/10 p-10 ring-1 ring-violet-500/10"
+					>
+						<div class="relative z-10 space-y-12">
+							<div class="space-y-4">
+								<h3 class="text-2xl font-black text-foreground">Biography</h3>
+								<p class="text-base leading-relaxed font-medium text-foreground/60">
+									{profile.bio || 'No biography provided.'}
 								</p>
 							</div>
-							<div class="pt-2">
-								<p class="mb-2 text-[10px] font-bold tracking-widest text-foreground/40 uppercase">
-									Privacy Status
-								</p>
-								<div class="flex items-center gap-2 text-emerald-500">
-									<UserCheck class="h-3 w-3" />
-									<span class="font-medium">Federated & Secure</span>
+
+							<div class="grid grid-cols-1 gap-12 lg:grid-cols-2">
+								<div class="space-y-4">
+									<label
+										class="text-[10px] font-black tracking-widest text-foreground/40 uppercase"
+									>
+										Account Handle
+									</label>
+									<div
+										class="group flex items-center justify-between rounded-xl bg-zinc-500/5 p-4 ring-1 ring-white/5 transition-all hover:bg-zinc-500/10"
+									>
+										<code class="text-sm font-bold text-foreground/80">{profile.handle}</code>
+										<button
+											onclick={() => {
+												navigator.clipboard.writeText(profile.handle);
+												toast.success('Handle copied!');
+											}}
+											class="text-foreground/40 transition-colors hover:text-foreground"
+										>
+											<Copy class="h-5 w-5" />
+										</button>
+									</div>
+								</div>
+
+								<div class="space-y-4">
+									<label
+										class="text-[10px] font-black tracking-widest text-foreground/40 uppercase"
+									>
+										Member Since
+									</label>
+									<p class="text-lg font-black text-foreground">
+										{new Date(profile.createdAt).toLocaleDateString('en-IN', {
+											day: 'numeric',
+											month: 'long',
+											year: 'numeric'
+										})}
+									</p>
 								</div>
 							</div>
 						</div>
 					</Card>
-				</div>
-			</div>
-
-			<!-- Right Content: Tabs and Posts -->
-			<div class="lg:col-span-6">
-				<div class="animate-fade-in-up" style="animation-delay: 0.2s;">
-					<Tabs value="posts" class="w-full">
-						<TabsList
-							class="glass-card mb-6 grid h-14 w-full grid-cols-3 border border-white/10 p-1.5 shadow-xl ring-1 ring-violet-500/10"
-						>
-							<TabsTrigger
-								value="posts"
-								class="data-[state=active]:bg-linear-to-r data-[state=active]:from-violet-500 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white"
-							>
-								<LayoutGrid class="mr-2 h-4 w-4" />
-								Posts
-							</TabsTrigger>
-							<TabsTrigger
-								value="activity"
-								class="data-[state=active]:bg-linear-to-r data-[state=active]:from-violet-500 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white"
-							>
-								<ActivityIcon class="mr-2 h-4 w-4" />
-								Activity
-							</TabsTrigger>
-							<TabsTrigger
-								value="about"
-								class="data-[state=active]:bg-linear-to-r data-[state=active]:from-violet-500 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white"
-							>
-								<Info class="mr-2 h-4 w-4" />
-								About
-							</TabsTrigger>
-						</TabsList>
-
-						<TabsContent value="posts" class="mt-0 space-y-4">
-							{#if data.isOwner}
-								<div class="flex items-center justify-between">
-									<h2 class="text-xl font-bold">Your Feed</h2>
-									<Button
-										onclick={() => goto('/create')}
-										class="bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.05] hover:shadow-violet-500/25"
-									>
-										Create New Post
-									</Button>
-								</div>
-							{/if}
-
-							{#if posts && posts.length > 0}
-								{#each posts as rawActivity ((rawActivity as any).id || (rawActivity as any).activity?.object?.id || (rawActivity as any).object?.id)}
-									<Post
-										activity={rawActivity}
-										isOwner={data.isOwner}
-										username={profile.username}
-										onDelete={handleDeletePost}
-										onUpdate={handleUpdatePost}
-									/>
-								{/each}
-							{:else}
-								<Card
-									class="glass-card flex flex-col items-center border border-white/10 py-16 text-center ring-1 ring-violet-500/10"
-								>
-									<div
-										class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-500/10"
-									>
-										<LayoutGrid class="h-8 w-8 text-violet-500" />
-									</div>
-									<h3 class="mb-2 text-lg font-semibold">No posts yet</h3>
-									<p class="mx-auto max-w-xs text-sm text-foreground/50">
-										Check back later to see what {profile.displayName} shares with the federation.
-									</p>
-								</Card>
-							{/if}
-						</TabsContent>
-
-						<TabsContent value="activity">
-							<Card
-								class="glass-card flex flex-col items-center border border-white/10 py-16 text-center ring-1 ring-violet-500/10"
-							>
-								<div
-									class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-fuchsia-500/10"
-								>
-									<ActivityIcon class="h-8 w-8 text-fuchsia-500" />
-								</div>
-								<h3 class="mb-2 text-lg font-semibold">Activity Timeline</h3>
-								<p class="mx-auto max-w-xs text-sm text-foreground/50">
-									Interaction history will appear here soon.
-								</p>
-							</Card>
-						</TabsContent>
-
-						<TabsContent value="about">
-							<Card class="glass-card border border-white/10 p-8 ring-1 ring-violet-500/10">
-								<div class="space-y-8">
-									<div>
-										<h3 class="mb-4 text-xl font-bold">Biography</h3>
-										<p class="text-sm leading-relaxed text-foreground/70">
-											{profile.bio || 'No biography provided.'}
-										</p>
-									</div>
-
-									<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
-										<div class="space-y-6">
-											<div>
-												<label
-													class="mb-2 block text-xs font-semibold tracking-wider text-foreground/50 uppercase"
-													>Account Handle</label
-												>
-												<div class="flex items-center justify-between rounded-lg bg-white/5 p-3">
-													<code class="text-xs break-all opacity-80">{profile.handle}</code>
-													<Button size="icon" variant="ghost" onclick={copyHandle} class="h-8 w-8">
-														<Copy class="h-4 w-4" />
-													</Button>
-												</div>
-											</div>
-										</div>
-										<div class="space-y-6">
-											<div>
-												<label
-													class="mb-2 block text-xs font-semibold tracking-wider text-foreground/50 uppercase"
-													>Member Since</label
-												>
-												<p class="p-3 text-sm font-medium">
-													{new Date(profile.createdAt).toLocaleDateString('en-IN', {
-														day: 'numeric',
-														month: 'long',
-														year: 'numeric'
-													})}
-												</p>
-											</div>
-										</div>
-									</div>
-								</div>
-							</Card>
-						</TabsContent>
-					</Tabs>
-				</div>
-			</div>
-
-			<!-- Right Sidebar -->
-			<div class="hidden lg:col-span-3 lg:block">
-				<div class="animate-fade-in-up" style="animation-delay: 0.3s;">
-					<RightSidebar />
-				</div>
+				{/if}
 			</div>
 		</div>
-	</div>
+	</main>
+
+	<!-- ══════════════════════════════════════════
+	     COL 3 — Right sidebar
+	     ══════════════════════════════════════════ -->
+	<aside class="pv-col-right pv-panel border-l border-white/10">
+		<div class="pv-right-scroll">
+			<RightSidebar />
+		</div>
+	</aside>
 </div>
+
+<style>
+	/* ─────────────────────────────────────────────────────────────────
+	   ROOT GRID — 3 columns, full viewport height, no page scroll
+	   ───────────────────────────────────────────────────────────────── */
+	.pv-profile {
+		display: grid;
+		grid-template-columns: 320px minmax(0, 680px) 290px;
+		justify-content: center;
+		height: 100vh;
+		overflow: hidden;
+	}
+
+	/* Shared frosted-glass panel */
+	.pv-panel {
+		background: color-mix(in oklch, var(--background) 88%, transparent);
+		backdrop-filter: blur(20px);
+	}
+
+	/* ── LEFT column ── */
+	.pv-col-left {
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.pv-left-scroll {
+		flex: 1 1 0;
+		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in oklch, var(--foreground) 15%, transparent) transparent;
+	}
+	.pv-left-scroll::-webkit-scrollbar {
+		width: 4px;
+	}
+	.pv-left-scroll::-webkit-scrollbar-thumb {
+		background: color-mix(in oklch, var(--foreground) 15%, transparent);
+		border-radius: 9999px;
+	}
+
+	/* ── CENTER column ── */
+	.pv-col-center {
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.pv-profile-header {
+		flex-shrink: 0;
+		background: color-mix(in oklch, var(--background) 88%, transparent);
+		backdrop-filter: blur(20px);
+	}
+
+	.pv-feed-scroll {
+		flex: 1 1 0;
+		min-height: 0;
+		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in oklch, var(--foreground) 15%, transparent) transparent;
+	}
+	.pv-feed-scroll::-webkit-scrollbar {
+		width: 4px;
+	}
+	.pv-feed-scroll::-webkit-scrollbar-thumb {
+		background: color-mix(in oklch, var(--foreground) 15%, transparent);
+		border-radius: 9999px;
+	}
+
+	/* ── RIGHT column ── */
+	.pv-col-right {
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.pv-right-scroll {
+		flex: 1 1 0;
+		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in oklch, var(--foreground) 15%, transparent) transparent;
+	}
+	.pv-right-scroll::-webkit-scrollbar {
+		width: 4px;
+	}
+	.pv-right-scroll::-webkit-scrollbar-thumb {
+		background: color-mix(in oklch, var(--foreground) 15%, transparent);
+		border-radius: 9999px;
+	}
+
+	/* ─────────────────────────────────────────────────────────────────
+	   MANUAL TAB BAR
+	   ───────────────────────────────────────────────────────────────── */
+	.pv-tab {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 8px;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		color: color-mix(in oklch, var(--foreground) 55%, transparent);
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
+		cursor: pointer;
+		border: none;
+		background: transparent;
+	}
+	.pv-tab:hover {
+		background: color-mix(in oklch, var(--foreground) 6%, transparent);
+		color: var(--foreground);
+	}
+	.pv-tab-active {
+		background: linear-gradient(to right, #8b5cf6, #d946ef) !important;
+		color: white !important;
+		box-shadow: 0 4px 15px -1px rgb(139 92 246 / 0.3);
+	}
+
+	/* ─────────────────────────────────────────────────────────────────
+	   MOBILE — single column
+	   ───────────────────────────────────────────────────────────────── */
+	@media (max-width: 1023px) {
+		.pv-profile {
+			display: flex;
+			flex-direction: column;
+			height: auto !important;
+			min-height: 0 !important;
+			overflow: visible !important;
+		}
+
+		.pv-col-left {
+			height: auto !important;
+			min-height: auto !important;
+			overflow: visible !important;
+		}
+
+		.pv-left-scroll {
+			overflow: visible !important;
+			flex: none !important;
+		}
+
+		.pv-col-center {
+			height: auto !important;
+			min-height: auto !important;
+			overflow: visible !important;
+		}
+
+		.pv-profile-header {
+			position: sticky;
+			top: 0;
+			z-index: 30;
+		}
+
+		.pv-feed-scroll {
+			overflow: visible !important;
+			flex: none !important;
+		}
+
+		.pv-col-right {
+			display: none !important;
+		}
+	}
+
+	/* ─────────────────────────────────────────────────────────────────
+	   LIGHT MODE
+	   ───────────────────────────────────────────────────────────────── */
+	:root:not(.dark) .pv-panel,
+	:root:not(.dark) .pv-profile-header,
+	:root:not(.dark) .pv-col-left,
+	:root:not(.dark) .pv-col-right {
+		background: color-mix(in oklch, var(--background) 95%, transparent);
+		border-color: oklch(0 0 0 / 10%) !important;
+		box-shadow: 0 1px 0 oklch(0 0 0 / 8%);
+	}
+
+	:root:not(.dark) .glass-card {
+		background: white !important;
+		border-color: oklch(0 0 0 / 10%) !important;
+		box-shadow: 0 2px 12px -2px oklch(0 0 0 / 8%) !important;
+	}
+</style>
