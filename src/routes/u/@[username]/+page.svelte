@@ -709,6 +709,7 @@
 			height: auto !important;
 			min-height: 0 !important;
 			overflow: visible !important;
+			max-width: 100vw;
 		}
 
 		.pv-col-left {
@@ -726,17 +727,20 @@
 			height: auto !important;
 			min-height: auto !important;
 			overflow: visible !important;
+			max-width: 100vw;
 		}
 
 		.pv-profile-header {
 			position: sticky;
 			top: 0;
 			z-index: 30;
+			padding-top: env(safe-area-inset-top, 0px);
 		}
 
 		.pv-feed-scroll {
 			overflow: visible !important;
 			flex: none !important;
+			padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
 		}
 
 		.pv-col-right {
