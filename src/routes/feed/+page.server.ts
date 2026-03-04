@@ -72,11 +72,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 		orderBy: [desc(activities.createdAt)]
 	});
 
-	// Filter public, non-tombstone
+	// Filter public, non-tombstone, and exclude comments (inReplyTo)
 	const allPublicPosts = allCreateActivities.filter((row) => {
 		const act = row.activity as any;
 		const obj = act.object;
 		if (!obj || obj.type === 'Tombstone') return false;
+		if (obj.inReplyTo) return false; // skip comments – they belong under their parent post
 		const to: string[] = act.to || obj.to || [];
 		const cc: string[] = act.cc || obj.cc || [];
 		return [...to, ...cc].includes(PUBLIC_URI);
