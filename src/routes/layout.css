@@ -117,10 +117,39 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Prevent body from exceeding viewport on mobile */
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
   }
   
   html {
     scroll-behavior: smooth;
+    /* Prevent rubber-band scrolling on Capacitor */
+    overscroll-behavior: none;
+  }
+
+  /* Safe-area insets for Capacitor / notched devices */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Mobile-specific touch optimization */
+  @media (max-width: 1023px) {
+    body {
+      /* Prevent accidental zoom on double-tap */
+      touch-action: manipulation;
+    }
+
+    /* Ensure nothing overflows horizontally on mobile */
+    #BODY > div {
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
   }
 }
 

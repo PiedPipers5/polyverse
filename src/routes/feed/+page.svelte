@@ -770,6 +770,7 @@
 			grid-template-columns: 1fr;
 			height: auto;
 			overflow: visible;
+			max-width: 100vw;
 		}
 		.pv-col-left,
 		.pv-col-right {
@@ -778,14 +779,19 @@
 		.pv-col-center {
 			height: auto;
 			overflow: visible;
+			max-width: 100vw;
 		}
 		.pv-feed-header {
 			position: sticky;
 			top: 0;
 			z-index: 30;
+			/* Account for notch / status bar */
+			padding-top: env(safe-area-inset-top, 0px);
 		}
 		.pv-feed-scroll {
 			overflow: visible;
+			/* Extra bottom padding for dock + safe area */
+			padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
 		}
 	}
 

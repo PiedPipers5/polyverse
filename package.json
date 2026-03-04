@@ -62,6 +62,9 @@
 		"vitest-browser-svelte": "^2.0.2"
 	},
 	"dependencies": {
+		"@capacitor/android": "^8.1.0",
+		"@capacitor/cli": "^8.1.0",
+		"@capacitor/core": "^8.1.0",
 		"@fedify/fedify": "^1.5.9",
 		"@google/generative-ai": "^0.24.1",
 		"@js-temporal/polyfill": "^0.5.1",
