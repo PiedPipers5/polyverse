@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
     // Since we use adapter-vercel with server routes, the app loads from the deployed URL.
     // Update this URL to your Vercel deployment.
     server: {
-        url: 'https://polyverse-piedpipers.vercel.app',
+        url: 'https://polyverse-pp.vercel.app',
         cleartext: false
     },
     android: {
