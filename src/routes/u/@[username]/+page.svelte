@@ -10,7 +10,9 @@
 		UserPlus,
 		Settings,
 		UserCheck,
-		Loader2
+		Loader2,
+		Clock,
+		UserMinus
 	} from 'lucide-svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
@@ -42,6 +44,61 @@
 		nextCursor = data.nextCursor;
 		hasMore = data.hasMore;
 	});
+
+	// Follow state
+	let followStatus = $state<'none' | 'pending' | 'accepted'>(data.followStatus || 'none');
+	let isFollowLoading = $state(false);
+
+	$effect(() => {
+		followStatus = data.followStatus || 'none';
+	});
+
+	async function handleFollow() {
+		if (isFollowLoading) return;
+		isFollowLoading = true;
+		try {
+			const res = await fetch('/api/follow', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ targetUsername: profile.username })
+			});
+			if (res.ok) {
+				followStatus = 'pending';
+				toast.success('Follow request sent!');
+			} else {
+				const err = await res.json();
+				toast.error(err.message || 'Failed to send follow request');
+			}
+		} catch {
+			toast.error('Network error');
+		} finally {
+			isFollowLoading = false;
+		}
+	}
+
+	async function handleUnfollow() {
+		if (isFollowLoading) return;
+		isFollowLoading = true;
+		try {
+			const res = await fetch('/api/follow', {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ targetUsername: profile.username })
+			});
+			if (res.ok) {
+				followStatus = 'none';
+				toast.success('Unfollowed');
+				invalidateAll();
+			} else {
+				const err = await res.json();
+				toast.error(err.message || 'Failed to unfollow');
+			}
+		} catch {
+			toast.error('Network error');
+		} finally {
+			isFollowLoading = false;
+		}
+	}
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
