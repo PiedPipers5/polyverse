@@ -12,7 +12,9 @@
 		Lock,
 		Users,
 		Languages,
-		Loader2
+		Loader2,
+		ArrowUp,
+		ArrowDown
 	} from 'lucide-svelte';
 	import { languages } from '$lib/constants/languages';
 
@@ -66,6 +68,60 @@
 	let languageName = $derived(
 		languages.find((l) => l.code === postLanguage)?.nativeName || postLanguage
 	);
+
+	let isVoting = $state(false);
+	let localNetScore = $state(activity.netScore || 0);
+	let localUserVote = $state<'upvote' | 'downvote' | null>(activity.userVote || null);
+
+	$effect(() => {
+		localNetScore = activity.netScore || 0;
+		localUserVote = activity.userVote || null;
+	});
+
+	async function handleVote(action: 'upvote' | 'downvote') {
+		if (isVoting) return;
+		isVoting = true;
+
+		const previousVote = localUserVote;
+		const previousScore = localNetScore;
+
+		let newVote: 'upvote' | 'downvote' | null = action;
+		if (previousVote === action) {
+			newVote = null;
+		}
+
+		localUserVote = newVote;
+
+		let scoreDiff = 0;
+		if (previousVote === 'upvote') scoreDiff -= 1;
+		else if (previousVote === 'downvote') scoreDiff += 1;
+
+		if (newVote === 'upvote') scoreDiff += 1;
+		else if (newVote === 'downvote') scoreDiff -= 1;
+
+		localNetScore += scoreDiff;
+
+		try {
+			const res = await fetch('/api/interact', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					postId: targetObjectId,
+					action: newVote === null ? 'remove' : newVote
+				})
+			});
+
+			if (!res.ok) {
+				throw new Error('Vote failed');
+			}
+		} catch (e) {
+			localUserVote = previousVote;
+			localNetScore = previousScore;
+			toast.error('Failed to register vote. Please try again.');
+		} finally {
+			isVoting = false;
+		}
+	}
 
 	// Close menu when clicking outside (simple implementation)
 	function toggleMenu() {
@@ -284,8 +340,45 @@
 			</div>
 		{/if}
 
-		<div class="mt-2 flex items-center justify-between">
-			<p class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+		<div class="mt-3 flex items-center justify-between">
+			<!-- Vote controls -->
+			<div class="flex items-center gap-1 rounded-full bg-white/5 p-1 ring-1 ring-white/10">
+				<button
+					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote ===
+					'upvote'
+						? 'bg-violet-500/20 text-violet-400'
+						: 'text-foreground/50'}"
+					onclick={() => handleVote('upvote')}
+					disabled={isVoting}
+					aria-label="Upvote"
+				>
+					<ArrowUp class="h-4 w-4" />
+				</button>
+				<span
+					class="min-w-[1.5rem] text-center text-xs font-bold {localUserVote === 'upvote'
+						? 'text-violet-400'
+						: localUserVote === 'downvote'
+							? 'text-rose-400'
+							: 'text-foreground/70'}"
+				>
+					{localNetScore}
+				</span>
+				<button
+					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote ===
+					'downvote'
+						? 'bg-rose-500/20 text-rose-400'
+						: 'text-foreground/50'}"
+					onclick={() => handleVote('downvote')}
+					disabled={isVoting}
+					aria-label="Downvote"
+				>
+					<ArrowDown class="h-4 w-4" />
+				</button>
+			</div>
+
+			<p
+				class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs text-muted-foreground"
+			>
 				{#if privacyLevel === 'public'}
 					<span class="flex items-center gap-1"><Globe class="h-3.5 w-3.5" /> Public</span>
 				{:else if privacyLevel === 'unlisted'}

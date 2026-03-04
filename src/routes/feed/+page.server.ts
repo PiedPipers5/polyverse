@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { activities, users, followers } from '$lib/server/db/schema';
-import { eq, and, desc, count } from 'drizzle-orm';
+import { activities, users, followers, interactions } from '$lib/server/db/schema';
+import { eq, and, desc, count, inArray } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
@@ -86,9 +86,30 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const postsInPage = allPublicPosts.slice(0, PAGE_SIZE);
 	const hasMore = totalPublicPosts > PAGE_SIZE;
 
+	// Hydrate interaction data (upvotes/downvotes)
+	const postIds = postsInPage.map((p) => (p.activity as any).object?.id || p.id);
+
+	let interactionsData: any[] = [];
+	if (postIds.length > 0) {
+		interactionsData = await db.query.interactions.findMany({
+			where: inArray(interactions.postId, postIds)
+		});
+	}
+
 	const posts = postsInPage.map((row) => {
-		const author = userMap.get(row.actorId);
+		const author = row.actorId ? userMap.get(row.actorId) : undefined;
 		const act = row.activity as any;
+		const postId = act.object?.id || row.id;
+
+		// Calculate scores
+		const postInteractions = interactionsData.filter(i => i.postId === postId);
+		const upvotes = postInteractions.filter(i => i.type === 'upvote').length;
+		const downvotes = postInteractions.filter(i => i.type === 'downvote').length;
+		const netScore = upvotes - downvotes;
+
+		// Determine current user's vote
+		const currentUserVote = postInteractions.find(i => i.actorId === currentUser?.id)?.type || null;
+
 		return {
 			id: row.id,
 			actorId: row.actorId,
@@ -103,7 +124,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 			activity: act,
 			content: act.object?.content || act.content || '',
 			publishedAt: row.createdAt.toISOString(),
-			createdAt: row.createdAt.toISOString()
+			createdAt: row.createdAt.toISOString(),
+			netScore,
+			userVote: currentUserVote
 		};
 	});
 
