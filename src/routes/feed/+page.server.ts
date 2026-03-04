@@ -48,13 +48,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const followersResult = await db
 			.select({ count: count() })
 			.from(followers)
-			.where(eq(followers.userId, currentUser.id));
+			.where(and(eq(followers.userId, currentUser.id), eq(followers.status, 'accepted')));
 		followersCount = followersResult[0]?.count ?? 0;
 
 		const followingResult = await db
 			.select({ count: count() })
 			.from(followers)
-			.where(eq(followers.followerId, currentUser.id));
+			.where(and(eq(followers.followerId, currentUser.id), eq(followers.status, 'accepted')));
 		followingCount = followingResult[0]?.count ?? 0;
 
 		const allUserActivities = await db.query.activities.findMany({

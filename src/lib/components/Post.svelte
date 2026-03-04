@@ -75,10 +75,20 @@
 	let isVoting = $state(false);
 	let localNetScore = $state(activity.netScore || 0);
 	let localUserVote = $state<'upvote' | 'downvote' | null>(activity.userVote || null);
+	// Tracks whether the user has cast a vote in this session.
+	// When true, the $effect below will NOT overwrite the optimistic local state
+	// with the (now-stale) server-provided values. This fixes the issue where
+	// likes/votes appeared to reset until a hard page reload.
+	let voteDirty = $state(false);
 
 	$effect(() => {
-		localNetScore = activity.netScore || 0;
-		localUserVote = activity.userVote || null;
+		// Only sync from server props if there hasn't been a local vote action.
+		// Once the user votes, we keep the optimistic value until a full navigation/reload
+		// brings genuinely fresh server data.
+		if (!voteDirty) {
+			localNetScore = activity.netScore || 0;
+			localUserVote = activity.userVote || null;
+		}
 	});
 
 	async function handleVote(action: 'upvote' | 'downvote') {
@@ -94,6 +104,7 @@
 		}
 
 		localUserVote = newVote;
+		voteDirty = true;
 
 		let scoreDiff = 0;
 		if (previousVote === 'upvote') scoreDiff -= 1;

@@ -270,11 +270,38 @@
 								<Settings class="mr-2 h-4 w-4" />
 								Edit Profile
 							</Button>
+						{:else if followStatus === 'accepted'}
+							<Button
+								onclick={handleUnfollow}
+								disabled={isFollowLoading}
+								class="w-full bg-zinc-700 text-white shadow-lg transition-all hover:scale-[1.02] hover:bg-red-600 dark:border-0 dark:ring-0"
+							>
+								{#if isFollowLoading}
+									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+								{:else}
+									<UserMinus class="mr-2 h-4 w-4" />
+								{/if}
+								Following
+							</Button>
+						{:else if followStatus === 'pending'}
+							<Button
+								disabled
+								class="w-full cursor-not-allowed bg-amber-600/20 text-amber-400 shadow-lg transition-all dark:border-0 dark:ring-0"
+							>
+								<Clock class="mr-2 h-4 w-4" />
+								Requested
+							</Button>
 						{:else}
 							<Button
+								onclick={handleFollow}
+								disabled={isFollowLoading}
 								class="w-full bg-violet-600 text-white shadow-lg shadow-violet-500/20 transition-all hover:scale-[1.02] hover:bg-violet-700 dark:border-0 dark:bg-linear-to-r dark:from-violet-600 dark:to-indigo-600 dark:ring-0 dark:hover:from-violet-500 dark:hover:to-indigo-500"
 							>
-								<UserPlus class="mr-2 h-4 w-4" />
+								{#if isFollowLoading}
+									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+								{:else}
+									<UserPlus class="mr-2 h-4 w-4" />
+								{/if}
 								Follow
 							</Button>
 						{/if}

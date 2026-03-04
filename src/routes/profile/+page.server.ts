@@ -43,18 +43,18 @@ export const load: PageServerLoad = async ({ locals }) => {
         limit: 50
     });
 
-    // Count followers
+    // Count followers (only accepted)
     const followersResult = await db
         .select({ count: count() })
         .from(followers)
-        .where(eq(followers.userId, user.id));
+        .where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted')));
     const followersCount = followersResult[0]?.count || 0;
 
-    // Count following
+    // Count following (only accepted)
     const followingResult = await db
         .select({ count: count() })
         .from(followers)
-        .where(eq(followers.followerId, user.id));
+        .where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted')));
     const followingCount = followingResult[0]?.count || 0;
 
     // Count posts (only Create activities with non-Tombstone objects)
