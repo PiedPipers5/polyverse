@@ -32,18 +32,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const bio = user.bio || didDoc?.summary || '';
 	const avatarUrl = user.avatarUrl || didDoc?.icon?.url || '';
 
-	// Count followers (users who follow this user)
+	// Count followers (only accepted follows)
 	const followersResult = await db
 		.select({ count: count() })
 		.from(followers)
-		.where(eq(followers.userId, user.id));
+		.where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted')));
 	const followersCount = followersResult[0]?.count || 0;
 
-	// Count following (users this user follows)
+	// Count following (only accepted follows)
 	const followingResult = await db
 		.select({ count: count() })
 		.from(followers)
-		.where(eq(followers.followerId, user.id));
+		.where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted')));
 	const followingCount = followingResult[0]?.count || 0;
 
 	// BUG FIX: Post count was incorrectly incrementing on edits and deletes.
@@ -71,7 +71,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	// Check if the current user is the owner of this profile
 	const isOwner = requestor?.username === username;
 
-	// Check if requestor is a follower
+	// Check the follow status between requestor and profile owner
+	let followStatus: 'none' | 'pending' | 'accepted' = 'none';
 	let isFollower = false;
 	if (requestor && !isOwner) {
 		const followRecord = await db.query.followers.findFirst({
@@ -80,7 +81,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				eq(followers.followerId, requestor.userId)
 			)
 		});
-		isFollower = !!followRecord;
+		if (followRecord) {
+			followStatus = followRecord.status as 'pending' | 'accepted';
+			isFollower = followRecord.status === 'accepted';
+		}
 	}
 
 	const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
@@ -147,6 +151,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			publishedAt: a.createdAt
 		})),
 		isOwner,
+		followStatus,
 		nextCursor,
 		hasMore
 	};
