@@ -283,3 +283,56 @@ export const interactions = pgTable(
 		};
 	}
 );
+
+/**
+ * Federated Follows Table
+ * Tracks follow relationships between local users and remote actors.
+ * Used for the ActivityPub follow handshake:
+ *   1. Local user sends Follow → status = "pending" (Task 3.2.4)
+ *   2. Remote server sends Accept → status upgraded to "accepted" (Task 3.3.4)
+ *
+ * Separate from the `followers` table which only tracks local-to-local follows.
+ */
+export const federatedFollows = pgTable('federated_follows', {
+	/**
+	 * Unique identifier for this follow record.
+	 */
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	/**
+	 * The local user who initiated the follow.
+	 */
+	localUserId: uuid('local_user_id')
+		.notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The URI of the remote actor being followed
+	 * (e.g., "https://mastodon.social/users/Gargron").
+	 */
+	remoteActorUri: text('remote_actor_uri').notNull(),
+
+	/**
+	 * Status of the follow handshake.
+	 * "pending"  – Follow sent, awaiting Accept
+	 * "accepted" – Remote server sent Accept
+	 * "rejected" – Remote server sent Reject
+	 */
+	status: text('status').notNull().default('pending'),
+
+	/**
+	 * The ActivityPub ID of the outgoing Follow activity.
+	 * Used to match incoming Accept/Reject activities to this record.
+	 */
+	followActivityId: text('follow_activity_id'),
+
+	/**
+	 * When this follow was created.
+	 */
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+
+	/**
+	 * When this follow was last updated (e.g., status change).
+	 */
+	updatedAt: timestamp('updated_at').defaultNow().notNull()
+});

@@ -111,6 +111,6 @@
 			class="text-[10px] text-foreground/30 transition-colors hover:text-foreground/60"
 			>Federation Status</a
 		>
-		<p class="mt-2 w-full text-[10px] text-foreground/20">© 2026 POLYVERSE INTEL</p>
+		<p class="mt-2 w-full text-[10px] text-foreground/20">© 2026 Piedpipers.</p>
 	</div>
 </div>
