@@ -48,13 +48,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const followersResult = await db
 			.select({ count: count() })
 			.from(followers)
-			.where(eq(followers.userId, currentUser.id));
+			.where(and(eq(followers.userId, currentUser.id), eq(followers.status, 'accepted')));
 		followersCount = followersResult[0]?.count ?? 0;
 
 		const followingResult = await db
 			.select({ count: count() })
 			.from(followers)
-			.where(eq(followers.followerId, currentUser.id));
+			.where(and(eq(followers.followerId, currentUser.id), eq(followers.status, 'accepted')));
 		followingCount = followingResult[0]?.count ?? 0;
 
 		const allUserActivities = await db.query.activities.findMany({
@@ -72,19 +72,57 @@ export const load: PageServerLoad = async ({ locals }) => {
 		orderBy: [desc(activities.createdAt)]
 	});
 
-	// Filter public, non-tombstone, and exclude comments (inReplyTo)
-	const allPublicPosts = allCreateActivities.filter((row) => {
+	// Build the set of followers-collection URIs that the current user has access to.
+	// If user A follows user B (accepted), then A can see posts addressed to B's followers URI.
+	const domain = env.DOMAIN!;
+	const followedFollowerUris = new Set<string>();
+
+	if (currentUser) {
+		// Get all users the current user follows (accepted only)
+		const acceptedFollows = await db.query.followers.findMany({
+			where: and(
+				eq(followers.followerId, currentUser.id),
+				eq(followers.status, 'accepted')
+			)
+		});
+
+		for (const f of acceptedFollows) {
+			if (f.userId) {
+				const followedUser = userMap.get(f.userId);
+				if (followedUser) {
+					followedFollowerUris.add(`https://${domain}/users/${followedUser.username}/followers`);
+				}
+			}
+		}
+
+		// The user should also see their own followers-only posts
+		followedFollowerUris.add(`https://${domain}/users/${currentUser.username}/followers`);
+	}
+
+	// Filter: public posts OR followers-only posts the current user has access to
+	const allVisiblePosts = allCreateActivities.filter((row) => {
 		const act = row.activity as any;
 		const obj = act.object;
 		if (!obj || obj.type === 'Tombstone') return false;
 		if (obj.inReplyTo) return false; // skip comments – they belong under their parent post
+
 		const to: string[] = act.to || obj.to || [];
 		const cc: string[] = act.cc || obj.cc || [];
-		return [...to, ...cc].includes(PUBLIC_URI);
+		const audiences = [...to, ...cc];
+
+		// Public post
+		if (audiences.includes(PUBLIC_URI)) return true;
+
+		// Followers-only post: check if any audience URI is in the set of accessible followers URIs
+		for (const uri of audiences) {
+			if (followedFollowerUris.has(uri)) return true;
+		}
+
+		return false;
 	});
 
-	const totalPublicPosts = allPublicPosts.length;
-	const postsInPage = allPublicPosts.slice(0, PAGE_SIZE);
+	const totalPublicPosts = allVisiblePosts.length;
+	const postsInPage = allVisiblePosts.slice(0, PAGE_SIZE);
 	const hasMore = totalPublicPosts > PAGE_SIZE;
 
 	// Hydrate interaction data (upvotes/downvotes)
@@ -133,7 +171,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const nextCursor = hasMore && posts.length > 0 ? posts[posts.length - 1].createdAt : null;
 
-	const domain = env.DOMAIN!;
 
 	return {
 		posts,

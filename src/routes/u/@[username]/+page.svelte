@@ -10,7 +10,9 @@
 		UserPlus,
 		Settings,
 		UserCheck,
-		Loader2
+		Loader2,
+		Clock,
+		UserMinus
 	} from 'lucide-svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
@@ -42,6 +44,61 @@
 		nextCursor = data.nextCursor;
 		hasMore = data.hasMore;
 	});
+
+	// Follow state
+	let followStatus = $state<'none' | 'pending' | 'accepted'>(data.followStatus || 'none');
+	let isFollowLoading = $state(false);
+
+	$effect(() => {
+		followStatus = data.followStatus || 'none';
+	});
+
+	async function handleFollow() {
+		if (isFollowLoading) return;
+		isFollowLoading = true;
+		try {
+			const res = await fetch('/api/follow', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ targetUsername: profile.username })
+			});
+			if (res.ok) {
+				followStatus = 'pending';
+				toast.success('Follow request sent!');
+			} else {
+				const err = await res.json();
+				toast.error(err.message || 'Failed to send follow request');
+			}
+		} catch {
+			toast.error('Network error');
+		} finally {
+			isFollowLoading = false;
+		}
+	}
+
+	async function handleUnfollow() {
+		if (isFollowLoading) return;
+		isFollowLoading = true;
+		try {
+			const res = await fetch('/api/follow', {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ targetUsername: profile.username })
+			});
+			if (res.ok) {
+				followStatus = 'none';
+				toast.success('Unfollowed');
+				invalidateAll();
+			} else {
+				const err = await res.json();
+				toast.error(err.message || 'Failed to unfollow');
+			}
+		} catch {
+			toast.error('Network error');
+		} finally {
+			isFollowLoading = false;
+		}
+	}
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
@@ -213,11 +270,38 @@
 								<Settings class="mr-2 h-4 w-4" />
 								Edit Profile
 							</Button>
+						{:else if followStatus === 'accepted'}
+							<Button
+								onclick={handleUnfollow}
+								disabled={isFollowLoading}
+								class="w-full bg-zinc-700 text-white shadow-lg transition-all hover:scale-[1.02] hover:bg-red-600 dark:border-0 dark:ring-0"
+							>
+								{#if isFollowLoading}
+									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+								{:else}
+									<UserMinus class="mr-2 h-4 w-4" />
+								{/if}
+								Following
+							</Button>
+						{:else if followStatus === 'pending'}
+							<Button
+								disabled
+								class="w-full cursor-not-allowed bg-amber-600/20 text-amber-400 shadow-lg transition-all dark:border-0 dark:ring-0"
+							>
+								<Clock class="mr-2 h-4 w-4" />
+								Requested
+							</Button>
 						{:else}
 							<Button
+								onclick={handleFollow}
+								disabled={isFollowLoading}
 								class="w-full bg-violet-600 text-white shadow-lg shadow-violet-500/20 transition-all hover:scale-[1.02] hover:bg-violet-700 dark:border-0 dark:bg-linear-to-r dark:from-violet-600 dark:to-indigo-600 dark:ring-0 dark:hover:from-violet-500 dark:hover:to-indigo-500"
 							>
-								<UserPlus class="mr-2 h-4 w-4" />
+								{#if isFollowLoading}
+									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+								{:else}
+									<UserPlus class="mr-2 h-4 w-4" />
+								{/if}
 								Follow
 							</Button>
 						{/if}

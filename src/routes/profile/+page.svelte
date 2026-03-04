@@ -9,7 +9,12 @@
 		UserCheck,
 		LayoutGrid,
 		Info,
-		Activity as ActivityIcon
+		Activity as ActivityIcon,
+		Bell,
+		UserPlus,
+		Loader2,
+		Check,
+		X
 	} from 'lucide-svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
@@ -32,6 +37,42 @@
 	let postsCount = $state(untrack(() => data.user.postsCount || 0));
 
 	let showingLogoutConfirm = $state(false);
+
+	// Pending follow requests
+	type PendingRequest = {
+		id: string;
+		follower: { username: string; displayName: string | null; avatarUrl: string | null } | null;
+		createdAt: Date;
+	};
+	let pendingRequests = $state<PendingRequest[]>(untrack(() => data.pendingRequests || []));
+	let processingIds = $state<Set<string>>(new Set());
+
+	async function handleFollowAction(followerUsername: string, action: 'accept' | 'reject') {
+		processingIds = new Set([...processingIds, followerUsername]);
+		try {
+			const res = await fetch('/api/follow/accept', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ followerUsername, action })
+			});
+			if (res.ok) {
+				pendingRequests = pendingRequests.filter((r) => r.follower?.username !== followerUsername);
+				toast.success(
+					action === 'accept' ? `Accepted @${followerUsername}` : `Rejected @${followerUsername}`
+				);
+				if (action === 'accept') invalidateAll();
+			} else {
+				const err = await res.json();
+				toast.error(err.message || 'Failed');
+			}
+		} catch {
+			toast.error('Network error');
+		} finally {
+			const next = new Set(processingIds);
+			next.delete(followerUsername);
+			processingIds = next;
+		}
+	}
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
@@ -296,10 +337,17 @@
 				<button
 					type="button"
 					onclick={() => (activeTab = 'activity')}
-					class="pv-tab {activeTab === 'activity' ? 'pv-tab-active' : ''}"
+					class="pv-tab relative {activeTab === 'activity' ? 'pv-tab-active' : ''}"
 				>
-					<ActivityIcon class="mr-2 h-4 w-4" />
-					Activity
+					<Bell class="mr-2 h-4 w-4" />
+					Requests
+					{#if pendingRequests.length > 0}
+						<span
+							class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-lg"
+						>
+							{pendingRequests.length}
+						</span>
+					{/if}
 				</button>
 				<button
 					type="button"
@@ -362,19 +410,86 @@
 
 				<!-- Activity tab -->
 				{#if activeTab === 'activity'}
-					<Card
-						class="glass-card flex flex-col items-center border border-white/10 py-16 text-center ring-1 ring-violet-500/10"
-					>
-						<div
-							class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-fuchsia-500/10"
-						>
-							<ActivityIcon class="h-8 w-8 text-fuchsia-500" />
-						</div>
-						<h3 class="mb-2 text-lg font-semibold">Activity Timeline</h3>
-						<p class="mx-auto max-w-xs text-sm text-foreground/50">
-							Your interactions across the federation will appear here soon.
-						</p>
-					</Card>
+					<div class="space-y-3">
+						<h2 class="text-xl font-bold">Follow Requests</h2>
+						{#if pendingRequests.length === 0}
+							<Card
+								class="glass-card flex flex-col items-center border border-white/10 py-16 text-center ring-1 ring-violet-500/10"
+							>
+								<div
+									class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10"
+								>
+									<UserCheck class="h-8 w-8 text-emerald-500" />
+								</div>
+								<h3 class="mb-2 text-lg font-semibold">All caught up!</h3>
+								<p class="mx-auto max-w-xs text-sm text-foreground/50">
+									You have no pending follow requests.
+								</p>
+							</Card>
+						{:else}
+							{#each pendingRequests as req (req.id)}
+								<div
+									class="glass-card flex items-center gap-4 rounded-2xl border border-white/10 p-4 shadow-lg ring-1 ring-violet-500/10 transition-all"
+								>
+									<!-- Avatar -->
+									<Avatar class="h-12 w-12 shrink-0 ring-2 ring-violet-500/20">
+										{#if req.follower?.avatarUrl}
+											<AvatarImage
+												src={req.follower.avatarUrl}
+												alt={req.follower.displayName || req.follower.username}
+											/>
+										{/if}
+										<AvatarFallback
+											class="bg-linear-to-br from-violet-500 to-fuchsia-500 text-sm font-bold text-white"
+										>
+											{getInitials(
+												req.follower?.displayName || null,
+												req.follower?.username || '??'
+											)}
+										</AvatarFallback>
+									</Avatar>
+
+									<!-- Info -->
+									<div class="min-w-0 flex-1">
+										<a
+											href="/u/@{req.follower?.username}"
+											class="text-sm font-bold hover:underline"
+										>
+											{req.follower?.displayName || req.follower?.username}
+										</a>
+										<p class="text-xs text-foreground/40">
+											@{req.follower?.username} wants to follow you
+										</p>
+									</div>
+
+									<!-- Actions -->
+									<div class="flex gap-2">
+										<Button
+											size="sm"
+											onclick={() => handleFollowAction(req.follower!.username, 'accept')}
+											disabled={processingIds.has(req.follower?.username || '')}
+											class="bg-emerald-600 text-white hover:bg-emerald-700"
+										>
+											{#if processingIds.has(req.follower?.username || '')}
+												<Loader2 class="h-4 w-4 animate-spin" />
+											{:else}
+												<Check class="mr-1 h-4 w-4" /> Accept
+											{/if}
+										</Button>
+										<Button
+											size="sm"
+											variant="outline"
+											onclick={() => handleFollowAction(req.follower!.username, 'reject')}
+											disabled={processingIds.has(req.follower?.username || '')}
+											class="border-white/10 text-red-400 hover:bg-red-500/10"
+										>
+											<X class="mr-1 h-4 w-4" /> Reject
+										</Button>
+									</div>
+								</div>
+							{/each}
+						{/if}
+					</div>
 				{/if}
 
 				<!-- About / Details tab -->

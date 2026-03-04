@@ -43,18 +43,18 @@ export const load: PageServerLoad = async ({ locals }) => {
         limit: 50
     });
 
-    // Count followers
+    // Count followers (only accepted)
     const followersResult = await db
         .select({ count: count() })
         .from(followers)
-        .where(eq(followers.userId, user.id));
+        .where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted')));
     const followersCount = followersResult[0]?.count || 0;
 
-    // Count following
+    // Count following (only accepted)
     const followingResult = await db
         .select({ count: count() })
         .from(followers)
-        .where(eq(followers.followerId, user.id));
+        .where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted')));
     const followingCount = followingResult[0]?.count || 0;
 
     // Count posts (only Create activities with non-Tombstone objects)
@@ -107,6 +107,42 @@ export const load: PageServerLoad = async ({ locals }) => {
         };
     });
 
+    // Fetch pending follow requests (people wanting to follow the current user)
+    const pendingFollowRows = await db.query.followers.findMany({
+        where: and(
+            eq(followers.userId, user.id),
+            eq(followers.status, 'pending')
+        )
+    });
+
+    // Hydrate with user info
+    const pendingFollowerIds = pendingFollowRows
+        .map(r => r.followerId)
+        .filter((id): id is string => id !== null);
+
+    let pendingFollowerUsers: { id: string; username: string; displayName: string | null; avatarUrl: string | null }[] = [];
+    if (pendingFollowerIds.length > 0) {
+        const allUsersForPending = await db.query.users.findMany({
+            columns: { id: true, username: true, displayName: true, avatarUrl: true }
+        });
+        pendingFollowerUsers = allUsersForPending.filter(u => pendingFollowerIds.includes(u.id));
+    }
+
+    const pendingUserMap = new Map(pendingFollowerUsers.map(u => [u.id, u]));
+
+    const pendingRequests = pendingFollowRows.map(r => {
+        const follower = r.followerId ? pendingUserMap.get(r.followerId) : null;
+        return {
+            id: r.id,
+            follower: follower ? {
+                username: follower.username,
+                displayName: follower.displayName,
+                avatarUrl: follower.avatarUrl
+            } : null,
+            createdAt: r.createdAt
+        };
+    });
+
     return {
         user: {
             id: user.id,
@@ -122,6 +158,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             followingCount,
             postsCount
         },
-        activities: hydratedActivities
+        activities: hydratedActivities,
+        pendingRequests
     };
 };
