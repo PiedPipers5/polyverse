@@ -33,60 +33,53 @@ export const load: PageServerLoad = async ({ locals }) => {
     const did = (user.didDocument as { id: string }).id;
     const domain = env.DOMAIN!;
 
-    // Fetch recent activities for the logged-in user (only Create activities = actual posts)
-    const recentActivities = await db.query.activities.findMany({
-        where: and(
-            eq(activities.actorId, user.id),
-            eq(activities.type, 'Create')
-        ),
-        orderBy: (activities, { desc }) => [desc(activities.createdAt)],
-        limit: 50
-    });
+    // Run parallel queries
+    const [
+        recentActivities,
+        followersResult,
+        followingResult,
+        postsCountResult,
+        pendingFollowRows
+    ] = await Promise.all([
+        db.query.activities.findMany({
+            where: and(eq(activities.actorId, user.id), eq(activities.type, 'Create')),
+            orderBy: (activities, { desc }) => [desc(activities.createdAt)],
+            limit: 50
+        }),
+        db.select({ count: count() }).from(followers).where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted'))),
+        db.select({ count: count() }).from(followers).where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted'))),
+        db.query.activities.findMany({
+            where: and(eq(activities.actorId, user.id), eq(activities.type, 'Create'))
+        }),
+        db.query.followers.findMany({ where: and(eq(followers.userId, user.id), eq(followers.status, 'pending')) })
+    ]);
 
-    // Count followers (only accepted)
-    const followersResult = await db
-        .select({ count: count() })
-        .from(followers)
-        .where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted')));
     const followersCount = followersResult[0]?.count || 0;
-
-    // Count following (only accepted)
-    const followingResult = await db
-        .select({ count: count() })
-        .from(followers)
-        .where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted')));
     const followingCount = followingResult[0]?.count || 0;
 
     // Count posts (only Create activities with non-Tombstone objects)
-    const allUserActivities = await db.query.activities.findMany({
-        where: and(
-            eq(activities.actorId, user.id),
-            eq(activities.type, 'Create')
-        )
-    });
-
-    // Filter out tombstones
-    const nonDeletedPosts = allUserActivities.filter((a) => {
+    const postsCount = postsCountResult.filter((a) => {
         const obj = (a.activity as any).object;
         return obj && obj.type !== 'Tombstone';
-    });
-
-    const postsCount = nonDeletedPosts.length;
+    }).length;
 
     const filteredActivities = recentActivities.filter((a) => {
         const obj = (a.activity as any).object;
-        // Exclude deleted posts (tombstones)
         return obj && obj.type !== 'Tombstone';
     });
 
-    // Hydrate interaction data
+    // Hydrate interaction data and pending follower info in parallel
     const postIds = filteredActivities.map(a => (a.activity as any).object?.id || a.id);
-    let interactionsData: any[] = [];
-    if (postIds.length > 0) {
-        interactionsData = await db.query.interactions.findMany({
-            where: inArray(interactions.postId, postIds)
-        });
-    }
+    const pendingFollowerIds = [...new Set(pendingFollowRows.map(r => r.followerId).filter(Boolean))] as string[];
+
+    const [interactionsData, pendingFollowersData] = await Promise.all([
+        postIds.length > 0
+            ? db.query.interactions.findMany({ where: inArray(interactions.postId, postIds) })
+            : Promise.resolve([]),
+        pendingFollowerIds.length > 0
+            ? db.query.users.findMany({ where: inArray(users.id, pendingFollowerIds), columns: { id: true, username: true, displayName: true, avatarUrl: true } })
+            : Promise.resolve([])
+    ]);
 
     const hydratedActivities = filteredActivities.map(a => {
         const act = a.activity as any;
@@ -107,28 +100,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         };
     });
 
-    // Fetch pending follow requests (people wanting to follow the current user)
-    const pendingFollowRows = await db.query.followers.findMany({
-        where: and(
-            eq(followers.userId, user.id),
-            eq(followers.status, 'pending')
-        )
-    });
-
-    // Hydrate with user info
-    const pendingFollowerIds = pendingFollowRows
-        .map(r => r.followerId)
-        .filter((id): id is string => id !== null);
-
-    let pendingFollowerUsers: { id: string; username: string; displayName: string | null; avatarUrl: string | null }[] = [];
-    if (pendingFollowerIds.length > 0) {
-        const allUsersForPending = await db.query.users.findMany({
-            columns: { id: true, username: true, displayName: true, avatarUrl: true }
-        });
-        pendingFollowerUsers = allUsersForPending.filter(u => pendingFollowerIds.includes(u.id));
-    }
-
-    const pendingUserMap = new Map(pendingFollowerUsers.map(u => [u.id, u]));
+    const pendingUserMap = new Map(pendingFollowersData.map(u => [u.id, u]));
 
     const pendingRequests = pendingFollowRows.map(r => {
         const follower = r.followerId ? pendingUserMap.get(r.followerId) : null;

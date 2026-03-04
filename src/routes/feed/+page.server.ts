@@ -19,6 +19,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/login');
 	}
 
+	const domain = env.DOMAIN!;
+
 	// Fetch current user profile for sidebar
 	const currentUser = await db.query.users.findFirst({
 		where: eq(users.id, locals.user.userId),
@@ -33,91 +35,71 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}
 	});
 
-	// Fetch all local users for author info
-	const allUsers = await db.query.users.findMany({
-		columns: { id: true, username: true, displayName: true, avatarUrl: true }
-	});
-	const userMap = new Map(allUsers.map((u) => [u.id, u]));
-
-	// Count followers / following for the sidebar profile card
 	let followersCount = 0;
 	let followingCount = 0;
 	let postsCount = 0;
+	const followedFollowerUris = new Set<string>();
 
 	if (currentUser) {
-		const followersResult = await db
-			.select({ count: count() })
-			.from(followers)
-			.where(and(eq(followers.userId, currentUser.id), eq(followers.status, 'accepted')));
+		// Run sidebar counts and follow uris in parallel
+		const [
+			followersResult,
+			followingResult,
+			allUserActivities,
+			acceptedFollows
+		] = await Promise.all([
+			db.select({ count: count() }).from(followers).where(and(eq(followers.userId, currentUser.id), eq(followers.status, 'accepted'))),
+			db.select({ count: count() }).from(followers).where(and(eq(followers.followerId, currentUser.id), eq(followers.status, 'accepted'))),
+			db.query.activities.findMany({ where: and(eq(activities.actorId, currentUser.id), eq(activities.type, 'Create')) }),
+			db.query.followers.findMany({ where: and(eq(followers.followerId, currentUser.id), eq(followers.status, 'accepted')) })
+		]);
+
 		followersCount = followersResult[0]?.count ?? 0;
-
-		const followingResult = await db
-			.select({ count: count() })
-			.from(followers)
-			.where(and(eq(followers.followerId, currentUser.id), eq(followers.status, 'accepted')));
 		followingCount = followingResult[0]?.count ?? 0;
-
-		const allUserActivities = await db.query.activities.findMany({
-			where: and(eq(activities.actorId, currentUser.id), eq(activities.type, 'Create'))
-		});
 		postsCount = allUserActivities.filter((a) => {
 			const obj = (a.activity as any).object;
 			return obj && obj.type !== 'Tombstone';
 		}).length;
+
+		// Build the set of followers-collection URIs the user has access to
+		const followedUserIds = acceptedFollows.map(f => f.userId).filter(Boolean) as string[];
+
+		if (followedUserIds.length > 0) {
+			const followedUsersList = await db.query.users.findMany({
+				where: inArray(users.id, followedUserIds),
+				columns: { username: true }
+			});
+			for (const fu of followedUsersList) {
+				followedFollowerUris.add(`https://${domain}/users/${fu.username}/followers`);
+			}
+		}
+		// The user should also see their own followers-only posts
+		followedFollowerUris.add(`https://${domain}/users/${currentUser.username}/followers`);
 	}
 
-	// Fetch all 'Create' activities for the feed
+	// Fetch all 'Create' activities for the feed (still needed to filter by audience)
+	// TODO in future: move JSON filtering to raw SQL JSONb operators
 	const allCreateActivities = await db.query.activities.findMany({
 		where: eq(activities.type, 'Create'),
 		orderBy: [desc(activities.createdAt)]
 	});
-
-	// Build the set of followers-collection URIs that the current user has access to.
-	// If user A follows user B (accepted), then A can see posts addressed to B's followers URI.
-	const domain = env.DOMAIN!;
-	const followedFollowerUris = new Set<string>();
-
-	if (currentUser) {
-		// Get all users the current user follows (accepted only)
-		const acceptedFollows = await db.query.followers.findMany({
-			where: and(
-				eq(followers.followerId, currentUser.id),
-				eq(followers.status, 'accepted')
-			)
-		});
-
-		for (const f of acceptedFollows) {
-			if (f.userId) {
-				const followedUser = userMap.get(f.userId);
-				if (followedUser) {
-					followedFollowerUris.add(`https://${domain}/users/${followedUser.username}/followers`);
-				}
-			}
-		}
-
-		// The user should also see their own followers-only posts
-		followedFollowerUris.add(`https://${domain}/users/${currentUser.username}/followers`);
-	}
 
 	// Filter: public posts OR followers-only posts the current user has access to
 	const allVisiblePosts = allCreateActivities.filter((row) => {
 		const act = row.activity as any;
 		const obj = act.object;
 		if (!obj || obj.type === 'Tombstone') return false;
-		if (obj.inReplyTo) return false; // skip comments – they belong under their parent post
+		if (obj.inReplyTo) return false; // skip comments
 
 		const to: string[] = act.to || obj.to || [];
 		const cc: string[] = act.cc || obj.cc || [];
 		const audiences = [...to, ...cc];
 
-		// Public post
 		if (audiences.includes(PUBLIC_URI)) return true;
 
-		// Followers-only post: check if any audience URI is in the set of accessible followers URIs
 		for (const uri of audiences) {
 			if (followedFollowerUris.has(uri)) return true;
 		}
-
 		return false;
 	});
 
@@ -125,15 +107,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const postsInPage = allVisiblePosts.slice(0, PAGE_SIZE);
 	const hasMore = totalPublicPosts > PAGE_SIZE;
 
-	// Hydrate interaction data (upvotes/downvotes)
+	// Hydrate interaction data and ONLY needed authors
 	const postIds = postsInPage.map((p) => (p.activity as any).object?.id || p.id);
+	const actorIds = [...new Set(postsInPage.map(p => p.actorId).filter(Boolean))] as string[];
 
-	let interactionsData: any[] = [];
-	if (postIds.length > 0) {
-		interactionsData = await db.query.interactions.findMany({
-			where: inArray(interactions.postId, postIds)
-		});
-	}
+	const [interactionsData, authors] = await Promise.all([
+		postIds.length > 0
+			? db.query.interactions.findMany({ where: inArray(interactions.postId, postIds) })
+			: Promise.resolve([]),
+		actorIds.length > 0
+			? db.query.users.findMany({ where: inArray(users.id, actorIds), columns: { id: true, username: true, displayName: true, avatarUrl: true } })
+			: Promise.resolve([])
+	]);
+
+	const userMap = new Map(authors.map(a => [a.id, a]));
 
 	const posts = postsInPage.map((row) => {
 		const author = row.actorId ? userMap.get(row.actorId) : undefined;
