@@ -361,8 +361,8 @@
 		</div>
 
 		<!-- Scrollable content area — same pattern as feed's pv-feed-scroll -->
-		<div class="pv-feed-scroll">
-			<div class="space-y-4 px-5 py-4 pb-24">
+		<div class="pv-feed-scroll w-full max-w-[100vw]">
+			<div class="space-y-4 px-2 py-4 pb-24 lg:px-5">
 				<!-- Posts tab -->
 				{#if activeTab === 'posts'}
 					<div class="flex items-center justify-between">

@@ -395,8 +395,8 @@
 		</div>
 
 		<!-- Scrollable posts area -->
-		<div class="pv-feed-scroll">
-			<div class="space-y-4 px-4 py-4">
+		<div class="pv-feed-scroll w-full max-w-[100vw]">
+			<div class="space-y-4 px-2 py-4 lg:px-4">
 				<!-- Composer -->
 				{#if user}
 					<div

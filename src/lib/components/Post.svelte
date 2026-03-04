@@ -324,7 +324,7 @@
 		{/if}
 
 		<div class="space-y-2">
-			<p class="pr-8 text-base whitespace-pre-wrap">
+			<p class="pr-8 text-base break-words break-all whitespace-pre-wrap lg:break-normal">
 				{showTranslated ? translatedContent : activity.content || activity.object?.content}
 			</p>
 
