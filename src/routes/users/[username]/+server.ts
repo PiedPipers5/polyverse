@@ -113,6 +113,9 @@ export const GET: RequestHandler = async ({ params, request }) => {
     // Link to DID Document
     actor.alsoKnownAs = [didDocument.id];
 
+    // Shared Inbox for federation optimization (US 3.4)
+    actor.endpoints = { sharedInbox: `https://${domain}/inbox` };
+
     return json(actor, {
         headers: {
             'Content-Type': 'application/activity+json; charset=utf-8'
