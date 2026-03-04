@@ -14,9 +14,11 @@
 		Languages,
 		Loader2,
 		ArrowUp,
-		ArrowDown
+		ArrowDown,
+		MessageSquare
 	} from 'lucide-svelte';
 	import { languages } from '$lib/constants/languages';
+	import CommentSection from './CommentSection.svelte';
 
 	interface Props {
 		activity: any;
@@ -37,6 +39,7 @@
 	let translatedContent = $state<string | null>(null);
 	let isTranslating = $state(false);
 	let showTranslated = $state(false);
+	let showComments = $state(false);
 
 	// Handle both flat ActivityPub objects and DB-wrapped rows
 	let apActivity = $derived(activity.activity || activity);
@@ -376,6 +379,17 @@
 				</button>
 			</div>
 
+			<!-- Comment toggle -->
+			<button
+				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-colors hover:bg-white/10 {showComments
+					? 'text-violet-400'
+					: 'text-foreground/50'}"
+				onclick={() => (showComments = !showComments)}
+			>
+				<MessageSquare class="h-3.5 w-3.5" />
+				{showComments ? 'Hide' : 'Comments'}
+			</button>
+
 			<p
 				class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs text-muted-foreground"
 			>
@@ -421,6 +435,13 @@
 			</p>
 		</div>
 	</Card>
+
+	<!-- Comment section (below the card) -->
+	{#if showComments}
+		<div class="mt-2">
+			<CommentSection postId={targetObjectId} {username} />
+		</div>
+	{/if}
 {/if}
 
 <!-- Lightbox -->

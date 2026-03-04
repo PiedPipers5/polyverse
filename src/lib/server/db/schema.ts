@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, jsonb, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * Users Table
@@ -142,11 +143,10 @@ export const activities = pgTable(
 			// Composite index for efficient outbox queries (sorted by date for a specific actor)
 			// This is critical for User Story 2.2 - fetching activities by actorId ordered by createdAt
 			actorCreatedAtIdx: index('activities_actor_created_at_idx').on(table.actorId, table.createdAt),
-			remoteActorCreatedAtIdx: index('activities_remote_actor_created_at_idx').on(table.remoteActorId, table.createdAt)
+			remoteActorCreatedAtIdx: index('activities_remote_actor_created_at_idx').on(table.remoteActorId, table.createdAt),
 
-			// Note: GIN index on JSONB column for filtering by to/cc fields
-			// will be created via SQL migration as Drizzle doesn't support .using() in type-safe API
-			// This helps with User Story 2.3 - filtering activities by audience/visibility
+			// Index for fast comment tree lookups (find all replies to a given post)
+			inReplyToIdx: index('activities_in_reply_to_idx').using('btree', sql`((${table.activity}->'object'->>'inReplyTo'))`)
 		};
 	}
 );

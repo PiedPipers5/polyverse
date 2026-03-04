@@ -20,6 +20,9 @@
 		initialLanguage?: string;
 		mode?: 'create' | 'edit';
 		objectId?: string; // Required for edit mode
+		inReplyTo?: string; // For replies/comments
+		compact?: boolean; // Compact mode for comment sections
+		placeholder?: string;
 		onPostCreated?: (post: any) => void;
 		onPostUpdated?: (post: any) => void;
 		onCancel?: () => void;
@@ -33,6 +36,9 @@
 		initialLanguage = 'en',
 		mode = 'create',
 		objectId,
+		inReplyTo,
+		compact = false,
+		placeholder = "What's on your mind?",
 		onPostCreated,
 		onPostUpdated,
 		onCancel
@@ -155,7 +161,7 @@
 		isSubmitting = true;
 
 		try {
-			const body = {
+			const body: Record<string, unknown> = {
 				content,
 				action: mode,
 				privacy,
@@ -167,6 +173,10 @@
 					mediaType: m.type
 				}))
 			};
+
+			if (inReplyTo) {
+				body.inReplyTo = inReplyTo;
+			}
 
 			const response = await fetch(`/users/${username}/outbox`, {
 				method: 'POST',
@@ -206,9 +216,9 @@
 <div class="mx-auto w-full max-w-2xl rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
 	<div class="space-y-4">
 		<Textarea
-			placeholder="What's on your mind?"
+			{placeholder}
 			bind:value={content}
-			class="min-h-[100px] resize-none"
+			class="{compact ? 'min-h-[60px]' : 'min-h-[100px]'} resize-none"
 			maxlength={charLimit}
 			disabled={isSubmitting}
 		/>

@@ -43,7 +43,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
     const domain = env.DOMAIN!;
     const body = await request.json();
     // Default to 'create' if no action specified
-    const { action = 'create', content, privacy = 'public', media = [], language = 'en', objectId } = body;
+    const { action = 'create', content, privacy = 'public', media = [], language = 'en', objectId, inReplyTo } = body;
 
     const actorUri = getActorUri(domain, username);
     const published = new Date().toISOString();
@@ -79,7 +79,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         // 4. Construct Note Object
         const noteId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
 
-        const note = {
+        const note: Record<string, unknown> = {
             id: noteId,
             type: 'Note',
             published,
@@ -90,6 +90,11 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
             cc,
             attachment: media
         };
+
+        // If this is a reply, set the inReplyTo field (ActivityPub standard)
+        if (inReplyTo) {
+            note.inReplyTo = inReplyTo;
+        }
 
         // 5. Construct Create Activity
         const createId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
