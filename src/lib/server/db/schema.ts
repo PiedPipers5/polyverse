@@ -153,19 +153,22 @@ export const activities = pgTable(
 
 /**
  * Followers Table
- * Tracks who follows whom.
+ * Tracks who follows whom (local-to-local and local-to-remote).
  * Used for audience scoping (delivering to followers) and verifying read access.
+ *
+ * Follow request flow:
+ *   1. User A clicks "Follow" on User B → row inserted with status = 'pending'
+ *   2. User B accepts the request      → status updated to 'accepted'
+ *   3. Only 'accepted' rows grant read access to followers-only posts.
  */
 export const followers = pgTable(
 	'followers',
 	{
-		/**
-		 * Internal ID
-		 */
+		/** Internal ID */
 		id: uuid('id').defaultRandom().primaryKey(),
 
 		/**
-		 * The local user being followed (the leader/target).
+		 * The local user being followed (the target/leader).
 		 */
 		userId: uuid('user_id')
 			.references(() => users.id, { onDelete: 'cascade' }),
@@ -177,7 +180,7 @@ export const followers = pgTable(
 			.references(() => remoteActors.id, { onDelete: 'cascade' }),
 
 		/**
-		 * The local user who is following (the follower).
+		 * The local user who is following (the follower/requester).
 		 */
 		followerId: uuid('follower_id')
 			.references(() => users.id, { onDelete: 'cascade' }),
@@ -189,9 +192,25 @@ export const followers = pgTable(
 			.references(() => remoteActors.id, { onDelete: 'cascade' }),
 
 		/**
-		 * When the follow relationship was established.
+		 * Status of the follow relationship.
+		 * 'pending'  – request sent, awaiting target user's approval
+		 * 'accepted' – target user approved the follow
+		 */
+		status: text('status').notNull().default('pending'),
+
+		/**
+		 * When the follow relationship was created.
 		 */
 		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// Prevent duplicate local-to-local follow relationships
+			userFollowerUniqueIdx: uniqueIndex('followers_user_follower_idx').on(
+				table.userId,
+				table.followerId
+			)
+		};
 	}
 );
 
