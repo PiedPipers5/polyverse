@@ -32,73 +32,50 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const bio = user.bio || didDoc?.summary || '';
 	const avatarUrl = user.avatarUrl || didDoc?.icon?.url || '';
 
-	// Count followers (only accepted follows)
-	const followersResult = await db
-		.select({ count: count() })
-		.from(followers)
-		.where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted')));
-	const followersCount = followersResult[0]?.count || 0;
-
-	// Count following (only accepted follows)
-	const followingResult = await db
-		.select({ count: count() })
-		.from(followers)
-		.where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted')));
-	const followingCount = followingResult[0]?.count || 0;
-
-	// BUG FIX: Post count was incorrectly incrementing on edits and deletes.
-	// We now only count top-level 'Create' activities and filter out those that
-	// have been marked as 'Tombstone' (deleted).
-	const allUserActivitiesCount = await db.query.activities.findMany({
-		where: and(
-			eq(activities.actorId, user.id),
-			eq(activities.type, 'Create')
-		)
-	});
-
-	// Filter out tombstones to get accurate active post count
-	const nonDeletedPostsCount = allUserActivitiesCount.filter((a) => {
-		const obj = (a.activity as any).object;
-		return obj && obj.type !== 'Tombstone';
-	});
-
-	const postsCount = nonDeletedPostsCount.length;
-
-	// Fetch recent activities for the feed
-	// We'll fetch the last 20 activities for this user
-	// Determine requestor's access level
+	// Check the follow status between requestor and profile owner
 	const requestor = locals.user;
-	// Check if the current user is the owner of this profile
 	const isOwner = requestor?.username === username;
 
-	// Check the follow status between requestor and profile owner
+	// Run all stats and data queries in parallel
+	const [
+		followersResult,
+		followingResult,
+		allUserActivitiesCount,
+		followRecord,
+		recentActivitiesRaw
+	] = await Promise.all([
+		db.select({ count: count() }).from(followers).where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted'))),
+		db.select({ count: count() }).from(followers).where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted'))),
+		db.query.activities.findMany({ where: and(eq(activities.actorId, user.id), eq(activities.type, 'Create')) }),
+		(requestor && !isOwner)
+			? db.query.followers.findFirst({ where: and(eq(followers.userId, user.id), eq(followers.followerId, requestor.userId)) })
+			: Promise.resolve(null),
+		db.query.activities.findMany({
+			where: and(eq(activities.actorId, user.id), eq(activities.type, 'Create')),
+			orderBy: (activities, { desc }) => [desc(activities.createdAt)],
+			limit: 30
+		})
+	]);
+
+	const followersCount = followersResult[0]?.count || 0;
+	const followingCount = followingResult[0]?.count || 0;
+
+	// Filter out tombstones to get accurate active post count
+	const postsCount = allUserActivitiesCount.filter((a) => {
+		const obj = (a.activity as any).object;
+		return obj && obj.type !== 'Tombstone';
+	}).length;
+
 	let followStatus: 'none' | 'pending' | 'accepted' = 'none';
 	let isFollower = false;
-	if (requestor && !isOwner) {
-		const followRecord = await db.query.followers.findFirst({
-			where: and(
-				eq(followers.userId, user.id),
-				eq(followers.followerId, requestor.userId)
-			)
-		});
-		if (followRecord) {
-			followStatus = followRecord.status as 'pending' | 'accepted';
-			isFollower = followRecord.status === 'accepted';
-		}
+
+	if (followRecord) {
+		followStatus = followRecord.status as 'pending' | 'accepted';
+		isFollower = followRecord.status === 'accepted';
 	}
 
 	const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
 	const followersUri = `https://${env.DOMAIN}/users/${username}/followers`;
-
-	// Fetch recent activities (fetch 6 to check for hasMore)
-	const recentActivitiesRaw = await db.query.activities.findMany({
-		where: and(
-			eq(activities.actorId, user.id),
-			eq(activities.type, 'Create')
-		),
-		orderBy: (activities, { desc }) => [desc(activities.createdAt)],
-		limit: 30 // Fetch more than needed to account for filtering
-	});
 
 	// Filter based on privacy and tombstones
 	let filteredActivities = recentActivitiesRaw.filter(record => {
