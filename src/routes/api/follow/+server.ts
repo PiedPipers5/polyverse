@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users, federatedFollows } from '$lib/server/db/schema';
+import { users, followers, federatedFollows } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { resolveRemoteActor } from '$lib/server/federation';
@@ -9,98 +9,171 @@ import type { RequestHandler } from '@sveltejs/kit';
 /**
  * POST /api/follow
  *
- * Task 3.2.4 (BE): Record a follow request for a remote actor.
+ * Handles both local and remote follow requests.
  *
- * Constructs a Follow activity, records it in the `federatedFollows` table
- * with status "pending", and returns the activity for the client.
- *
- * Expected Body:
- * {
- *   "handle": "@gargron@mastodon.social"  // or "gargron@mastodon.social"
- * }
- *
- * Note: Actual delivery to the remote inbox (Task 3.2.2/3.2.3 via queue)
- * is not yet implemented — this records the intent and constructs the activity.
+ * Body: { "targetUsername": "alice" }        → local follow
+ *   or: { "handle": "@user@remote.domain" }  → remote (federated) follow
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
-	// 1. Authentication check
 	const user = locals.user;
 	if (!user) {
 		throw error(401, 'Unauthorized');
 	}
 
-	const domain = env.DOMAIN!;
 	const body = await request.json();
-	const { handle } = body;
+	const { targetUsername, handle } = body;
 
-	if (!handle || typeof handle !== 'string') {
-		throw error(400, 'A "handle" field is required (e.g., "@user@domain.com")');
-	}
-
-	// 2. Resolve the remote actor (WebFinger → Actor fetch → cache)
-	const result = await resolveRemoteActor(handle);
-	if (!result) {
-		throw error(404, `Could not find remote actor: ${handle}`);
-	}
-
-	const remoteActorUri = result.actor.id as string;
-	const remoteInbox = result.actor.inbox as string;
-
-	if (!remoteActorUri || !remoteInbox) {
-		throw error(502, 'Remote actor is missing required fields (id, inbox)');
-	}
-
-	// 3. Check for existing follow relationship
-	const existingFollow = await db.query.federatedFollows.findFirst({
-		where: and(
-			eq(federatedFollows.localUserId, user.userId),
-			eq(federatedFollows.remoteActorUri, remoteActorUri)
-		)
-	});
-
-	if (existingFollow) {
-		if (existingFollow.status === 'accepted') {
-			throw error(409, `You are already following ${handle}`);
+	// ─── Local follow (targetUsername provided) ──────────────────────────
+	if (targetUsername && typeof targetUsername === 'string') {
+		// Can't follow yourself
+		if (targetUsername === user.username) {
+			throw error(400, 'You cannot follow yourself');
 		}
-		if (existingFollow.status === 'pending') {
-			throw error(409, `Follow request for ${handle} is already pending`);
+
+		// Find the target user
+		const targetUser = await db.query.users.findFirst({
+			where: eq(users.username, targetUsername),
+			columns: { id: true, username: true }
+		});
+
+		if (!targetUser) {
+			throw error(404, `User @${targetUsername} not found`);
 		}
-	}
 
-	// 4. Construct the Follow activity
-	const actorUri = `https://${domain}/users/${user.username}`;
-	const followId = `https://${domain}/users/${user.username}/follows/${crypto.randomUUID()}`;
+		// Check for existing follow relationship
+		const existing = await db.query.followers.findFirst({
+			where: and(
+				eq(followers.userId, targetUser.id),
+				eq(followers.followerId, user.userId)
+			)
+		});
 
-	const followActivity = {
-		'@context': 'https://www.w3.org/ns/activitystreams',
-		id: followId,
-		type: 'Follow',
-		actor: actorUri,
-		object: remoteActorUri
-	};
+		if (existing) {
+			if (existing.status === 'accepted') {
+				throw error(409, `You are already following @${targetUsername}`);
+			}
+			if (existing.status === 'pending') {
+				throw error(409, `Follow request to @${targetUsername} is already pending`);
+			}
+		}
 
-	// 5. Record in federatedFollows with status "pending"
-	await db.insert(federatedFollows).values({
-		localUserId: user.userId,
-		remoteActorUri: remoteActorUri,
-		status: 'pending',
-		followActivityId: followId,
-		createdAt: new Date(),
-		updatedAt: new Date()
-	});
-
-	// 6. Return the constructed activity
-	// Note: Actual delivery to remoteInbox via queue (Task 3.2.2/3.2.3) is not yet implemented
-	return json(
-		{
-			success: true,
-			followActivity,
+		// Insert follow with status 'pending'
+		await db.insert(followers).values({
+			userId: targetUser.id,
+			followerId: user.userId,
 			status: 'pending',
-			message: `Follow request recorded for ${handle}. Delivery to remote inbox is not yet implemented (see Task 3.2.2/3.2.3).`,
-			remoteInbox
-		},
-		{ status: 201 }
+			createdAt: new Date()
+		});
+
+		return json(
+			{ success: true, status: 'pending', message: `Follow request sent to @${targetUsername}` },
+			{ status: 201 }
+		);
+	}
+
+	// ─── Remote / federated follow (handle provided) ────────────────────
+	if (handle && typeof handle === 'string') {
+		const domain = env.DOMAIN!;
+
+		const result = await resolveRemoteActor(handle);
+		if (!result) {
+			throw error(404, `Could not find remote actor: ${handle}`);
+		}
+
+		const remoteActorUri = result.actor.id as string;
+		const remoteInbox = result.actor.inbox as string;
+
+		if (!remoteActorUri || !remoteInbox) {
+			throw error(502, 'Remote actor is missing required fields (id, inbox)');
+		}
+
+		const existingFollow = await db.query.federatedFollows.findFirst({
+			where: and(
+				eq(federatedFollows.localUserId, user.userId),
+				eq(federatedFollows.remoteActorUri, remoteActorUri)
+			)
+		});
+
+		if (existingFollow) {
+			if (existingFollow.status === 'accepted') {
+				throw error(409, `You are already following ${handle}`);
+			}
+			if (existingFollow.status === 'pending') {
+				throw error(409, `Follow request for ${handle} is already pending`);
+			}
+		}
+
+		const actorUri = `https://${domain}/users/${user.username}`;
+		const followId = `https://${domain}/users/${user.username}/follows/${crypto.randomUUID()}`;
+
+		const followActivity = {
+			'@context': 'https://www.w3.org/ns/activitystreams',
+			id: followId,
+			type: 'Follow',
+			actor: actorUri,
+			object: remoteActorUri
+		};
+
+		await db.insert(federatedFollows).values({
+			localUserId: user.userId,
+			remoteActorUri: remoteActorUri,
+			status: 'pending',
+			followActivityId: followId,
+			createdAt: new Date(),
+			updatedAt: new Date()
+		});
+
+		return json(
+			{
+				success: true,
+				followActivity,
+				status: 'pending',
+				message: `Follow request recorded for ${handle}.`,
+				remoteInbox
+			},
+			{ status: 201 }
+		);
+	}
+
+	throw error(400, 'Either "targetUsername" (local) or "handle" (remote) is required.');
+};
+
+/**
+ * DELETE /api/follow
+ *
+ * Unfollow a local user.
+ * Body: { "targetUsername": "alice" }
+ */
+export const DELETE: RequestHandler = async ({ request, locals }) => {
+	const user = locals.user;
+	if (!user) {
+		throw error(401, 'Unauthorized');
+	}
+
+	const body = await request.json();
+	const { targetUsername } = body;
+
+	if (!targetUsername) {
+		throw error(400, '"targetUsername" is required');
+	}
+
+	const targetUser = await db.query.users.findFirst({
+		where: eq(users.username, targetUsername),
+		columns: { id: true }
+	});
+
+	if (!targetUser) {
+		throw error(404, `User @${targetUsername} not found`);
+	}
+
+	await db.delete(followers).where(
+		and(
+			eq(followers.userId, targetUser.id),
+			eq(followers.followerId, user.userId)
+		)
 	);
+
+	return json({ success: true, message: `Unfollowed @${targetUsername}` });
 };
 
 /**
