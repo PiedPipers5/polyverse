@@ -163,19 +163,33 @@
 
 	function noop() {}
 
-	// ── Override global dock padding so the 100vh grid works ──────────────────
+	// ── Override global dock padding so the 100vh grid works (DESKTOP ONLY) ───
 	onMount(() => {
 		const mainEl = document.querySelector<HTMLElement>('main.flex-1');
-		if (mainEl) {
-			mainEl.style.setProperty('padding-bottom', '0', 'important');
-			mainEl.style.setProperty('overflow', 'hidden', 'important');
+		const isDesktop = window.matchMedia('(min-width: 1024px)');
+
+		function applyDesktopOverride(matches: boolean) {
+			if (!mainEl) return;
+			if (matches) {
+				mainEl.style.setProperty('padding-bottom', '0', 'important');
+				mainEl.style.setProperty('overflow', 'hidden', 'important');
+			} else {
+				mainEl.style.removeProperty('padding-bottom');
+				mainEl.style.removeProperty('overflow');
+			}
 		}
-		// Return cleanup — runs only in the browser, never during SSR
+
+		applyDesktopOverride(isDesktop.matches);
+		isDesktop.addEventListener('change', (e) => applyDesktopOverride(e.matches));
+
 		return () => {
 			if (mainEl) {
 				mainEl.style.removeProperty('padding-bottom');
 				mainEl.style.removeProperty('overflow');
 			}
+			isDesktop.removeEventListener('change', (e: MediaQueryListEvent) =>
+				applyDesktopOverride(e.matches)
+			);
 		};
 	});
 </script>
