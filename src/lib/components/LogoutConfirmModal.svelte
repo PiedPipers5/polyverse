@@ -4,6 +4,7 @@
 	import { enhance } from '$app/forms';
 
 	let { open = $bindable(false) } = $props();
+	let isSubmitting = $state(false);
 
 	let dialog = $state<HTMLDialogElement>();
 
@@ -57,17 +58,31 @@
 				type="button"
 				class="flex-1 cursor-pointer border-r border-border/50 px-4 py-4 text-sm font-semibold transition-all hover:bg-muted/50 dark:border-white/5 dark:text-zinc-400 dark:hover:bg-white/5"
 				onclick={handleClose}
+				disabled={isSubmitting}
 			>
 				Cancel
 			</button>
 
-			<form method="POST" action="/logout" use:enhance class="flex-1">
-				<button
+			<form
+				method="POST"
+				action="/logout"
+				use:enhance={() => {
+					isSubmitting = true;
+					return async ({ update }) => {
+						await update();
+						isSubmitting = false;
+					};
+				}}
+				class="flex-1"
+			>
+				<Button
 					type="submit"
-					class="w-full cursor-pointer px-4 py-4 text-sm font-bold text-red-600 transition-all hover:bg-red-50/50 dark:text-red-500 dark:hover:bg-red-500/10"
+					variant="ghost"
+					class="h-full w-full rounded-none px-4 py-4 text-sm font-bold text-red-600 transition-all hover:bg-red-50/50 dark:text-red-500 dark:hover:bg-red-500/10"
+					loading={isSubmitting}
 				>
 					Logout
-				</button>
+				</Button>
 			</form>
 		</div>
 	</dialog>

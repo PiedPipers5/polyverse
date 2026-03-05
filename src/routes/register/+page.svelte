@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -12,6 +13,7 @@
 	let { form }: PageProps = $props();
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
+	let isSubmitting = $state(false);
 </script>
 
 <div class="starfield">
@@ -150,7 +152,18 @@
 					</p>
 				</div>
 
-				<form id="register-form" method="POST" class="space-y-6">
+				<form
+					id="register-form"
+					method="POST"
+					use:enhance={() => {
+						isSubmitting = true;
+						return async ({ update }) => {
+							await update();
+							isSubmitting = false;
+						};
+					}}
+					class="space-y-6"
+				>
 					<div class="group space-y-2">
 						<Label for="username" class="ml-1 text-sm font-medium text-zinc-300"
 							>Universal Username</Label
@@ -281,6 +294,7 @@
 						<Button
 							type="submit"
 							class="h-14 w-full rounded-2xl border-none bg-gradient-to-r from-purple-600 to-blue-600 text-lg font-bold text-primary-foreground shadow-lg shadow-purple-500/25 transition-all hover:from-purple-500 hover:to-blue-500 active:scale-[0.98]"
+							loading={isSubmitting}
 						>
 							Generate Identity
 						</Button>

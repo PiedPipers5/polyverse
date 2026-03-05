@@ -340,14 +340,9 @@
 				<Button
 					onclick={handleSubmit}
 					disabled={isSubmitting || (!content.trim() && media.length === 0) || charsRemaining < 0}
+					loading={isSubmitting}
 				>
-					{isSubmitting
-						? mode === 'create'
-							? 'Publishing...'
-							: 'Updating...'
-						: mode === 'create'
-							? 'Publish'
-							: 'Update'}
+					{mode === 'create' ? 'Publish' : 'Update'}
 				</Button>
 			</div>
 		</div>
