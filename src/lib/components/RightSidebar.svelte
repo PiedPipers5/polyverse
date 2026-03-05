@@ -3,6 +3,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { TrendingUp, UserPlus, Info, ExternalLink } from 'lucide-svelte';
+	import { page } from '$app/stores';
+
+	let suggestions = $derived($page.data.suggestions || []);
 
 	let trends = [
 		{ tag: '#Federation', posts: '2.4k' },
@@ -10,12 +13,6 @@
 		{ tag: '#Polyverse', posts: '1.2k' },
 		{ tag: '#Web3', posts: '850' },
 		{ tag: '#DigitalIdentity', posts: '640' }
-	];
-
-	let suggestions = [
-		{ name: 'Alice Smith', handle: '@alice', avatar: '' },
-		{ name: 'Bob Nexus', handle: '@bob_n', avatar: '' },
-		{ name: 'Crystal Clear', handle: '@crystal', avatar: '' }
 	];
 
 	function getInitials(name: string): string {
@@ -63,31 +60,38 @@
 			</CardTitle>
 		</CardHeader>
 		<CardContent class="grid gap-4">
-			{#each suggestions as user}
-				<div class="flex items-center justify-between gap-3">
-					<div class="flex min-w-0 items-center gap-2">
-						<Avatar class="h-9 w-9 border-2 border-background shadow-md">
-							<AvatarFallback class="bg-muted text-[10px] font-bold">
-								{getInitials(user.name)}
-							</AvatarFallback>
-						</Avatar>
-						<div class="min-w-0">
-							<p class="mb-1 truncate text-sm leading-none font-bold">{user.name}</p>
-							<p class="truncate text-xs leading-none text-foreground/40">{user.handle}</p>
+			<div class="scrollbar-hide flex max-h-[400px] flex-col gap-4 overflow-y-auto pr-1">
+				{#each suggestions as user}
+					<div class="flex items-center justify-between gap-3">
+						<div class="flex min-w-0 items-center gap-2">
+							<Avatar class="h-9 w-9 border-2 border-background shadow-md">
+								<AvatarImage src={user.avatarUrl} alt={user.displayName || user.username} />
+								<AvatarFallback class="bg-muted text-[10px] font-bold">
+									{getInitials(user.displayName || user.username)}
+								</AvatarFallback>
+							</Avatar>
+							<div class="min-w-0">
+								<p class="mb-1 truncate text-sm leading-none font-bold">
+									{user.displayName || user.username}
+								</p>
+								<p class="truncate text-xs leading-none text-foreground/40">@{user.username}</p>
+							</div>
 						</div>
+						<Button
+							size="sm"
+							variant="outline"
+							class="glass-card h-8 border-white/10 px-3 text-xs hover:bg-white/5"
+							href={`/u/@${user.username}`}
+						>
+							View
+						</Button>
 					</div>
-					<Button
-						size="sm"
-						variant="outline"
-						class="glass-card h-8 border-white/10 px-3 text-xs hover:bg-white/5"
-					>
-						Follow
-					</Button>
-				</div>
-			{/each}
+				{/each}
+			</div>
 			<Button
 				variant="ghost"
 				class="mt-2 w-full text-xs text-emerald-500 hover:bg-emerald-500/5 hover:text-emerald-600"
+				href="/search"
 			>
 				Find People
 			</Button>

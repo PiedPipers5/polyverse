@@ -8,6 +8,7 @@
 
 	let { form } = $props();
 	let showPassword = $state(false);
+	let isSubmitting = $state(false);
 </script>
 
 <div class="starfield">
@@ -111,7 +112,17 @@
 				</p>
 			</div>
 
-			<form method="POST" use:enhance class="grid gap-6">
+			<form
+				method="POST"
+				use:enhance={() => {
+					isSubmitting = true;
+					return async ({ update }) => {
+						await update();
+						isSubmitting = false;
+					};
+				}}
+				class="grid gap-6"
+			>
 				{#if form?.error}
 					<div
 						transition:fade
@@ -213,6 +224,7 @@
 				<Button
 					type="submit"
 					class="h-14 w-full rounded-2xl bg-primary text-lg font-black text-primary-foreground shadow-xl shadow-primary/5 transition-all hover:bg-primary/90 active:scale-[0.98]"
+					loading={isSubmitting}
 				>
 					Sync Account
 				</Button>

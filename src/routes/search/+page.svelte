@@ -157,6 +157,7 @@
 			<Button
 				onclick={doSearch}
 				disabled={!query.trim() || loading}
+				{loading}
 				size="sm"
 				class="shrink-0 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600 disabled:opacity-50"
 			>
