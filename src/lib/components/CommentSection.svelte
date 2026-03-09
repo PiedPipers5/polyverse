@@ -7,12 +7,11 @@
 	interface Props {
 		postId: string;
 		username: string;
+		totalComments?: number;
 	}
 
-	let { postId, username }: Props = $props();
-
+	let { postId, username, totalComments = $bindable(0) }: Props = $props();
 	let comments = $state<any[]>([]);
-	let totalComments = $state(0);
 	let loading = $state(true);
 	let error = $state(false);
 

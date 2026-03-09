@@ -40,6 +40,7 @@
 	let isTranslating = $state(false);
 	let showTranslated = $state(false);
 	let showComments = $state(false);
+	let localCommentsCount = $state(activity.commentsCount || 0);
 
 	// Handle both flat ActivityPub objects and DB-wrapped rows
 	let apActivity = $derived(activity.activity || activity);
@@ -398,7 +399,10 @@
 				onclick={() => (showComments = !showComments)}
 			>
 				<MessageSquare class="h-3.5 w-3.5" />
-				{showComments ? 'Hide' : 'Comments'}
+				<span>
+					{localCommentsCount > 0 ? localCommentsCount : ''}
+					{showComments ? 'Hide' : 'Comments'}
+				</span>
 			</button>
 
 			<p
@@ -450,7 +454,7 @@
 	<!-- Comment section (below the card) -->
 	{#if showComments}
 		<div class="mt-2">
-			<CommentSection postId={targetObjectId} {username} />
+			<CommentSection postId={targetObjectId} {username} bind:totalComments={localCommentsCount} />
 		</div>
 	{/if}
 {/if}
