@@ -72,14 +72,27 @@ export const load: PageServerLoad = async ({ locals }) => {
     const postIds = filteredActivities.map(a => (a.activity as any).object?.id || a.id);
     const pendingFollowerIds = [...new Set(pendingFollowRows.map(r => r.followerId).filter(Boolean))] as string[];
 
-    const [interactionsData, pendingFollowersData] = await Promise.all([
+    const [interactionsData, pendingFollowersData, allReplies] = await Promise.all([
         postIds.length > 0
             ? db.query.interactions.findMany({ where: inArray(interactions.postId, postIds) })
             : Promise.resolve([]),
         pendingFollowerIds.length > 0
             ? db.query.users.findMany({ where: inArray(users.id, pendingFollowerIds), columns: { id: true, username: true, displayName: true, avatarUrl: true } })
-            : Promise.resolve([])
+            : Promise.resolve([]),
+        db.query.activities.findMany({
+            where: eq(activities.type, 'Create')
+        })
     ]);
+
+    // Build a map of Comment Counts
+    const commentCountMap = new Map<string, number>();
+    for (const row of allReplies) {
+        const act = row.activity as any;
+        const parentId = act.object?.inReplyTo;
+        if (parentId) {
+            commentCountMap.set(parentId, (commentCountMap.get(parentId) || 0) + 1);
+        }
+    }
 
     const hydratedActivities = filteredActivities.map(a => {
         const act = a.activity as any;
@@ -96,6 +109,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             content: act.object?.content || act.content || '',
             publishedAt: a.createdAt,
             netScore,
+            commentsCount: commentCountMap.get(postId) || 0,
             userVote: currentUserVote
         };
     });

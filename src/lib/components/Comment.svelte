@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { toast } from 'svelte-sonner';
-	import { ArrowUp, ArrowDown, MessageSquare, ChevronDown, ChevronUp } from 'lucide-svelte';
+	import {
+		ArrowUp,
+		ArrowDown,
+		MessageSquare,
+		ChevronDown,
+		ChevronUp,
+		Trash2,
+		Loader2
+	} from 'lucide-svelte';
 	import Comment from './Comment.svelte';
 
 	interface CommentData {
@@ -36,6 +44,7 @@
 	let isVoting = $state(false);
 	let localNetScore = $state(0);
 	let localUserVote = $state<'upvote' | 'downvote' | null>(null);
+	let isDeleting = $state(false);
 
 	$effect(() => {
 		localNetScore = comment.netScore;
@@ -127,6 +136,28 @@
 			toast.error('Failed to post reply');
 		} finally {
 			submittingReply = false;
+		}
+	}
+
+	async function handleDelete() {
+		if (!confirm('Are you sure you want to delete this comment?')) return;
+		isDeleting = true;
+		try {
+			const res = await fetch(`/users/${username}/outbox`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					action: 'delete',
+					objectId: comment.id
+				})
+			});
+			if (!res.ok) throw new Error();
+			toast.success('Comment deleted');
+			onReplySubmitted?.(); // Trigger re-fetch
+		} catch {
+			toast.error('Failed to delete comment');
+		} finally {
+			isDeleting = false;
 		}
 	}
 </script>
@@ -235,8 +266,23 @@
 						class="flex items-center gap-1 text-[10px] font-medium text-foreground/40 transition-colors hover:text-violet-400"
 						onclick={() => (showReplyBox = !showReplyBox)}
 					>
-						<MessageSquare class="h-3 w-3" />
+						<MessageSquare class="h-3.5 w-3.5" />
 						Reply
+					</button>
+				{/if}
+
+				{#if comment.author?.username === username}
+					<button
+						class="ml-auto flex items-center gap-1 text-[10px] font-medium text-destructive/40 transition-colors hover:text-destructive"
+						onclick={handleDelete}
+						disabled={isDeleting}
+					>
+						{#if isDeleting}
+							<Loader2 class="h-3 w-3 animate-spin" />
+						{:else}
+							<Trash2 class="h-3 w-3" />
+						{/if}
+						Delete
 					</button>
 				{/if}
 			</div>
