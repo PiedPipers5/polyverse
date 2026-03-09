@@ -164,7 +164,7 @@
 					class="text-destructive hover:bg-destructive/10 hover:text-destructive"
 				>
 					<LogOut class="mr-2 h-4 w-4" />
-					Sign Out
+					LogOut
 				</Button>
 				<Button
 					onclick={saveProfile}
