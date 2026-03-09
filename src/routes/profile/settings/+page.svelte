@@ -13,6 +13,7 @@
 		ShieldCheck,
 		Globe,
 		Camera,
+		Trash2,
 		CheckCircle2,
 		Loader2,
 		Fingerprint
@@ -106,6 +107,30 @@
 		} finally {
 			uploading = false;
 			input.value = '';
+		}
+	}
+
+	/* Remove avatar */
+	async function removeAvatar() {
+		uploading = true;
+		try {
+			const response = await fetch('/api/users/me', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ avatarUrl: null })
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to remove avatar');
+			}
+
+			avatarUrl = null;
+			toast.success('Avatar removed');
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Failed to remove avatar');
+		} finally {
+			uploading = false;
 		}
 	}
 
@@ -279,6 +304,19 @@
 										>
 											Upload New
 										</Button>
+
+										{#if avatarUrl}
+											<Button
+												variant="ghost"
+												size="sm"
+												onclick={removeAvatar}
+												disabled={uploading}
+												class="cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive"
+											>
+												<Trash2 class="mr-1.5 h-3.5 w-3.5" />
+												Remove
+											</Button>
+										{/if}
 									</div>
 								</div>
 							</div>
