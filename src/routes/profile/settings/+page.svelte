@@ -21,6 +21,7 @@
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import LogoutConfirmModal from '$lib/components/LogoutConfirmModal.svelte';
+	import ConfirmRemoveAvatarModal from '$lib/components/ConfirmRemoveAvatarModal.svelte';
 	import { fly, fade } from 'svelte/transition';
 
 	// Get data from server load function (Svelte 5 syntax)
@@ -43,6 +44,7 @@
 	let saving = $state(false);
 	let fileInput: HTMLInputElement;
 	let showingLogoutConfirm = $state(false);
+	let showingRemoveAvatarConfirm = $state(false);
 
 	// Get initials for avatar fallback
 	function getInitials(name: string | null, username: string): string {
@@ -309,7 +311,7 @@
 											<Button
 												variant="ghost"
 												size="sm"
-												onclick={removeAvatar}
+												onclick={() => (showingRemoveAvatarConfirm = true)}
 												disabled={uploading}
 												class="cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive"
 											>
@@ -477,6 +479,7 @@
 </div>
 
 <LogoutConfirmModal bind:open={showingLogoutConfirm} />
+<ConfirmRemoveAvatarModal bind:open={showingRemoveAvatarConfirm} onConfirm={removeAvatar} />
 
 <style>
 	/* Custom animations and overrides if needed */
