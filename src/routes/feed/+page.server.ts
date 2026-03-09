@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { activities, users, followers, interactions } from '$lib/server/db/schema';
+import { activities, users, followers, interactions, remoteActors } from '$lib/server/db/schema';
 import { eq, and, desc, count, inArray } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
@@ -107,23 +107,27 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const postsInPage = allVisiblePosts.slice(0, PAGE_SIZE);
 	const hasMore = totalPublicPosts > PAGE_SIZE;
 
-	// Hydrate interaction data and ONLY needed authors
+	// Hydrate interaction data, local authors, and remote actors
 	const postIds = postsInPage.map((p) => (p.activity as any).object?.id || p.id);
 	const actorIds = [...new Set(postsInPage.map(p => p.actorId).filter(Boolean))] as string[];
+	const remoteActorIds = [...new Set(postsInPage.map(p => p.remoteActorId).filter(Boolean))] as string[];
 
-	const [interactionsData, authors] = await Promise.all([
+	const [interactionsData, authors, remoteAuthors] = await Promise.all([
 		postIds.length > 0
 			? db.query.interactions.findMany({ where: inArray(interactions.postId, postIds) })
 			: Promise.resolve([]),
 		actorIds.length > 0
 			? db.query.users.findMany({ where: inArray(users.id, actorIds), columns: { id: true, username: true, displayName: true, avatarUrl: true } })
+			: Promise.resolve([]),
+		remoteActorIds.length > 0
+			? db.query.remoteActors.findMany({ where: inArray(remoteActors.id, remoteActorIds) })
 			: Promise.resolve([])
 	]);
 
 	const userMap = new Map(authors.map(a => [a.id, a]));
+	const remoteActorMap = new Map(remoteAuthors.map(a => [a.id, a]));
 
 	const posts = postsInPage.map((row) => {
-		const author = row.actorId ? userMap.get(row.actorId) : undefined;
 		const act = row.activity as any;
 		const postId = act.object?.id || row.id;
 
@@ -136,17 +140,39 @@ export const load: PageServerLoad = async ({ locals }) => {
 		// Determine current user's vote
 		const currentUserVote = postInteractions.find(i => i.actorId === currentUser?.id)?.type || null;
 
+		// Build author — prefer remote actor if present
+		const remoteActor = row.remoteActorId ? remoteActorMap.get(row.remoteActorId) : undefined;
+		const localAuthor = row.actorId ? userMap.get(row.actorId) : undefined;
+
+		let author: { username: string; displayName: string | null; avatarUrl: string | null; profileUrl: string } | null = null;
+		let isRemote = false;
+		let remoteHandle: string | null = null;
+
+		if (remoteActor) {
+			const actorJson = remoteActor.actorJson as any;
+			author = {
+				username: remoteActor.handle,
+				displayName: actorJson?.name || remoteActor.handle,
+				avatarUrl: actorJson?.icon?.url || null,
+				profileUrl: remoteActor.actorUri
+			};
+			isRemote = true;
+			remoteHandle = remoteActor.handle; // e.g. "user@mastodon.social"
+		} else if (localAuthor) {
+			author = {
+				username: localAuthor.username,
+				displayName: localAuthor.displayName,
+				avatarUrl: localAuthor.avatarUrl,
+				profileUrl: `/u/@${localAuthor.username}`
+			};
+		}
+
 		return {
 			id: row.id,
 			actorId: row.actorId,
-			author: author
-				? {
-					username: author.username,
-					displayName: author.displayName,
-					avatarUrl: author.avatarUrl,
-					profileUrl: `/u/@${author.username}`
-				}
-				: null,
+			author,
+			isRemote,
+			remoteHandle,
 			activity: act,
 			content: act.object?.content || act.content || '',
 			publishedAt: row.createdAt.toISOString(),

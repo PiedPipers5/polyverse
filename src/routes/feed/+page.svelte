@@ -24,7 +24,8 @@
 		ChevronDown,
 		ChevronUp,
 		UserPlus,
-		Copy
+		Copy,
+		Globe
 	} from 'lucide-svelte';
 	import LogoutConfirmModal from '$lib/components/LogoutConfirmModal.svelte';
 	import { toast } from 'svelte-sonner';
@@ -40,6 +41,8 @@
 		id: string;
 		actorId: string;
 		author: Author | null;
+		isRemote: boolean;
+		remoteHandle: string | null;
 		activity: any;
 		content: string;
 		publishedAt: string;
@@ -152,6 +155,8 @@
 						profileUrl: `/u/@${user.username}`
 					}
 				: null,
+			isRemote: false,
+			remoteHandle: null,
 			activity: newPost,
 			content: newPost.object?.content || newPost.content || '',
 			publishedAt: new Date().toISOString(),
@@ -442,14 +447,22 @@
 				{:else}
 					{#each filteredPosts as post (post.id)}
 						<div
-							class="feed-card overflow-hidden rounded-2xl border border-white/10 bg-card/80 shadow-xl ring-1 ring-white/5 backdrop-blur-sm"
+							class="feed-card overflow-hidden rounded-2xl border shadow-xl ring-1 backdrop-blur-sm
+							       {post.isRemote
+								? 'border-teal-500/20 bg-card/80 ring-teal-500/5'
+								: 'border-white/10 bg-card/80 ring-white/5'}"
 						>
 							{#if post.author}
 								<a
 									href={post.author.profileUrl}
+									target={post.isRemote ? '_blank' : undefined}
+									rel={post.isRemote ? 'noopener noreferrer' : undefined}
 									class="flex items-center gap-3 border-b border-white/8 px-4 py-3 transition-colors hover:bg-white/5"
 								>
-									<Avatar class="h-10 w-10 shrink-0 ring-2 ring-white/10">
+									<Avatar
+										class="h-10 w-10 shrink-0 ring-2
+										       {post.isRemote ? 'ring-teal-400/40' : 'ring-white/10'}"
+									>
 										{#if post.author.avatarUrl}
 											<AvatarImage
 												src={post.author.avatarUrl}
@@ -457,16 +470,32 @@
 											/>
 										{/if}
 										<AvatarFallback
-											class="bg-linear-to-br from-violet-500 to-fuchsia-500 text-xs font-bold text-white"
+											class="{post.isRemote
+												? 'bg-linear-to-br from-teal-500 to-cyan-500'
+												: 'bg-linear-to-br from-violet-500 to-fuchsia-500'} text-xs font-bold text-white"
 										>
 											{getInitials(post.author.displayName, post.author.username)}
 										</AvatarFallback>
 									</Avatar>
 									<div class="min-w-0 flex-1">
-										<p class="truncate text-sm leading-tight font-bold">
-											{post.author.displayName || post.author.username}
+										<div class="flex items-center gap-2">
+											<p class="truncate text-sm leading-tight font-bold">
+												{post.author.displayName || post.author.username}
+											</p>
+											{#if post.isRemote}
+												<span class="remote-badge">
+													<Globe class="h-2.5 w-2.5" />
+													Remote
+												</span>
+											{/if}
+										</div>
+										<p class="truncate text-xs text-muted-foreground">
+											{#if post.isRemote && post.remoteHandle}
+												@{post.remoteHandle}
+											{:else}
+												@{post.author.username}
+											{/if}
 										</p>
-										<p class="truncate text-xs text-muted-foreground">@{post.author.username}</p>
 									</div>
 									<span class="ml-auto shrink-0 text-xs text-foreground/30 tabular-nums"
 										>{relativeTime(post.publishedAt)}</span
@@ -774,6 +803,23 @@
 	.feed-card:hover {
 		transform: translateY(-1px);
 		box-shadow: 0 8px 32px -4px color-mix(in oklch, #8b5cf6 12%, transparent);
+	}
+
+	/* Remote post badge */
+	:global(.remote-badge) {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 1px 6px;
+		border-radius: 9999px;
+		font-size: 0.6rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: #2dd4bf;
+		background: color-mix(in oklch, #14b8a6 15%, transparent);
+		border: 1px solid color-mix(in oklch, #14b8a6 30%, transparent);
+		flex-shrink: 0;
 	}
 
 	/* ─────────────────────────────────────────────────────────────────
