@@ -14,6 +14,15 @@
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
 	let isSubmitting = $state(false);
+	let password = $state('');
+	let confirmPassword = $state('');
+
+	const requirements = $derived([
+		{ label: '8+ characters', met: password.length >= 8 },
+		{ label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+		{ label: 'One number', met: /[0-9]/.test(password) },
+		{ label: 'One special character (!@#$%^&*-+)', met: /[!@#$%^&*\-+]/.test(password) }
+	]);
 </script>
 
 <div class="starfield">
@@ -211,6 +220,7 @@
 								type={showPassword ? 'text' : 'password'}
 								placeholder="••••••••"
 								required
+								bind:value={password}
 								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pr-12 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
 							/>
 							<div
@@ -243,6 +253,41 @@
 								{/if}
 							</button>
 						</div>
+
+						<!-- Password Requirements Checklist -->
+						<div class="mt-3 grid grid-cols-2 gap-2 px-2">
+							{#each requirements as req}
+								<div class="flex items-center gap-2">
+									<div
+										class="flex h-4 w-4 items-center justify-center rounded-full border transition-colors {req.met
+											? 'border-green-500 bg-green-500/20'
+											: 'border-zinc-700 bg-zinc-800/50'}"
+									>
+										{#if req.met}
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												width="10"
+												height="10"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="4"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												class="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg
+											>
+										{/if}
+									</div>
+									<span
+										class="text-[11px] font-medium transition-colors {req.met
+											? 'text-green-400'
+											: 'text-zinc-500'}"
+									>
+										{req.label}
+									</span>
+								</div>
+							{/each}
+						</div>
 					</div>
 
 					<div class="group space-y-2">
@@ -256,6 +301,7 @@
 								type={showConfirmPassword ? 'text' : 'password'}
 								placeholder="••••••••"
 								required
+								bind:value={confirmPassword}
 								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pr-12 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
 							/>
 							<div
