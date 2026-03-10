@@ -101,6 +101,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
                         : null,
                     netScore,
                     userVote,
+                    tag: obj.tag || [],
                     replies: buildTree(commentId)
                 };
             });
