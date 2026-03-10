@@ -41,3 +41,7 @@ export { getActorCache, disconnectRedis, isRedisConfigured, getActorCacheTtlSeco
 
 // Worker
 export { startSharedInboxWorker, stopSharedInboxWorker } from './worker.js';
+
+// Delivery Worker (Tasks 3.2.2, 3.2.3)
+export { startDeliveryWorker, stopDeliveryWorker, enqueueDelivery } from './deliveryWorker.js';
+export type { DeliveryJob } from './deliveryWorker.js';

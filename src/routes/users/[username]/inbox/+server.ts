@@ -1,11 +1,11 @@
 import { error, json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users, activities, federatedFollows } from '$lib/server/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { users, activities, federatedFollows, notifications } from '$lib/server/db/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { verifyHttpSignature } from '$lib/server/httpSignature';
 import { resolveRemoteActor } from '$lib/server/federation';
-import type { RequestHandler } from './$types';
+import type { RequestHandler } from '@sveltejs/kit';
 
 /**
  * POST /users/:username/inbox
@@ -90,6 +90,16 @@ export const POST: RequestHandler = async ({ params, request }) => {
 		case 'Follow':
 			// Incoming follow requests from remote users - acknowledge receipt
 			console.log(`[Inbox] Received Follow activity from ${actorId} for ${username}`);
+			// Task 4.4.2: Create a notification for the follow
+			await insertNotification(targetUser.id, null, actorId || null, 'follow', null);
+			break;
+
+		case 'Like':
+			await handleLikeActivity(activity, targetUser, domain);
+			break;
+
+		case 'Announce':
+			await handleAnnounceActivity(activity, targetUser, domain);
 			break;
 
 		case 'Undo':
@@ -178,6 +188,12 @@ async function handleCreateActivity(
 		createdAt: new Date(activity.published as string || new Date().toISOString())
 	});
 
+	// Task 4.4.2: Create a notification if this is a reply to the target user's post
+	const inReplyTo = object.inReplyTo as string | undefined;
+	if (inReplyTo && inReplyTo.includes(`/users/${targetUser.username}/`)) {
+		await insertNotification(targetUser.id, null, actorUri, 'reply', object.id as string);
+	}
+
 	console.log(
 		`[Inbox:Create] Saved activity from ${actorUri} for user ${targetUser.username}`
 	);
@@ -241,15 +257,115 @@ async function handleAcceptActivity(
 		})
 		.where(eq(federatedFollows.id, pendingFollow.id));
 
+	// Task 4.4.2: Create a notification for the accepted follow
+	await insertNotification(targetUser.id, null, actorUri, 'follow', pendingFollow.followActivityId);
+
 	console.log(
 		`[Inbox:Accept] Follow accepted: ${targetUser.username} → ${actorUri}`
 	);
+}
+
+/**
+ * Task 4.4.2 (BE): Handle incoming Like activities.
+ * Increment likes_count and create a notification.
+ */
+async function handleLikeActivity(
+	activity: Record<string, unknown>,
+	targetUser: { id: string; username: string },
+	domain: string
+): Promise<void> {
+	const actorUri = typeof activity.actor === 'string'
+		? activity.actor
+		: (activity.actor as Record<string, unknown>)?.id as string;
+
+	const objectUri = typeof activity.object === 'string'
+		? activity.object
+		: (activity.object as Record<string, unknown>)?.id as string;
+
+	if (!objectUri) {
+		console.warn('[Inbox:Like] Activity has no object, ignoring');
+		return;
+	}
+
+	// Increment likes_count on the local post
+	await db
+		.update(activities)
+		.set({ likesCount: sql`${activities.likesCount} + 1` })
+		.where(
+			sql`${activities.activity}->'object'->>'id' = ${objectUri} AND ${activities.type} = 'Create'`
+		);
+
+	// Create notification
+	await insertNotification(targetUser.id, null, actorUri, 'like', objectUri);
+
+	console.log(`[Inbox:Like] Like from ${actorUri} on ${objectUri}`);
+}
+
+/**
+ * Task 4.4.2 (BE): Handle incoming Announce (Boost) activities.
+ * Increment boosts_count and create a notification.
+ */
+async function handleAnnounceActivity(
+	activity: Record<string, unknown>,
+	targetUser: { id: string; username: string },
+	domain: string
+): Promise<void> {
+	const actorUri = typeof activity.actor === 'string'
+		? activity.actor
+		: (activity.actor as Record<string, unknown>)?.id as string;
+
+	const objectUri = typeof activity.object === 'string'
+		? activity.object
+		: (activity.object as Record<string, unknown>)?.id as string;
+
+	if (!objectUri) {
+		console.warn('[Inbox:Announce] Activity has no object, ignoring');
+		return;
+	}
+
+	// Increment boosts_count on the local post
+	await db
+		.update(activities)
+		.set({ boostsCount: sql`${activities.boostsCount} + 1` })
+		.where(
+			sql`${activities.activity}->'object'->>'id' = ${objectUri} AND ${activities.type} = 'Create'`
+		);
+
+	// Create notification
+	await insertNotification(targetUser.id, null, actorUri, 'boost', objectUri);
+
+	console.log(`[Inbox:Announce] Boost from ${actorUri} on ${objectUri}`);
 }
 
 
 // ═══════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════
+
+/**
+ * Task 4.4.2: Insert a notification row.
+ */
+async function insertNotification(
+	recipientId: string,
+	localActorId: string | null,
+	remoteActorUri: string | null,
+	type: string,
+	objectId: string | null
+): Promise<void> {
+	try {
+		await db.insert(notifications).values({
+			recipientId,
+			actorId: localActorId,
+			remoteActorUri,
+			type,
+			objectId,
+			read: false,
+			createdAt: new Date()
+		});
+	} catch (err) {
+		console.error('[Inbox] Failed to insert notification:', err);
+	}
+}
 
 /**
  * Resolves a remote actor by their URI, checking the remote_actors cache first.

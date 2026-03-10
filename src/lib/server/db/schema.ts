@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, jsonb, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, jsonb, timestamp, index, uniqueIndex, integer, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -136,7 +136,17 @@ export const activities = pgTable(
 		/**
 		 * Type of activity (Create, Note, etc) for easier indexing/filtering without parsing JSON
 		 */
-		type: text('type').notNull()
+		type: text('type').notNull(),
+
+		/**
+		 * Denormalized like count for efficient display (Task 4.2.3).
+		 */
+		likesCount: integer('likes_count').notNull().default(0),
+
+		/**
+		 * Denormalized boost/announce count for efficient display (Task 4.3).
+		 */
+		boostsCount: integer('boosts_count').notNull().default(0)
 	},
 	(table) => {
 		return {
@@ -381,3 +391,76 @@ export const customEmojis = pgTable('custom_emojis', {
 	 */
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
+
+/**
+ * Likes Table (Task 4.2.2)
+ * Tracks Like activities — which user liked which post.
+ * Used to prevent duplicate likes and to generate Undo(Like) activities.
+ */
+export const likes = pgTable(
+	'likes',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/** The URI/ID of the post being liked. */
+		postId: text('post_id').notNull(),
+
+		/** The local user who liked the post. */
+		actorId: uuid('actor_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** The ActivityPub ID of the Like activity (used for Undo). */
+		likeActivityId: text('like_activity_id').notNull(),
+
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// One like per user per post
+			postActorUniqueIdx: uniqueIndex('likes_post_actor_idx').on(table.postId, table.actorId)
+		};
+	}
+);
+
+/**
+ * Notifications Table (Task 4.4.1)
+ * Aggregates inbound activities directed at the user:
+ * follow requests, likes, replies, mentions, boosts.
+ */
+export const notifications = pgTable(
+	'notifications',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/** The local user receiving the notification. */
+		recipientId: uuid('recipient_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** The actor who triggered the notification (local user ID or null for remote). */
+		actorId: uuid('actor_id')
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** URI of the remote actor who triggered the notification (null for local). */
+		remoteActorUri: text('remote_actor_uri'),
+
+		/** Notification type. */
+		type: text('type').notNull(), // 'follow' | 'like' | 'reply' | 'mention' | 'boost'
+
+		/** The ActivityPub object ID related to this notification (e.g. post URI). */
+		objectId: text('object_id'),
+
+		/** Whether the user has read this notification. */
+		read: boolean('read').notNull().default(false),
+
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// Fast lookup of unread notifications for a user
+			recipientReadIdx: index('notifications_recipient_read_idx').on(table.recipientId, table.read),
+			recipientCreatedAtIdx: index('notifications_recipient_created_at_idx').on(table.recipientId, table.createdAt)
+		};
+	}
+);

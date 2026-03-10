@@ -12,8 +12,10 @@ export const handleError = Sentry.handleErrorWithSentry();
 
 // Start background workers
 import { startSharedInboxWorker } from '$lib/server/redis';
+import { startDeliveryWorker } from '$lib/server/redis';
 // Start intentionally floating promise since it runs a while loop
 startSharedInboxWorker().catch(err => console.error('Shared inbox worker failed:', err));
+startDeliveryWorker().catch(err => console.error('Delivery worker failed:', err));
 
 /**
  * Server hooks for authentication middleware.

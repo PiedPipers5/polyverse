@@ -4,6 +4,7 @@ import { users, followers, federatedFollows } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { resolveRemoteActor } from '$lib/server/federation';
+import { enqueueDelivery } from '$lib/server/redis';
 import type { RequestHandler } from '@sveltejs/kit';
 
 /**
@@ -114,6 +115,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			object: remoteActorUri
 		};
 
+		// Task 3.2.4: Record follow with status 'pending'
 		await db.insert(federatedFollows).values({
 			localUserId: user.userId,
 			remoteActorUri: remoteActorUri,
@@ -123,12 +125,25 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			updatedAt: new Date()
 		});
 
+		// Task 3.2.2: Push to Redis delivery queue (do NOT send synchronously)
+		try {
+			await enqueueDelivery({
+				activity: followActivity,
+				inbox: remoteInbox,
+				actorUsername: user.username,
+				actorUserId: user.userId
+			});
+		} catch (err) {
+			console.error('Failed to enqueue follow delivery:', err);
+			// Follow is recorded in DB even if queue push fails
+		}
+
 		return json(
 			{
 				success: true,
 				followActivity,
 				status: 'pending',
-				message: `Follow request recorded for ${handle}.`,
+				message: `Follow request sent to ${handle}.`,
 				remoteInbox
 			},
 			{ status: 201 }
