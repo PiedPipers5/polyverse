@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { activities, users, remoteActors } from '$lib/server/db/schema';
-import { eq, and, lt, desc, inArray } from 'drizzle-orm';
+import { eq, and, lt, desc, inArray, or, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
 const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
@@ -10,9 +10,11 @@ const PAGE_SIZE = 20;
 /**
  * GET /api/feed?before=<ISO timestamp>&limit=20
  *
- * Returns a page of public Create activities, ordered newest-first,
+ * Returns a page of public Create and Announce activities, ordered newest-first,
  * with cursor-based pagination. Each post includes author info plus
- * isRemote/remoteHandle for federation badges (Task 3.5.3).
+ * isRemote/remoteHandle for federation badges.
+ *
+ * Task 3.5.2: Announce (Boost) activities are included with a `boostedBy` field.
  */
 export const GET: RequestHandler = async ({ url, locals }) => {
 	if (!locals.user) {
@@ -22,8 +24,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const before = url.searchParams.get('before');
 	const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 50);
 
-	// Build base conditions
-	const conditions = [eq(activities.type, 'Create')];
+	// Build base conditions — include both Create and Announce
+	const conditions = [
+		or(eq(activities.type, 'Create'), eq(activities.type, 'Announce'))
+	];
 
 	// Cursor-based pagination
 	if (before) {
@@ -45,6 +49,15 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	// Filter to only public posts, exclude tombstones
 	const allPublicPosts = rows.filter((row) => {
 		const act = row.activity as any;
+
+		// For Announce activities, check if the Announce itself is public
+		if (act.type === 'Announce') {
+			const to: string[] = act.to || [];
+			const cc: string[] = act.cc || [];
+			return [...to, ...cc].includes(PUBLIC_URI);
+		}
+
+		// For Create activities, check the object
 		const obj = act.object;
 		if (!obj || obj.type === 'Tombstone') return false;
 		const to: string[] = act.to || obj.to || [];
@@ -85,6 +98,49 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const userMap = new Map(localAuthors.map((u) => [u.id, u]));
 	const remoteActorMap = new Map(remoteActorRows.map((a) => [a.id, a]));
 
+	// For Announce activities, we need to resolve the boosted post content.
+	// Collect all boosted object URIs and try to find them among our local activities.
+	const boostedUris = publicPosts
+		.filter((row) => (row.activity as any).type === 'Announce')
+		.map((row) => (row.activity as any).object)
+		.filter((obj: unknown): obj is string => typeof obj === 'string');
+
+	let boostedPostMap = new Map<string, any>();
+	if (boostedUris.length > 0) {
+		// Try to find boosted posts locally by matching activity.object.id
+		const allLocalActivities = await db.query.activities.findMany({
+			where: eq(activities.type, 'Create'),
+			limit: 500
+		});
+
+		for (const row of allLocalActivities) {
+			const act = row.activity as any;
+			const objId = act.object?.id;
+			if (objId && boostedUris.includes(objId)) {
+				const localAuthor = row.actorId ? userMap.get(row.actorId) : undefined;
+				const remoteActor = row.remoteActorId ? remoteActorMap.get(row.remoteActorId) : undefined;
+				boostedPostMap.set(objId, {
+					object: act.object,
+					author: remoteActor
+						? {
+							username: remoteActor.handle,
+							displayName: (remoteActor.actorJson as any)?.name || remoteActor.handle,
+							avatarUrl: (remoteActor.actorJson as any)?.icon?.url || null,
+							profileUrl: remoteActor.actorUri
+						}
+						: localAuthor
+							? {
+								username: localAuthor.username,
+								displayName: localAuthor.displayName,
+								avatarUrl: localAuthor.avatarUrl,
+								profileUrl: `/u/@${localAuthor.username}`
+							}
+							: null
+				});
+			}
+		}
+	}
+
 	const posts = publicPosts.map((row) => {
 		const act = row.activity as any;
 
@@ -110,13 +166,38 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				profileUrl: remoteActor.actorUri
 			};
 			isRemote = true;
-			remoteHandle = remoteActor.handle; // e.g. "alice@mastodon.social"
+			remoteHandle = remoteActor.handle;
 		} else if (localAuthor) {
 			author = {
 				username: localAuthor.username,
 				displayName: localAuthor.displayName,
 				avatarUrl: localAuthor.avatarUrl,
 				profileUrl: `/u/@${localAuthor.username}`
+			};
+		}
+
+		// Task 3.5.2: Handle Announce (Boost) activities
+		if (act.type === 'Announce') {
+			const boostedUri = typeof act.object === 'string' ? act.object : act.object?.id;
+			const boostedData = boostedUri ? boostedPostMap.get(boostedUri) : null;
+
+			return {
+				id: row.id,
+				actorId: row.actorId,
+				author,
+				isRemote,
+				remoteHandle,
+				activity: act,
+				content: boostedData?.object?.content || `[Boosted post: ${boostedUri}]`,
+				publishedAt: row.createdAt.toISOString(),
+				createdAt: row.createdAt.toISOString(),
+				likesCount: row.likesCount,
+				boostsCount: row.boostsCount,
+				// Boost-specific fields
+				isBoosted: true,
+				boostedBy: author,
+				originalAuthor: boostedData?.author || null,
+				originalPostUri: boostedUri
 			};
 		}
 
@@ -129,7 +210,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			activity: act,
 			content: act.object?.content || act.content || '',
 			publishedAt: row.createdAt.toISOString(),
-			createdAt: row.createdAt.toISOString()
+			createdAt: row.createdAt.toISOString(),
+			likesCount: row.likesCount,
+			boostsCount: row.boostsCount,
+			isBoosted: false,
+			boostedBy: null,
+			originalAuthor: null,
+			originalPostUri: null
 		};
 	});
 

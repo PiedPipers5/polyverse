@@ -1,0 +1,42 @@
+Epic 4: Engagement and Interaction
+Objective: A social network is defined by interaction. This Epic adds depth: threading (replies), endorsements (likes), and re-sharing (boosts). It transforms the feed from a list of statements into a conversation.
+User Story 4.1: Threaded Conversations
+Client Perspective: "As a user, I want to reply to a post and see the conversation organized in a thread, so I can follow the discussion."
+Context: Threading relies on the inReplyTo property. A reply is just a Note that points to another Note.30
+Task 4.1.1 (FE): Update the Composer to support "Reply Mode". When replying, the UI should show the parent post and pre-fill the privacy scope to match the parent.
+Task 4.1.2 (BE): When creating a reply, set the inReplyTo field to the parent ID. Add the parent author to the to field (so they get notified).31
+Task 4.1.3 (FE): Build a "Thread View" component. This is a recursive UI structure. It fetches the focus post, its ancestors (parents), and its descendants (children).
+Task 4.1.4 (BE): Implement GET /api/statuses/:id/context. This endpoint queries the database for all posts where inReplyTo equals the current ID (children) and the post referenced by the current inReplyTo (parent).43
+Task 4.1.5 (QA): Test deep nesting. Verify that the UI handles 10+ levels of replies gracefully without breaking the layout (e.g., indentation limits).10
+User Story 4.2: Likes and Favorites
+Client Perspective: "As a user, I want to 'Like' a post to show my appreciation to the author."
+Context: The Like activity. Unlike Notes, Likes are not usually "content" but "actions" on content.22
+Task 4.2.1 (FE): Add a "Like" button (Heart). Implement "optimistic" state—turn red immediately on click.
+Task 4.2.2 (BE): Generate the Like activity. object: the post URI. Deliver this activity to the post author's inbox.31
+Task 4.2.3 (BE): Increment a likes_count counter on the local post record. This is a denormalization for performance.
+Task 4.2.4 (BE): Handle Undo Like. If the user clicks the button again, send an Undo activity wrapping the original Like. Decrement the counter.36
+Task 4.2.5 (FE): Display the like count. If the post is remote, this count might only reflect local likes unless the remote server's count is fetched periodically (a known ActivityPub quirk).45
+User Story 4.3: Boosting (Re-sharing)
+Client Perspective: "As a user, I want to 'Boost' a post to share it with my own followers."
+Context: The Announce activity. This is the primary mechanism for virality in the Fediverse.42
+Task 4.3.1 (BE): Generate the Announce activity. object: the original post URI. to: the user's Followers collection.1
+Task 4.3.2 (BE): Deliver the Announce to all followers. Crucially, if the original post is remote, this notifies the original author that their post was shared (if they are in the cc).
+Task 4.3.3 (FE): Filter the timeline. If the user boosts a post, do not show the original post and the boost adjacent to each other if possible (deduplication logic).
+Task 4.3.4 (QA): Verify privacy constraints. Ensure the UI prevents boosting "Followers Only" posts, as this would violate the original author's intent (though the protocol allows it, good clients prevent it).34
+Task 4.3.5 (BE): Handle Undo Announce (Unboost). Remove the Announce activity from the database and send the Undo to followers.
+User Story 4.4: Notifications System
+Client Perspective: "As a user, I want to get a notification when someone follows me, replies to me, or likes my post."
+Context: Aggregating inbound activities that are "directed" at the user.
+Task 4.4.1 (DO): Create a notifications table: id, recipient_id, actor_id, type (follow, like, reply, mention), object_id, read_boolean.13
+Task 4.4.2 (BE): Update the Inbox Dispatcher. When a relevant activity arrives, insert a row into the notifications table.
+Task 4.4.3 (FE): Create a Notifications page. Group notifications? (e.g., "3 people liked your post"). Display the actor's avatar and the action type.
+Task 4.4.4 (BE): Implement a "Mark as Read" endpoint.
+Task 4.4.5 (FE): Add a badge to the navigation bar showing the count of unread notifications. Poll the endpoint every 60 seconds or use a WebSocket for real-time updates.46
+User Story 4.5: Custom Emojis
+Client Perspective: "As a user, I want to use custom emojis in my posts to express myself better, compatible with other instances."
+Context: ActivityPub custom emojis are defined in the tag property of the Object.30
+Task 4.5.1 (BE): Create a table for custom_emojis (shortcode, image_url).
+Task 4.5.2 (FE): Integrate an emoji picker that mixes standard unicode emojis with the custom ones fetched from the backend.
+Task 4.5.3 (BE): When processing outgoing posts, scan the text for shortcodes (e.g., :blobcat:). If found, append the emoji metadata to the tag array in the ActivityPub object: { type: "Emoji", name: ":blobcat:", icon: { url: "..." } }.30
+Task 4.5.4 (FE): When rendering posts, verify the tag array. If an emoji is present, replace the shortcode in the text with an inline <img> tag using the provided URL.
+Task 4.5.5 (QA): Test accessibility. Ensure that the custom emoji img tag includes alt=":shortcode:" so screen readers can describe it.47
