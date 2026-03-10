@@ -214,11 +214,14 @@
 						>
 							{#if showPassword}
 								<EyeOff size={20} />
-							{:else}
+						{:else}
 								<Eye size={20} />
 							{/if}
 						</button>
 					</div>
+					<p class="ml-1 mt-1 text-[10px] font-medium tracking-wide text-zinc-500/70">
+						Requirement: 8+ chars, uppercase, number, & special char (!@#$%^&*-+)
+					</p>
 				</div>
 
 				<Button
