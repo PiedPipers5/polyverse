@@ -47,19 +47,19 @@
 		size="sm"
 		onclick={toggleDropdown}
 		{disabled}
-		class="flex h-9 items-center gap-1.5 px-3 text-muted-foreground hover:text-foreground"
+		class="flex h-9 items-center gap-1.5 rounded-lg px-2 text-muted-foreground transition-all hover:bg-white/5 hover:text-foreground active:bg-white/10"
 	>
-		<Languages class="h-4 w-4" />
-		<span class="text-xs font-medium">
+		<Languages class="h-3.5 w-3.5" />
+		<span class="text-[11px] font-bold">
 			{selectedLanguage?.nativeName} ({selectedLanguage?.name})
 		</span>
-		<ChevronDown class="h-3 w-3 transition-transform {isOpen ? 'rotate-180' : ''}" />
+		<ChevronDown class="h-3 w-3 opacity-30 transition-transform {isOpen ? 'rotate-180' : ''}" />
 	</Button>
 
 	{#if isOpen}
 		<!-- Backdrop -->
 		<button
-			class="fixed inset-0 z-10 h-full w-full cursor-default"
+			class="fixed inset-0 z-60 h-full w-full cursor-default"
 			onclick={() => (isOpen = false)}
 			type="button"
 			aria-label="Close language menu"
@@ -67,7 +67,7 @@
 
 		<div
 			transition:fly={{ y: -10, duration: 200 }}
-			class="absolute bottom-full left-0 z-20 mb-2 w-72 overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-xl ring-1 ring-black/5"
+			class="absolute bottom-full left-0 z-70 mb-2 w-72 overflow-hidden rounded-xl border border-white/10 bg-slate-950 text-popover-foreground shadow-2xl ring-1 ring-white/10"
 		>
 			<div class="border-b bg-muted/30 p-3">
 				<div class="relative">

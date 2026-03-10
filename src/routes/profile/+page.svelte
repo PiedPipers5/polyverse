@@ -166,6 +166,7 @@
 	<meta name="description" content="Your Polyverse profile." />
 </svelte:head>
 
+<<<<<<< Updated upstream
 <!--
   3-column fixed-height grid — mirrors the feed page layout.
   Col 1 (profile card): fixed, never scrolls.
@@ -197,6 +198,89 @@
 							{/if}
 							<AvatarFallback
 								class="bg-linear-to-br from-violet-500/80 to-fuchsia-500/80 text-lg font-bold text-white"
+=======
+	<!-- Hero Banner Section - Reduced height to minimize empty space -->
+	<div class="relative h-16 w-full overflow-hidden md:h-24">
+		<div
+			class="animate-gradient absolute inset-0 bg-linear-to-br from-violet-500/40 via-purple-500/40 to-fuchsia-500/40 dark:from-violet-900/50 dark:via-purple-900/50 dark:to-fuchsia-900/50"
+		></div>
+		<div class="absolute inset-0 bg-linear-to-b from-transparent to-background/95"></div>
+	</div>
+
+	<div class="relative z-10 container mx-auto -mt-8 px-4 pb-12 sm:px-6 md:-mt-12 lg:px-8">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+			<!-- Left Sidebar: User Profile Card -->
+			<div class="lg:col-span-4">
+				<div class="sticky top-20 space-y-6">
+					<Card class="glass-card group animate-fade-in-up overflow-hidden border-none shadow-2xl">
+						<CardContent class="p-0">
+							<div class="flex flex-col items-center px-6 pt-6 pb-6 text-center">
+								<!-- Larger Avatar for better presence -->
+								<div class="relative mb-6">
+									<div
+										class="absolute -inset-1.5 animate-pulse rounded-full bg-linear-to-r from-violet-500 to-fuchsia-500 opacity-60 blur-md"
+									></div>
+									<Avatar
+										class="relative h-32 w-32 border-4 border-background shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
+									>
+										{#if user.avatarUrl}
+											<AvatarImage src={user.avatarUrl} alt={user.displayName || user.username} />
+										{/if}
+										<AvatarFallback class="bg-muted text-3xl font-bold"
+											>{getInitials(user.displayName, user.username)}</AvatarFallback
+										>
+									</Avatar>
+								</div>
+
+								<!-- Identity -->
+								<h1 class="gradient-text mb-1 text-3xl font-extrabold tracking-tight">
+									{user.displayName || user.username}
+								</h1>
+								<p class="text-sm font-bold tracking-widest text-foreground/40 uppercase">
+									{user.handle}
+								</p>
+
+								<!-- Bio Section - Tightened -->
+								<p class="mt-4 px-2 text-sm leading-relaxed text-foreground/70 italic">
+									"{user.bio ||
+										'Digital pioneer in the federation. Own your data, own your identity.'}"
+								</p>
+
+								<!-- Action Buttons -->
+								<div class="mt-6 flex w-full flex-col gap-3">
+									<Button
+										onclick={() => goto('/profile/settings')}
+										class="w-full bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.02]"
+									>
+										<Settings class="mr-2 h-4 w-4" />
+										Edit Profile
+									</Button>
+
+									<div class="flex gap-2">
+										<Button
+											variant="outline"
+											onclick={copyProfile}
+											class="glass-card flex-1 border-white/10 hover:bg-white/5"
+										>
+											<Copy class="mr-2 h-4 w-4" />
+											Share
+										</Button>
+										<Button
+											variant="ghost"
+											onclick={() => (showingLogoutConfirm = true)}
+											class="flex-1 text-destructive hover:bg-destructive/10"
+										>
+											<LogOut class="mr-2 h-4 w-4" />
+											Logout
+										</Button>
+									</div>
+								</div>
+							</div>
+
+							<!-- Stats Grid - Refined -->
+							<div
+								class="grid grid-cols-3 border-t border-white/10 bg-white/5 py-5 backdrop-blur-md"
+>>>>>>> Stashed changes
 							>
 								{getInitials(user.displayName, user.username)}
 							</AvatarFallback>
@@ -210,6 +294,7 @@
 					<p
 						class="mt-1 text-center text-[10px] font-bold tracking-widest text-foreground/40 uppercase"
 					>
+<<<<<<< Updated upstream
 						{user.handle}
 					</p>
 
@@ -244,6 +329,31 @@
 							>
 								<LogOut class="mr-1.5 h-3.5 w-3.5" />Logout
 							</Button>
+=======
+						<h3 class="mb-4 flex items-center font-semibold">
+							<Info class="mr-2 h-4 w-4 text-violet-500" />
+							About Federated Identity
+						</h3>
+						<div class="space-y-4 text-xs text-foreground/60">
+							<div>
+								<p class="mb-1 font-medium text-foreground/80">DID (Decentralized ID)</p>
+								<div class="flex items-center justify-between rounded-lg bg-white/5 p-2">
+									<code class="font-mono break-all opacity-70">{user.did}</code>
+									<Button size="icon" variant="ghost" onclick={copyDID} class="h-6 w-6">
+										<Copy class="h-3 w-3" />
+									</Button>
+								</div>
+							</div>
+							<div>
+								<p class="mb-1 font-medium text-foreground/80">Joined</p>
+								<p>
+									{new Date(user.createdAt).toLocaleDateString('en-IN', {
+										month: 'long',
+										year: 'numeric'
+									})}
+								</p>
+							</div>
+>>>>>>> Stashed changes
 						</div>
 					</div>
 				</div>
@@ -275,6 +385,7 @@
 				</div>
 			</div>
 
+<<<<<<< Updated upstream
 			<!-- Identity Card -->
 			<div
 				class="glass-card rounded-2xl border border-white/10 bg-card/70 p-4 shadow-xl ring-1 ring-white/5 backdrop-blur-md"
@@ -311,6 +422,122 @@
 							})}
 						</p>
 					</div>
+=======
+						<TabsContent value="posts" class="mt-0 space-y-4">
+							<div class="flex items-center justify-between">
+								<h2 class="text-xl font-bold">Your Feed</h2>
+								<Button
+									onclick={() => goto('/create')}
+									class="bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.05] hover:shadow-violet-500/25"
+								>
+									Create New Post
+								</Button>
+							</div>
+
+							{#if posts && posts.length > 0}
+								{#each posts as activity (activity.id || (activity as any).object?.id)}
+									<Post
+										{activity}
+										isOwner={true}
+										username={user.username}
+										onDelete={handleDeletePost}
+										onUpdate={handleUpdatePost}
+									/>
+								{/each}
+							{:else}
+								<Card class="glass-card flex flex-col items-center border-none py-16 text-center">
+									<div
+										class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-500/10"
+									>
+										<LayoutGrid class="h-8 w-8 text-violet-500" />
+									</div>
+									<h3 class="mb-2 text-lg font-semibold">No posts yet</h3>
+									<p class="mx-auto max-w-xs text-sm text-foreground/50">
+										Share your first post with the federation and start owning your identity.
+									</p>
+									<Button
+										onclick={() => goto('/create')}
+										class="mt-6 bg-linear-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg transition-all hover:scale-[1.05] hover:shadow-violet-500/25"
+									>
+										Create First Post
+									</Button>
+								</Card>
+							{/if}
+						</TabsContent>
+
+						<TabsContent value="activity">
+							<Card class="glass-card flex flex-col items-center border-none py-16 text-center">
+								<div
+									class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-fuchsia-500/10"
+								>
+									<ActivityIcon class="h-8 w-8 text-fuchsia-500" />
+								</div>
+								<h3 class="mb-2 text-lg font-semibold">Activity Timeline</h3>
+								<p class="mx-auto max-w-xs text-sm text-foreground/50">
+									Your interactions across the federation will appear here soon.
+								</p>
+							</Card>
+						</TabsContent>
+
+						<TabsContent value="about">
+							<Card class="glass-card border-none p-8">
+								<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+									<div class="space-y-6">
+										<div>
+											<label
+												class="mb-2 block text-xs font-semibold tracking-wider text-foreground/50 uppercase"
+												>Account Handle</label
+											>
+											<div class="flex items-center justify-between rounded-lg bg-white/5 p-3">
+												<code class="text-sm font-medium">{user.handle}</code>
+												<Button size="icon" variant="ghost" onclick={copyHandle} class="h-8 w-8">
+													<Copy class="h-4 w-4" />
+												</Button>
+											</div>
+										</div>
+										<div>
+											<label
+												class="mb-2 block text-xs font-semibold tracking-wider text-foreground/50 uppercase"
+												>Decentralized ID</label
+											>
+											<div class="flex items-center justify-between rounded-lg bg-white/5 p-3">
+												<code class="text-[10px] break-all opacity-70">{user.did}</code>
+												<Button size="icon" variant="ghost" onclick={copyDID} class="h-8 w-8">
+													<Copy class="h-4 w-4" />
+												</Button>
+											</div>
+										</div>
+									</div>
+									<div class="space-y-6">
+										<div>
+											<label
+												class="mb-2 block text-xs font-semibold tracking-wider text-foreground/50 uppercase"
+												>Privacy Network</label
+											>
+											<div class="flex items-center gap-2 rounded-lg bg-white/5 p-3">
+												<UserCheck class="h-5 w-5 text-emerald-500" />
+												<span class="text-sm font-medium">Fully Federated & Encrypted</span>
+											</div>
+										</div>
+										<div>
+											<label
+												class="mb-2 block text-xs font-semibold tracking-wider text-foreground/50 uppercase"
+												>Member Since</label
+											>
+											<p class="p-3 text-sm font-medium">
+												{new Date(user.createdAt).toLocaleDateString('en-IN', {
+													day: 'numeric',
+													month: 'long',
+													year: 'numeric'
+												})}
+											</p>
+										</div>
+									</div>
+								</div>
+							</Card>
+						</TabsContent>
+					</Tabs>
+>>>>>>> Stashed changes
 				</div>
 			</div>
 		</div>

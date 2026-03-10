@@ -11,6 +11,7 @@
 		Loader2
 	} from 'lucide-svelte';
 	import Comment from './Comment.svelte';
+	import RichContent from './RichContent.svelte';
 
 	interface CommentData {
 		id: string;
@@ -25,6 +26,7 @@
 		} | null;
 		netScore: number;
 		userVote: 'upvote' | 'downvote' | null;
+		tag: any[];
 		replies: CommentData[];
 	}
 
@@ -220,9 +222,9 @@
 
 		{#if !collapsed}
 			<!-- Content -->
-			<p class="mt-1.5 text-sm leading-relaxed whitespace-pre-wrap text-foreground/85">
-				{comment.content}
-			</p>
+			<div class="mt-1.5 text-sm leading-relaxed text-foreground/85">
+				<RichContent content={comment.content} tags={comment.tag} />
+			</div>
 
 			<!-- Action bar -->
 			<div class="mt-2 flex items-center gap-3">
@@ -240,7 +242,7 @@
 						<ArrowUp class="h-3 w-3" />
 					</button>
 					<span
-						class="min-w-[1rem] text-center text-[10px] font-bold {localUserVote === 'upvote'
+						class="min-w-4 text-center text-[10px] font-bold {localUserVote === 'upvote'
 							? 'text-violet-400'
 							: localUserVote === 'downvote'
 								? 'text-rose-400'

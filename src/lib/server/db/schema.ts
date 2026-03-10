@@ -355,3 +355,29 @@ export const federatedFollows = pgTable('federated_follows', {
 	 */
 	updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
+
+/**
+ * Custom Emojis Table
+ * Stores metadata for custom emojis (shortcode and image URL).
+ */
+export const customEmojis = pgTable('custom_emojis', {
+	/**
+	 * Unique identifier for the emoji.
+	 */
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	/**
+	 * The shortcode used in posts (e.g., ":blobcat:").
+	 */
+	shortcode: text('shortcode').notNull().unique(),
+
+	/**
+	 * The URL to the emoji image.
+	 */
+	imageUrl: text('image_url').notNull(),
+
+	/**
+	 * When this emoji was added.
+	 */
+	createdAt: timestamp('created_at').defaultNow().notNull()
+});

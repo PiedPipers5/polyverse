@@ -15,10 +15,20 @@
 		Loader2,
 		ArrowUp,
 		ArrowDown,
-		MessageSquare
+		MessageSquare,
+		Heart,
+		Share2,
+		MoreHorizontal,
+		Copy,
+		Check,
+		ExternalLink,
+		ShieldAlert,
+		Sparkles
 	} from 'lucide-svelte';
 	import { languages } from '$lib/constants/languages';
 	import CommentSection from './CommentSection.svelte';
+	import { fly, fade } from 'svelte/transition';
+	import RichContent from './RichContent.svelte';
 
 	interface Props {
 		activity: any;
@@ -325,9 +335,9 @@
 		{/if}
 
 		<div class="space-y-2">
-			<p class="pr-8 text-base whitespace-pre-wrap">
-				{showTranslated ? translatedContent : activity.content || activity.object?.content}
-			</p>
+			<div class="mt-3 text-sm leading-relaxed text-foreground/90">
+				<RichContent content={apActivity.object.content} tags={apActivity.object.tag} />
+			</div>
 
 			{#if showTranslated}
 				<p class="flex items-center gap-1 text-[10px] text-muted-foreground italic">

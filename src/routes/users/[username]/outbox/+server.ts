@@ -79,6 +79,29 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         // 4. Construct Note Object
         const noteId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
 
+        // Custom Emoji Scanning
+        const emojiRegex = /:[a-zA-Z0-9_]+:/g;
+        const shortcodes = [...new Set(content.match(emojiRegex) || [])];
+        const tags: any[] = [];
+
+        if (shortcodes.length > 0) {
+            const emojisData = await db.query.customEmojis.findMany({
+                where: (table, { inArray }) => inArray(table.shortcode, shortcodes as string[])
+            });
+
+            for (const emoji of emojisData) {
+                tags.push({
+                    type: 'Emoji',
+                    name: emoji.shortcode,
+                    icon: {
+                        type: 'Image',
+                        mediaType: emoji.imageUrl.endsWith('.gif') ? 'image/gif' : 'image/png', // Simplified guess
+                        url: emoji.imageUrl
+                    }
+                });
+            }
+        }
+
         const note: Record<string, unknown> = {
             id: noteId,
             type: 'Note',
@@ -88,6 +111,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
             contentMap: { [language]: content },
             to,
             cc,
+            tag: tags,
             attachment: media
         };
 
