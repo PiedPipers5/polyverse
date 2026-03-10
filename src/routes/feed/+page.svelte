@@ -562,7 +562,7 @@
 			</a>
 
 			<!-- Trending -->
-			<a href="/search" class="nav-link">
+			<a href="/trending" class="nav-link">
 				<TrendingUp class="nav-icon" />
 				<span>Trending</span>
 			</a>

@@ -2,18 +2,37 @@
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { TrendingUp, UserPlus, Info, ExternalLink } from 'lucide-svelte';
+	import { TrendingUp, UserPlus, Info, ExternalLink, Loader2, Hash } from 'lucide-svelte';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 
 	let suggestions = $derived($page.data.suggestions || []);
 
-	let trends = [
-		{ tag: '#Federation', posts: '2.4k' },
-		{ tag: '#PrivacyFirst', posts: '1.8k' },
-		{ tag: '#Polyverse', posts: '1.2k' },
-		{ tag: '#Web3', posts: '850' },
-		{ tag: '#DigitalIdentity', posts: '640' }
-	];
+	// ── Live trending tags from the fediverse ────────────────────
+	let trendingTags = $state<
+		Array<{ name: string; url: string; totalUses?: number; totalAccounts?: number }>
+	>([]);
+	let loadingTrends = $state(true);
+
+	onMount(async () => {
+		try {
+			const res = await fetch('/api/trending?type=tags');
+			if (res.ok) {
+				const data = await res.json();
+				trendingTags = (data.tags ?? []).slice(0, 5);
+			}
+		} catch (err) {
+			console.warn('Failed to load trending tags:', err);
+		} finally {
+			loadingTrends = false;
+		}
+	});
+
+	function formatNumber(n: number): string {
+		if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+		if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+		return n.toString();
+	}
 
 	function getInitials(name: string): string {
 		return name
@@ -34,17 +53,33 @@
 			</CardTitle>
 		</CardHeader>
 		<CardContent class="grid gap-4">
-			{#each trends as trend}
-				<div class="group cursor-pointer">
-					<p class="text-sm font-bold text-violet-500 group-hover:underline">{trend.tag}</p>
-					<p class="text-[10px] font-medium tracking-tighter text-foreground/40 uppercase">
-						{trend.posts} posts
-					</p>
+			{#if loadingTrends}
+				<div class="flex items-center justify-center py-4">
+					<Loader2 class="h-5 w-5 animate-spin text-foreground/30" />
 				</div>
-			{/each}
+			{:else if trendingTags.length > 0}
+				{#each trendingTags as tag}
+					<a
+						href={tag.url}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="group cursor-pointer"
+					>
+						<p class="text-sm font-bold text-violet-500 group-hover:underline">
+							#{tag.name}
+						</p>
+						<p class="text-[10px] font-medium tracking-tighter text-foreground/40 uppercase">
+							{formatNumber(tag.totalUses || 0)} posts · {formatNumber(tag.totalAccounts || 0)} people
+						</p>
+					</a>
+				{/each}
+			{:else}
+				<p class="py-2 text-center text-xs text-foreground/30">No trends available</p>
+			{/if}
 			<Button
 				variant="ghost"
 				class="mt-2 w-full text-xs text-sky-500 hover:bg-sky-500/5 hover:text-sky-600"
+				href="/trending"
 			>
 				Show More
 			</Button>
