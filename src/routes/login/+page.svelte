@@ -179,6 +179,12 @@
 							class="text-sm font-medium text-zinc-400 transition-colors group-focus-within:text-purple-400"
 							>Password</Label
 						>
+						<a
+							href="/forgot-password"
+							class="text-xs font-medium text-purple-400/80 transition-colors hover:text-purple-400"
+						>
+							Forgot Password?
+						</a>
 					</div>
 					<div class="relative">
 						<Input
@@ -214,12 +220,12 @@
 						>
 							{#if showPassword}
 								<EyeOff size={20} />
-						{:else}
+							{:else}
 								<Eye size={20} />
 							{/if}
 						</button>
 					</div>
-					<p class="ml-1 mt-1 text-[10px] font-medium tracking-wide text-zinc-500/70">
+					<p class="mt-1 ml-1 text-[10px] font-medium tracking-wide text-zinc-500/70">
 						Requirement: 8+ chars, uppercase, number, & special char (!@#$%^&*-+)
 					</p>
 				</div>

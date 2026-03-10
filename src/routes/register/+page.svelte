@@ -210,6 +210,38 @@
 					</div>
 
 					<div class="group space-y-2">
+						<Label for="email" class="ml-1 text-sm font-medium text-zinc-300">Recovery Email</Label>
+						<div class="relative">
+							<Input
+								id="email"
+								name="email"
+								type="email"
+								placeholder="you@example.com"
+								required
+								class="h-14 rounded-2xl border-zinc-800 bg-white/5 pl-12 text-white transition-all placeholder:text-zinc-600 focus:border-purple-500/50 focus:ring-purple-500/20"
+							/>
+							<div
+								class="absolute top-1/2 left-4 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-purple-400"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="20"
+									height="20"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									><path
+										d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+									/><polyline points="22,6 12,13 2,6" /></svg
+								>
+							</div>
+						</div>
+					</div>
+
+					<div class="group space-y-2">
 						<Label for="password" class="ml-1 text-sm font-medium text-zinc-300"
 							>Secure Keyphrase</Label
 						>

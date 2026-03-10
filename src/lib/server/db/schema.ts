@@ -56,7 +56,22 @@ export const users = pgTable('users', {
 	 * URL to the user's avatar image.
 	 * Stored in Vercel Blob storage.
 	 */
-	avatarUrl: text('avatar_url')
+	avatarUrl: text('avatar_url'),
+
+	/**
+	 * User's email address for password recovery.
+	 */
+	email: text('email').unique(),
+
+	/**
+	 * Reset password token.
+	 */
+	resetPasswordToken: text('reset_password_token'),
+
+	/**
+	 * Reset password token expiry.
+	 */
+	resetPasswordExpires: timestamp('reset_password_expires')
 });
 
 /**
