@@ -60,8 +60,25 @@
 	let totalPublicPosts = $state(data.totalPublicPosts ?? 0);
 	let moreExpanded = $state(false);
 	let searchQuery = $state('');
+	let unreadNotifCount = $state(0);
 
 	let user = $derived(data.currentUser);
+
+	// Poll unread notification count every 60 seconds
+	onMount(() => {
+		async function fetchUnread() {
+			try {
+				const res = await fetch('/api/notifications');
+				if (res.ok) {
+					const d = await res.json();
+					unreadNotifCount = d.unreadCount ?? 0;
+				}
+			} catch { /* ignore */ }
+		}
+		fetchUnread();
+		const iv = setInterval(fetchUnread, 60_000);
+		return () => clearInterval(iv);
+	});
 
 	// ── Search filtering ───────────────────────────────────────────────────────
 	let filteredPosts = $derived(
@@ -568,9 +585,16 @@
 			</a>
 
 			<!-- Notifications -->
-			<a href="#" class="nav-link">
+			<a href="/notifications" class="nav-link relative">
 				<Bell class="nav-icon" />
 				<span>Notifications</span>
+				{#if unreadNotifCount > 0}
+					<span
+						class="absolute -top-1 left-3 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow-md shadow-rose-500/30"
+					>
+						{unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+					</span>
+				{/if}
 			</a>
 
 			<div class="mx-1 my-2 h-px bg-white/8"></div>

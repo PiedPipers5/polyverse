@@ -17,6 +17,7 @@
 		ArrowDown,
 		MessageSquare,
 		Heart,
+		Repeat2,
 		Share2,
 		MoreHorizontal,
 		Copy,
@@ -51,6 +52,15 @@
 	let showTranslated = $state(false);
 	let showComments = $state(false);
 	let localCommentsCount = $state(activity.commentsCount || 0);
+
+	// Like / Boost state
+	let isLiked = $state(activity.isLiked || false);
+	let localLikesCount = $state(activity.likesCount || 0);
+	let isLiking = $state(false);
+
+	let isBoosted = $state(activity.isBoosted || false);
+	let localBoostsCount = $state(activity.boostsCount || 0);
+	let isBoosting = $state(false);
 
 	// Handle both flat ActivityPub objects and DB-wrapped rows
 	let apActivity = $derived(activity.activity || activity);
@@ -264,6 +274,62 @@
 			isTranslating = false;
 		}
 	}
+
+	// ── Like handler ─────────────────────────────────────────────────────────
+	async function handleLike() {
+		if (isLiking) return;
+		isLiking = true;
+
+		const wasLiked = isLiked;
+		const prevCount = localLikesCount;
+
+		// Optimistic update
+		isLiked = !wasLiked;
+		localLikesCount += wasLiked ? -1 : 1;
+
+		try {
+			const res = await fetch('/api/like', {
+				method: wasLiked ? 'DELETE' : 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ postId: targetObjectId })
+			});
+			if (!res.ok) throw new Error('Like failed');
+		} catch {
+			isLiked = wasLiked;
+			localLikesCount = prevCount;
+			toast.error('Failed to like post');
+		} finally {
+			isLiking = false;
+		}
+	}
+
+	// ── Boost handler ────────────────────────────────────────────────────────
+	async function handleBoost() {
+		if (isBoosting) return;
+		isBoosting = true;
+
+		const wasBoosted = isBoosted;
+		const prevCount = localBoostsCount;
+
+		// Optimistic update
+		isBoosted = !wasBoosted;
+		localBoostsCount += wasBoosted ? -1 : 1;
+
+		try {
+			const res = await fetch('/api/boost', {
+				method: wasBoosted ? 'DELETE' : 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ postId: targetObjectId })
+			});
+			if (!res.ok) throw new Error('Boost failed');
+		} catch {
+			isBoosted = wasBoosted;
+			localBoostsCount = prevCount;
+			toast.error('Failed to boost post');
+		} finally {
+			isBoosting = false;
+		}
+	}
 </script>
 
 {#if isEditing}
@@ -400,6 +466,34 @@
 					<ArrowDown class="h-4 w-4" />
 				</button>
 			</div>
+
+			<!-- Like button -->
+			<button
+				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
+					   {isLiked ? 'text-rose-400 ring-rose-500/20 bg-rose-500/10' : 'text-foreground/50'}"
+				onclick={handleLike}
+				disabled={isLiking}
+				aria-label={isLiked ? 'Unlike' : 'Like'}
+			>
+				<Heart class="h-3.5 w-3.5 transition-transform {isLiked ? 'scale-110 fill-current' : ''}" />
+				{#if localLikesCount > 0}
+					<span>{localLikesCount}</span>
+				{/if}
+			</button>
+
+			<!-- Boost button -->
+			<button
+				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
+					   {isBoosted ? 'text-emerald-400 ring-emerald-500/20 bg-emerald-500/10' : 'text-foreground/50'}"
+				onclick={handleBoost}
+				disabled={isBoosting}
+				aria-label={isBoosted ? 'Unboost' : 'Boost'}
+			>
+				<Repeat2 class="h-3.5 w-3.5 transition-transform {isBoosted ? 'scale-110' : ''}" />
+				{#if localBoostsCount > 0}
+					<span>{localBoostsCount}</span>
+				{/if}
+			</button>
 
 			<!-- Comment toggle -->
 			<button
