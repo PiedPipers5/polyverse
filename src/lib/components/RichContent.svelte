@@ -43,7 +43,7 @@
 				class="mx-0.5 inline-block h-[1.2em] w-auto align-text-bottom"
 			/>
 		{:else}
-			{segment.value}
+			{@html segment.value}
 		{/if}
 	{/each}
 </div>
@@ -52,5 +52,32 @@
 	.rich-content {
 		white-space: pre-wrap;
 		word-break: break-word;
+	}
+	
+	/* Style HTML injected from remote ActivityPub posts */
+	.rich-content :global(a) {
+		color: var(--color-violet-500); /* Or text-sky-400 if you prefer */
+		text-decoration: none;
+		font-weight: 500;
+	}
+	:global(.dark) .rich-content :global(a) {
+		color: var(--color-violet-400);
+	}
+	.rich-content :global(a:hover) {
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	.rich-content :global(p) {
+		margin-bottom: 0.75rem;
+	}
+	.rich-content :global(p:last-child) {
+		margin-bottom: 0;
+	}
+	/* Ensure mentions look distinct if they have classes */
+	.rich-content :global(.mention) {
+		color: var(--color-violet-500);
+	}
+	:global(.dark) .rich-content :global(.mention) {
+		color: var(--color-violet-400);
 	}
 </style>
