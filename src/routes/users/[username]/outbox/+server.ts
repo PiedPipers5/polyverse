@@ -106,8 +106,11 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 
         // NSFW AI Check
         let isSensitive = false;
+        let flaggedWords: string[] = [];
         if (checkNsfw && content) {
-            isSensitive = await isContentNsfw(content);
+            const moderationResult = await isContentNsfw(content);
+            isSensitive = moderationResult.isNsfw;
+            flaggedWords = moderationResult.flaggedWords;
         }
 
         const note: Record<string, unknown> = {
@@ -121,7 +124,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
             cc,
             tag: tags,
             attachment: media,
-            ...(isSensitive ? { sensitive: true, summary: "NSFW Content" } : {})
+            ...(isSensitive ? { sensitive: true, summary: "NSFW Content", nsfwWords: flaggedWords } : {})
         };
 
         // If this is a reply, set the inReplyTo field (ActivityPub standard)

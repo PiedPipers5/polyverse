@@ -53,6 +53,11 @@
 	let showComments = $state(false);
 	let localCommentsCount = $state(activity.commentsCount || 0);
 
+	// NSFW feature state
+	let isRevealed = $state(
+		!(activity.activity?.object?.sensitive || activity.object?.sensitive || activity.sensitive)
+	);
+
 	// Like / Boost state
 	let isLiked = $state(activity.isLiked || false);
 	let localLikesCount = $state(activity.likesCount || 0);
@@ -400,37 +405,70 @@
 			</div>
 		{/if}
 
-		<div class="space-y-2">
-			<div class="mt-3 text-sm leading-relaxed text-foreground/90">
-				<RichContent 
-					content={showTranslated && translatedContent ? translatedContent : apActivity.object.content} 
-					tags={apActivity.object.tag} 
-				/>
+		<div class="relative overflow-hidden rounded-lg">
+			<div class="space-y-2 transition-all duration-500">
+				<div class="mt-3 text-sm leading-relaxed text-foreground/90">
+					<RichContent
+						content={showTranslated && translatedContent
+							? translatedContent
+							: apActivity.object.content}
+						tags={apActivity.object.tag}
+						nsfwWords={apActivity.object.nsfwWords || apActivity.nsfwWords || []}
+					/>
+				</div>
+
+				{#if showTranslated}
+					<p class="flex items-center gap-1 text-[10px] text-muted-foreground italic">
+						<span class="inline-block h-1 w-1 animate-pulse rounded-full bg-primary"></span>
+						Translated by Google Gemini
+					</p>
+				{/if}
 			</div>
 
-			{#if showTranslated}
-				<p class="flex items-center gap-1 text-[10px] text-muted-foreground italic">
-					<span class="inline-block h-1 w-1 animate-pulse rounded-full bg-primary"></span>
-					Translated by Google Gemini
-				</p>
+			<!-- Media Gallery -->
+			{#if attachments.length > 0}
+				<!-- NSFW Image Blur Overlay -->
+				<div class="relative mt-3">
+					{#if !isRevealed}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div
+							class="absolute inset-0 z-10 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md bg-black/40 backdrop-blur-3xl transition-all hover:bg-black/30"
+							onclick={() => (isRevealed = true)}
+						>
+							<ShieldAlert class="h-10 w-10 text-rose-400" />
+							<span class="font-bold text-white">Sensitive Content</span>
+							<span
+								class="mt-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 transition-all hover:bg-white/20"
+							>
+								Click to reveal media
+							</span>
+						</div>
+					{/if}
+
+					<div
+						class="{attachments.length === 1
+							? ''
+							: 'grid grid-cols-2 gap-1.5 md:gap-2'} transition-all duration-500 {!isRevealed
+							? 'pointer-events-none opacity-30 blur-md select-none'
+							: ''}"
+					>
+						{#each attachments as attachment, index}
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+							<img
+								src={attachment.url}
+								alt="Post image {index + 1}"
+								class="{attachments.length === 1
+									? 'max-h-96 w-full'
+									: 'aspect-square'} cursor-pointer rounded-md object-cover transition-opacity hover:opacity-90"
+								onclick={() => openLightbox(index)}
+							/>
+						{/each}
+					</div>
+				</div>
 			{/if}
 		</div>
-
-		<!-- Media Gallery -->
-		{#if attachments.length > 0}
-			<div class="mt-3 {attachments.length === 1 ? '' : 'grid grid-cols-2 gap-1.5 md:gap-2'}">
-				{#each attachments as attachment, index}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-					<img
-						src={attachment.url}
-						alt="Post image {index + 1}"
-						class="{attachments.length === 1 ? 'max-h-96 w-full' : 'aspect-square'} cursor-pointer rounded-md object-cover transition-opacity hover:opacity-90"
-						onclick={() => openLightbox(index)}
-					/>
-				{/each}
-			</div>
-		{/if}
 
 		<!-- Action bar: Row 1 – interactive buttons -->
 		<div class="mt-3 flex items-center gap-2">
@@ -459,8 +497,8 @@
 
 			<!-- Like -->
 			<button
-				class="flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all
-					{isLiked ? 'bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20' : 'bg-white/5 text-foreground/50 ring-1 ring-white/10 hover:bg-white/10'}"
+				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
+					   {isLiked ? 'bg-rose-500/10 text-rose-400 ring-rose-500/20' : 'text-foreground/50'}"
 				onclick={handleLike}
 				disabled={isLiking}
 				aria-label={isLiked ? 'Unlike' : 'Like'}
@@ -471,8 +509,8 @@
 
 			<!-- Boost -->
 			<button
-				class="flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all
-					{isBoosted ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-white/5 text-foreground/50 ring-1 ring-white/10 hover:bg-white/10'}"
+				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
+					   {isBoosted ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20' : 'text-foreground/50'}"
 				onclick={handleBoost}
 				disabled={isBoosting}
 				aria-label={isBoosted ? 'Unboost' : 'Boost'}
