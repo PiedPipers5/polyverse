@@ -3,7 +3,7 @@
 	import DockItem from './dock-item.svelte';
 	import DockIcon from './dock-icon.svelte';
 	import DockLabel from './dock-label.svelte';
-	import { Home, Search, LogOut, User, PlusSquare } from 'lucide-svelte';
+	import { Home, Search, LogOut, User, PlusSquare, MessageCircle } from 'lucide-svelte';
 	import LogoutConfirmModal from '../LogoutConfirmModal.svelte';
 
 	let { currentPath = '/feed' } = $props();
@@ -52,6 +52,19 @@
 						/>
 					</DockIcon>
 					<DockLabel slot="label">Create</DockLabel>
+				</DockItem>
+			</a>
+
+			<a href="/messages">
+				<DockItem>
+					<DockIcon slot="icon">
+						<MessageCircle
+							class="h-5 w-5 {currentPath.startsWith('/messages')
+								? 'text-purple-500'
+								: 'text-neutral-500'}"
+						/>
+					</DockIcon>
+					<DockLabel slot="label">Messages</DockLabel>
 				</DockItem>
 			</a>
 

@@ -1,11 +1,13 @@
 import { error, json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users, activities, federatedFollows, notifications } from '$lib/server/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { users, activities, federatedFollows, notifications, conversations, directMessages } from '$lib/server/db/schema';
+import { eq, and, or, sql } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { verifyHttpSignature } from '$lib/server/httpSignature';
 import { resolveRemoteActor } from '$lib/server/federation';
 import type { RequestHandler } from '@sveltejs/kit';
+
+const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
 
 /**
  * POST /users/:username/inbox
@@ -158,6 +160,18 @@ async function handleCreateActivity(
 		return;
 	}
 
+	// ── Check if this is a DM (no Public URI in to/cc) ──────────────
+	const toField = (object.to || activity.to || []) as string[];
+	const ccField = (object.cc || activity.cc || []) as string[];
+	const allAudience = [...toField, ...ccField];
+	const isDirectMessage = !allAudience.includes(PUBLIC_URI);
+
+	if (isDirectMessage) {
+		// Handle as a DM — skip the follow check, Mastodon allows DMs from non-followers
+		await handleIncomingDM(activity, object, actorUri, targetUser, domain);
+		return;
+	}
+
 	// ── Check that the local user follows the remote actor ──────────
 	const followRecord = await db.query.federatedFollows.findFirst({
 		where: and(
@@ -197,6 +211,74 @@ async function handleCreateActivity(
 	console.log(
 		`[Inbox:Create] Saved activity from ${actorUri} for user ${targetUser.username}`
 	);
+}
+
+/**
+ * Handle an incoming DM (Create(Note) with no Public URI).
+ * Finds or creates a conversation, inserts the message, and creates a notification.
+ */
+async function handleIncomingDM(
+	activity: Record<string, unknown>,
+	object: Record<string, unknown>,
+	actorUri: string,
+	targetUser: { id: string; username: string },
+	domain: string
+): Promise<void> {
+	const targetUserUri = `https://${domain}/users/${targetUser.username}`;
+
+	// Sort URIs for consistent storage
+	const [oneUri, twoUri] = [actorUri, targetUserUri].sort();
+	const oneLocalId = oneUri === targetUserUri ? targetUser.id : null;
+	const twoLocalId = twoUri === targetUserUri ? targetUser.id : null;
+
+	// Find or create conversation
+	let convo = await db.query.conversations.findFirst({
+		where: or(
+			and(
+				eq(conversations.participantOneUri, oneUri),
+				eq(conversations.participantTwoUri, twoUri)
+			),
+			and(
+				eq(conversations.participantOneUri, twoUri),
+				eq(conversations.participantTwoUri, oneUri)
+			)
+		)
+	});
+
+	if (!convo) {
+		const [created] = await db.insert(conversations).values({
+			participantOneUri: oneUri,
+			participantOneId: oneLocalId,
+			participantTwoUri: twoUri,
+			participantTwoId: twoLocalId,
+			lastMessageAt: new Date(),
+			createdAt: new Date()
+		}).returning();
+		convo = created;
+	}
+
+	// Insert the message
+	const content = (object.content as string) || '';
+	await db.insert(directMessages).values({
+		conversationId: convo.id,
+		senderUri: actorUri,
+		senderLocalId: null, // Remote sender
+		content,
+		activityJson: activity,
+		read: false,
+		createdAt: new Date(activity.published as string || new Date().toISOString())
+	});
+
+	// Update conversation timestamp
+	await db
+		.update(conversations)
+		.set({ lastMessageAt: new Date() })
+		.where(eq(conversations.id, convo.id));
+
+	// Create a notification
+	await insertNotification(targetUser.id, null, actorUri, 'mention', object.id as string);
+
+	console.log(`[Inbox:DM] Saved DM from ${actorUri} to ${targetUser.username}`);
 }
 
 /**
