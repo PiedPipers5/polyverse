@@ -24,7 +24,8 @@
 		Check,
 		ExternalLink,
 		ShieldAlert,
-		Sparkles
+		Sparkles,
+		Star
 	} from 'lucide-svelte';
 	import { languages } from '$lib/constants/languages';
 	import CommentSection from './CommentSection.svelte';
@@ -37,15 +38,20 @@
 		username: string; // Current user's username (for API calls)
 		onDelete: (id: string) => void;
 		onUpdate: (updatedActivity: any) => void;
+		isFavorited?: boolean;
 	}
 
-	let { activity, isOwner, username, onDelete, onUpdate }: Props = $props();
+	let { activity, isOwner, username, onDelete, onUpdate, isFavorited = false }: Props = $props();
 
 	let isEditing = $state(false);
 	let isMenuOpen = $state(false);
 	let isDeleting = $state(false);
 	let lightboxOpen = $state(false);
 	let lightboxIndex = $state(0);
+
+	// Favorite state
+	let isLocalFavorited = $state(isFavorited);
+	let isFavoring = $state(false);
 
 	let translatedContent = $state<string | null>(null);
 	let isTranslating = $state(false);
@@ -330,6 +336,43 @@
 			isBoosting = false;
 		}
 	}
+
+	// ── Favorite handler ──────────────────────────────────────────────────────
+	async function handleFavorite() {
+		if (isFavoring) return;
+		isFavoring = true;
+
+		const wasLocalFavorited = isLocalFavorited;
+		isLocalFavorited = !wasLocalFavorited; // optimistic
+
+		try {
+			if (!wasLocalFavorited) {
+				// Save — include a full snapshot of the activity for the favorites page
+				const apActivity = activity.activity || activity;
+				const res = await fetch('/api/favorites', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ postId: apActivity.object?.id || apActivity.id, activitySnapshot: activity })
+				});
+				if (!res.ok) throw new Error('Favorite failed');
+				toast.success('Saved to favorites ✨');
+			} else {
+				const apActivity = activity.activity || activity;
+				const res = await fetch('/api/favorites', {
+					method: 'DELETE',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ postId: apActivity.object?.id || apActivity.id })
+				});
+				if (!res.ok) throw new Error('Unfavorite failed');
+				toast.success('Removed from favorites');
+			}
+		} catch {
+			isLocalFavorited = wasLocalFavorited; // rollback
+			toast.error('Failed to update favorites. Try again.');
+		} finally {
+			isFavoring = false;
+		}
+	}
 </script>
 
 {#if isEditing}
@@ -440,6 +483,7 @@
 					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote === 'upvote' ? 'bg-violet-500/20 text-violet-400' : 'text-foreground/50'}"
 					onclick={() => handleVote('upvote')}
 					disabled={isVoting}
+					title="Upvote"
 					aria-label="Upvote"
 				>
 					<ArrowUp class="h-3.5 w-3.5" />
@@ -451,6 +495,7 @@
 					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote === 'downvote' ? 'bg-rose-500/20 text-rose-400' : 'text-foreground/50'}"
 					onclick={() => handleVote('downvote')}
 					disabled={isVoting}
+					title="Downvote"
 					aria-label="Downvote"
 				>
 					<ArrowDown class="h-3.5 w-3.5" />
@@ -463,6 +508,7 @@
 					{isLiked ? 'bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20' : 'bg-white/5 text-foreground/50 ring-1 ring-white/10 hover:bg-white/10'}"
 				onclick={handleLike}
 				disabled={isLiking}
+				title={isLiked ? 'Unlike' : 'Like'}
 				aria-label={isLiked ? 'Unlike' : 'Like'}
 			>
 				<Heart class="h-3.5 w-3.5 shrink-0 transition-transform {isLiked ? 'scale-110 fill-current' : ''}" />
@@ -475,6 +521,7 @@
 					{isBoosted ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-white/5 text-foreground/50 ring-1 ring-white/10 hover:bg-white/10'}"
 				onclick={handleBoost}
 				disabled={isBoosting}
+				title={isBoosted ? 'Unboost' : 'Boost'}
 				aria-label={isBoosted ? 'Unboost' : 'Boost'}
 			>
 				<Repeat2 class="h-3.5 w-3.5 shrink-0 transition-transform {isBoosted ? 'scale-110' : ''}" />
@@ -486,12 +533,25 @@
 				class="flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all
 					{showComments ? 'bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20' : 'bg-white/5 text-foreground/50 ring-1 ring-white/10 hover:bg-white/10'}"
 				onclick={() => (showComments = !showComments)}
+				title={showComments ? 'Hide comments' : 'Comments'}
 			>
 				<MessageSquare class="h-3.5 w-3.5 shrink-0" />
 				{#if localCommentsCount > 0}
 					<span class="tabular-nums">{localCommentsCount}</span>
 				{/if}
 				<span class="hidden sm:inline">{showComments ? 'Hide' : 'Comments'}</span>
+			</button>
+
+			<!-- Favorite / Bookmark -->
+			<button
+				class="ml-auto flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all
+					{isLocalFavorited ? 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30' : 'bg-white/5 text-foreground/40 ring-1 ring-white/10 hover:bg-white/10 hover:text-foreground/70'}"
+				onclick={handleFavorite}
+				disabled={isFavoring}
+				title={isLocalFavorited ? 'Remove from favorites' : 'Add to favorites'}
+				aria-label={isLocalFavorited ? 'Remove from favorites' : 'Add to favorites'}
+			>
+				<Star class="h-3.5 w-3.5 shrink-0 transition-all {isLocalFavorited ? 'fill-current scale-110 text-amber-400' : ''}" />
 			</button>
 		</div>
 

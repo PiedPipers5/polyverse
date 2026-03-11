@@ -390,6 +390,7 @@
 								{activity}
 								isOwner={true}
 								username={user.username}
+								isFavorited={(activity as any).isFavorited ?? false}
 								onDelete={handleDeletePost}
 								onUpdate={handleUpdatePost}
 							/>

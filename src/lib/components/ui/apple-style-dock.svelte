@@ -95,6 +95,7 @@
 					</DockItem>
 				</a>
 
+
 				<a href="/profile">
 					<DockItem>
 						<DockIcon slot="icon">
