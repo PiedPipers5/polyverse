@@ -3,7 +3,33 @@
 	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
 	import Composer from './Composer.svelte';
-	import { EllipsisVertical, Trash2, Pencil, X, Globe, Lock, Users } from 'lucide-svelte';
+	import {
+		EllipsisVertical,
+		Trash2,
+		Pencil,
+		X,
+		Globe,
+		Lock,
+		Users,
+		Languages,
+		Loader2,
+		ArrowUp,
+		ArrowDown,
+		MessageSquare,
+		Heart,
+		Repeat2,
+		Share2,
+		MoreHorizontal,
+		Copy,
+		Check,
+		ExternalLink,
+		ShieldAlert,
+		Sparkles
+	} from 'lucide-svelte';
+	import { languages } from '$lib/constants/languages';
+	import CommentSection from './CommentSection.svelte';
+	import { fly, fade } from 'svelte/transition';
+	import RichContent from './RichContent.svelte';
 
 	interface Props {
 		activity: any;
@@ -20,6 +46,21 @@
 	let isDeleting = $state(false);
 	let lightboxOpen = $state(false);
 	let lightboxIndex = $state(0);
+
+	let translatedContent = $state<string | null>(null);
+	let isTranslating = $state(false);
+	let showTranslated = $state(false);
+	let showComments = $state(false);
+	let localCommentsCount = $state(activity.commentsCount || 0);
+
+	// Like / Boost state
+	let isLiked = $state(activity.isLiked || false);
+	let localLikesCount = $state(activity.likesCount || 0);
+	let isLiking = $state(false);
+
+	let isBoosted = $state(activity.isBoosted || false);
+	let localBoostsCount = $state(activity.boostsCount || 0);
+	let isBoosting = $state(false);
 
 	// Handle both flat ActivityPub objects and DB-wrapped rows
 	let apActivity = $derived(activity.activity || activity);
@@ -40,6 +81,82 @@
 		if (cc.includes(PUBLIC_URI)) return 'unlisted';
 		return 'followers';
 	});
+
+	let postLanguage = $derived.by(() => {
+		const obj = apActivity.object || apActivity;
+		const contentMap = obj.contentMap || {};
+		const codes = Object.keys(contentMap);
+		return codes[0] || 'en';
+	});
+
+	let languageName = $derived(
+		languages.find((l) => l.code === postLanguage)?.nativeName || postLanguage
+	);
+
+	let isVoting = $state(false);
+	let localNetScore = $state(activity.netScore || 0);
+	let localUserVote = $state<'upvote' | 'downvote' | null>(activity.userVote || null);
+	// Tracks whether the user has cast a vote in this session.
+	// When true, the $effect below will NOT overwrite the optimistic local state
+	// with the (now-stale) server-provided values. This fixes the issue where
+	// likes/votes appeared to reset until a hard page reload.
+	let voteDirty = $state(false);
+
+	$effect(() => {
+		// Only sync from server props if there hasn't been a local vote action.
+		// Once the user votes, we keep the optimistic value until a full navigation/reload
+		// brings genuinely fresh server data.
+		if (!voteDirty) {
+			localNetScore = activity.netScore || 0;
+			localUserVote = activity.userVote || null;
+		}
+	});
+
+	async function handleVote(action: 'upvote' | 'downvote') {
+		if (isVoting) return;
+		isVoting = true;
+
+		const previousVote = localUserVote;
+		const previousScore = localNetScore;
+
+		let newVote: 'upvote' | 'downvote' | null = action;
+		if (previousVote === action) {
+			newVote = null;
+		}
+
+		localUserVote = newVote;
+		voteDirty = true;
+
+		let scoreDiff = 0;
+		if (previousVote === 'upvote') scoreDiff -= 1;
+		else if (previousVote === 'downvote') scoreDiff += 1;
+
+		if (newVote === 'upvote') scoreDiff += 1;
+		else if (newVote === 'downvote') scoreDiff -= 1;
+
+		localNetScore += scoreDiff;
+
+		try {
+			const res = await fetch('/api/interact', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					postId: targetObjectId,
+					action: newVote === null ? 'remove' : newVote
+				})
+			});
+
+			if (!res.ok) {
+				throw new Error('Vote failed');
+			}
+		} catch (e) {
+			localUserVote = previousVote;
+			localNetScore = previousScore;
+			toast.error('Failed to register vote. Please try again.');
+		} finally {
+			isVoting = false;
+		}
+	}
 
 	// Close menu when clicking outside (simple implementation)
 	function toggleMenu() {
@@ -123,6 +240,96 @@
 			lightboxIndex--;
 		}
 	}
+
+	async function translatePost() {
+		if (translatedContent) {
+			showTranslated = !showTranslated;
+			return;
+		}
+
+		isTranslating = true;
+		try {
+			const contentToTranslate = activity.content || activity.object?.content;
+			const response = await fetch('/api/ai/translate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					text: contentToTranslate,
+					targetLanguage: 'en' // Default to English for now
+				})
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				translatedContent = result.translatedText;
+				showTranslated = true;
+			} else {
+				const err = await response.json();
+				toast.error(err.message || 'Translation failed. Make sure AI is configured.');
+			}
+		} catch (e) {
+			toast.error('Error during translation');
+			console.error(e);
+		} finally {
+			isTranslating = false;
+		}
+	}
+
+	// ── Like handler ─────────────────────────────────────────────────────────
+	async function handleLike() {
+		if (isLiking) return;
+		isLiking = true;
+
+		const wasLiked = isLiked;
+		const prevCount = localLikesCount;
+
+		// Optimistic update
+		isLiked = !wasLiked;
+		localLikesCount += wasLiked ? -1 : 1;
+
+		try {
+			const res = await fetch('/api/like', {
+				method: wasLiked ? 'DELETE' : 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ postId: targetObjectId })
+			});
+			if (!res.ok) throw new Error('Like failed');
+		} catch {
+			isLiked = wasLiked;
+			localLikesCount = prevCount;
+			toast.error('Failed to like post');
+		} finally {
+			isLiking = false;
+		}
+	}
+
+	// ── Boost handler ────────────────────────────────────────────────────────
+	async function handleBoost() {
+		if (isBoosting) return;
+		isBoosting = true;
+
+		const wasBoosted = isBoosted;
+		const prevCount = localBoostsCount;
+
+		// Optimistic update
+		isBoosted = !wasBoosted;
+		localBoostsCount += wasBoosted ? -1 : 1;
+
+		try {
+			const res = await fetch('/api/boost', {
+				method: wasBoosted ? 'DELETE' : 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ postId: targetObjectId })
+			});
+			if (!res.ok) throw new Error('Boost failed');
+		} catch {
+			isBoosted = wasBoosted;
+			localBoostsCount = prevCount;
+			toast.error('Failed to boost post');
+		} finally {
+			isBoosting = false;
+		}
+	}
 </script>
 
 {#if isEditing}
@@ -133,13 +340,16 @@
 			initialContent={activity.content || activity.object?.content}
 			initialMedia={attachments.map((a: any) => ({ url: a.url, type: a.mediaType }))}
 			initialPrivacy={privacyLevel}
+			initialLanguage={postLanguage}
 			objectId={targetObjectId}
 			onCancel={() => (isEditing = false)}
 			onPostUpdated={handleUpdate}
 		/>
 	</div>
 {:else}
-	<Card class="group relative p-4">
+	<Card
+		class="glass-card group relative border border-white/10 p-4 shadow-xl ring-1 ring-violet-500/10 transition-all hover:shadow-2xl"
+	>
 		{#if isOwner}
 			<div class="absolute top-2 right-2">
 				<Button variant="ghost" size="icon" class="h-8 w-8" onclick={toggleMenu}>
@@ -190,17 +400,22 @@
 			</div>
 		{/if}
 
-		<p class="pr-8 text-base whitespace-pre-wrap">{activity.content || activity.object?.content}</p>
+		<div class="space-y-2">
+			<div class="mt-3 text-sm leading-relaxed text-foreground/90">
+				<RichContent content={apActivity.object.content} tags={apActivity.object.tag} />
+			</div>
+
+			{#if showTranslated}
+				<p class="flex items-center gap-1 text-[10px] text-muted-foreground italic">
+					<span class="inline-block h-1 w-1 animate-pulse rounded-full bg-primary"></span>
+					Translated by Google Gemini
+				</p>
+			{/if}
+		</div>
 
 		<!-- Media Gallery -->
 		{#if attachments.length > 0}
-			<div
-				class="mt-3 {attachments.length === 1
-					? ''
-					: attachments.length === 2
-						? 'grid grid-cols-2 gap-2'
-						: 'grid grid-cols-2 gap-2'}"
-			>
+			<div class="mt-3 {attachments.length === 1 ? '' : 'grid grid-cols-2 gap-1.5 md:gap-2'}">
 				{#each attachments as attachment, index}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -216,30 +431,136 @@
 			</div>
 		{/if}
 
-		<div class="mt-2 flex items-center justify-between">
-			<p class="flex items-center gap-1.5 text-xs text-muted-foreground">
-				{#if privacyLevel === 'public'}
-					<Globe class="h-3.5 w-3.5" />
-				{:else if privacyLevel === 'unlisted'}
-					<Lock class="h-3.5 w-3.5" />
-				{:else}
-					<Users class="h-3.5 w-3.5" />
+		<div class="mt-3 flex items-center justify-between">
+			<!-- Vote controls -->
+			<div class="flex items-center gap-1 rounded-full bg-white/5 p-1 ring-1 ring-white/10">
+				<button
+					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote ===
+					'upvote'
+						? 'bg-violet-500/20 text-violet-400'
+						: 'text-foreground/50'}"
+					onclick={() => handleVote('upvote')}
+					disabled={isVoting}
+					aria-label="Upvote"
+				>
+					<ArrowUp class="h-4 w-4" />
+				</button>
+				<span
+					class="min-w-[1.5rem] text-center text-xs font-bold {localUserVote === 'upvote'
+						? 'text-violet-400'
+						: localUserVote === 'downvote'
+							? 'text-rose-400'
+							: 'text-foreground/70'}"
+				>
+					{localNetScore}
+				</span>
+				<button
+					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote ===
+					'downvote'
+						? 'bg-rose-500/20 text-rose-400'
+						: 'text-foreground/50'}"
+					onclick={() => handleVote('downvote')}
+					disabled={isVoting}
+					aria-label="Downvote"
+				>
+					<ArrowDown class="h-4 w-4" />
+				</button>
+			</div>
+
+			<!-- Like button -->
+			<button
+				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
+					   {isLiked ? 'text-rose-400 ring-rose-500/20 bg-rose-500/10' : 'text-foreground/50'}"
+				onclick={handleLike}
+				disabled={isLiking}
+				aria-label={isLiked ? 'Unlike' : 'Like'}
+			>
+				<Heart class="h-3.5 w-3.5 transition-transform {isLiked ? 'scale-110 fill-current' : ''}" />
+				{#if localLikesCount > 0}
+					<span>{localLikesCount}</span>
 				{/if}
-				{new Date(activity.publishedAt || activity.published).toLocaleString('en-IN', {
-					day: '2-digit',
-					month: '2-digit',
-					year: 'numeric',
-					hour: '2-digit',
-					minute: '2-digit',
-					hour12: true,
-					timeZone: 'Asia/Kolkata'
-				})} IST
+			</button>
+
+			<!-- Boost button -->
+			<button
+				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
+					   {isBoosted ? 'text-emerald-400 ring-emerald-500/20 bg-emerald-500/10' : 'text-foreground/50'}"
+				onclick={handleBoost}
+				disabled={isBoosting}
+				aria-label={isBoosted ? 'Unboost' : 'Boost'}
+			>
+				<Repeat2 class="h-3.5 w-3.5 transition-transform {isBoosted ? 'scale-110' : ''}" />
+				{#if localBoostsCount > 0}
+					<span>{localBoostsCount}</span>
+				{/if}
+			</button>
+
+			<!-- Comment toggle -->
+			<button
+				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-colors hover:bg-white/10 {showComments
+					? 'text-violet-400'
+					: 'text-foreground/50'}"
+				onclick={() => (showComments = !showComments)}
+			>
+				<MessageSquare class="h-3.5 w-3.5" />
+				<span>
+					{localCommentsCount > 0 ? localCommentsCount : ''}
+					{showComments ? 'Hide' : 'Comments'}
+				</span>
+			</button>
+
+			<p
+				class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs text-muted-foreground"
+			>
+				{#if privacyLevel === 'public'}
+					<span class="flex items-center gap-1"><Globe class="h-3.5 w-3.5" /> Public</span>
+				{:else if privacyLevel === 'unlisted'}
+					<span class="flex items-center gap-1"><Lock class="h-3.5 w-3.5" /> Unlisted</span>
+				{:else}
+					<span class="flex items-center gap-1"><Users class="h-3.5 w-3.5" /> Followers</span>
+				{/if}
+				<span>
+					{new Date(activity.publishedAt || activity.published).toLocaleString('en-IN', {
+						day: '2-digit',
+						month: '2-digit',
+						year: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit',
+						hour12: true,
+						timeZone: 'Asia/Kolkata'
+					})} IST
+				</span>
 				{#if activity.object?.updated}
-					<span class="ml-2 italic">(edited)</span>
+					<span class="italic">(edited)</span>
+				{/if}
+				<span class="flex items-center gap-1">
+					<Languages class="h-3 w-3" />
+					{languageName}
+				</span>
+				{#if postLanguage !== 'en'}
+					<button
+						onclick={translatePost}
+						disabled={isTranslating}
+						class="group ml-2 flex items-center gap-1 transition-colors hover:text-primary"
+					>
+						{#if isTranslating}
+							<Loader2 class="h-3 w-3 animate-spin" />
+							<span>Translating...</span>
+						{:else}
+							<span>{showTranslated ? 'Show Original' : 'Translate'}</span>
+						{/if}
+					</button>
 				{/if}
 			</p>
 		</div>
 	</Card>
+
+	<!-- Comment section (below the card) -->
+	{#if showComments}
+		<div class="mt-2">
+			<CommentSection postId={targetObjectId} {username} bind:totalComments={localCommentsCount} />
+		</div>
+	{/if}
 {/if}
 
 <!-- Lightbox -->

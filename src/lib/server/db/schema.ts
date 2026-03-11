@@ -1,4 +1,5 @@
-import { pgTable, uuid, text, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, jsonb, timestamp, index, uniqueIndex, integer, boolean } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * Users Table
@@ -55,7 +56,22 @@ export const users = pgTable('users', {
 	 * URL to the user's avatar image.
 	 * Stored in Vercel Blob storage.
 	 */
-	avatarUrl: text('avatar_url')
+	avatarUrl: text('avatar_url'),
+
+	/**
+	 * User's email address for password recovery.
+	 */
+	email: text('email').unique(),
+
+	/**
+	 * Reset password token.
+	 */
+	resetPasswordToken: text('reset_password_token'),
+
+	/**
+	 * Reset password token expiry.
+	 */
+	resetPasswordExpires: timestamp('reset_password_expires')
 });
 
 /**
@@ -98,12 +114,18 @@ export const activities = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 
 		/**
-		 * The Actor who performed this activity.
-		 * References the users table.
+		 * The local Actor who performed this activity.
+		 * References the users table. Null if performed by a remote actor.
 		 */
 		actorId: uuid('actor_id')
-			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/**
+		 * The remote Actor who performed this activity.
+		 * References the remote_actors table. Null if performed by a local actor.
+		 */
+		remoteActorId: uuid('remote_actor_id')
+			.references(() => remoteActors.id, { onDelete: 'cascade' }),
 
 		/**
 		 * The full JSON-LD Activity object.
@@ -129,51 +151,90 @@ export const activities = pgTable(
 		/**
 		 * Type of activity (Create, Note, etc) for easier indexing/filtering without parsing JSON
 		 */
-		type: text('type').notNull()
+		type: text('type').notNull(),
+
+		/**
+		 * Denormalized like count for efficient display (Task 4.2.3).
+		 */
+		likesCount: integer('likes_count').notNull().default(0),
+
+		/**
+		 * Denormalized boost/announce count for efficient display (Task 4.3).
+		 */
+		boostsCount: integer('boosts_count').notNull().default(0)
 	},
 	(table) => {
 		return {
 			// Composite index for efficient outbox queries (sorted by date for a specific actor)
 			// This is critical for User Story 2.2 - fetching activities by actorId ordered by createdAt
-			actorCreatedAtIdx: index('activities_actor_created_at_idx').on(table.actorId, table.createdAt)
+			actorCreatedAtIdx: index('activities_actor_created_at_idx').on(table.actorId, table.createdAt),
+			remoteActorCreatedAtIdx: index('activities_remote_actor_created_at_idx').on(table.remoteActorId, table.createdAt),
 
-			// Note: GIN index on JSONB column for filtering by to/cc fields
-			// will be created via SQL migration as Drizzle doesn't support .using() in type-safe API
-			// This helps with User Story 2.3 - filtering activities by audience/visibility
+			// Index for fast comment tree lookups (find all replies to a given post)
+			inReplyToIdx: index('activities_in_reply_to_idx').using('btree', sql`((${table.activity}->'object'->>'inReplyTo'))`)
 		};
 	}
 );
 
 /**
  * Followers Table
- * Tracks who follows whom.
+ * Tracks who follows whom (local-to-local and local-to-remote).
  * Used for audience scoping (delivering to followers) and verifying read access.
+ *
+ * Follow request flow:
+ *   1. User A clicks "Follow" on User B → row inserted with status = 'pending'
+ *   2. User B accepts the request      → status updated to 'accepted'
+ *   3. Only 'accepted' rows grant read access to followers-only posts.
  */
 export const followers = pgTable(
 	'followers',
 	{
+		/** Internal ID */
+		id: uuid('id').defaultRandom().primaryKey(),
+
 		/**
-		 * The user being followed (the leader/target).
+		 * The local user being followed (the target/leader).
 		 */
 		userId: uuid('user_id')
-			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),
 
 		/**
-		 * The user who is following (the follower).
+		 * The remote user being followed.
+		 */
+		remoteUserId: uuid('remote_user_id')
+			.references(() => remoteActors.id, { onDelete: 'cascade' }),
+
+		/**
+		 * The local user who is following (the follower/requester).
 		 */
 		followerId: uuid('follower_id')
-			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),
 
 		/**
-		 * When the follow relationship was established.
+		 * The remote user who is following.
+		 */
+		remoteFollowerId: uuid('remote_follower_id')
+			.references(() => remoteActors.id, { onDelete: 'cascade' }),
+
+		/**
+		 * Status of the follow relationship.
+		 * 'pending'  – request sent, awaiting target user's approval
+		 * 'accepted' – target user approved the follow
+		 */
+		status: text('status').notNull().default('pending'),
+
+		/**
+		 * When the follow relationship was created.
 		 */
 		createdAt: timestamp('created_at').defaultNow().notNull()
 	},
 	(table) => {
 		return {
-			pk: { columns: [table.userId, table.followerId] } // Composite primary key
+			// Prevent duplicate local-to-local follow relationships
+			userFollowerUniqueIdx: uniqueIndex('followers_user_follower_idx').on(
+				table.userId,
+				table.followerId
+			)
 		};
 	}
 );
@@ -223,3 +284,198 @@ export const remoteActors = pgTable('remote_actors', {
 	 */
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
+
+/**
+ * Interactions Table
+ * Efficiently tracks user votes (upvotes/downvotes) on posts without parsing ActivityPub JSON blobs.
+ */
+export const interactions = pgTable(
+	'interactions',
+	{
+		/**
+		 * Unique identifier for the interaction.
+		 */
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/**
+		 * The URI/ID of the ActivityPub object being interacted with.
+		 */
+		postId: text('post_id').notNull(),
+
+		/**
+		 * The local Actor who performed this interaction.
+		 * References the users table.
+		 */
+		actorId: uuid('actor_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/**
+		 * Type of interaction ('upvote' or 'downvote').
+		 */
+		type: text('type').notNull(),
+
+		/**
+		 * When the interaction occurred.
+		 */
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// Ensure a user can only have one active interaction per post at a time
+			postActorUniqueIdx: uniqueIndex('interactions_post_actor_idx').on(table.postId, table.actorId)
+		};
+	}
+);
+
+/**
+ * Federated Follows Table
+ * Tracks follow relationships between local users and remote actors.
+ * Used for the ActivityPub follow handshake:
+ *   1. Local user sends Follow → status = "pending" (Task 3.2.4)
+ *   2. Remote server sends Accept → status upgraded to "accepted" (Task 3.3.4)
+ *
+ * Separate from the `followers` table which only tracks local-to-local follows.
+ */
+export const federatedFollows = pgTable('federated_follows', {
+	/**
+	 * Unique identifier for this follow record.
+	 */
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	/**
+	 * The local user who initiated the follow.
+	 */
+	localUserId: uuid('local_user_id')
+		.notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+
+	/**
+	 * The URI of the remote actor being followed
+	 * (e.g., "https://mastodon.social/users/Gargron").
+	 */
+	remoteActorUri: text('remote_actor_uri').notNull(),
+
+	/**
+	 * Status of the follow handshake.
+	 * "pending"  – Follow sent, awaiting Accept
+	 * "accepted" – Remote server sent Accept
+	 * "rejected" – Remote server sent Reject
+	 */
+	status: text('status').notNull().default('pending'),
+
+	/**
+	 * The ActivityPub ID of the outgoing Follow activity.
+	 * Used to match incoming Accept/Reject activities to this record.
+	 */
+	followActivityId: text('follow_activity_id'),
+
+	/**
+	 * When this follow was created.
+	 */
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+
+	/**
+	 * When this follow was last updated (e.g., status change).
+	 */
+	updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+/**
+ * Custom Emojis Table
+ * Stores metadata for custom emojis (shortcode and image URL).
+ */
+export const customEmojis = pgTable('custom_emojis', {
+	/**
+	 * Unique identifier for the emoji.
+	 */
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	/**
+	 * The shortcode used in posts (e.g., ":blobcat:").
+	 */
+	shortcode: text('shortcode').notNull().unique(),
+
+	/**
+	 * The URL to the emoji image.
+	 */
+	imageUrl: text('image_url').notNull(),
+
+	/**
+	 * When this emoji was added.
+	 */
+	createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+/**
+ * Likes Table (Task 4.2.2)
+ * Tracks Like activities — which user liked which post.
+ * Used to prevent duplicate likes and to generate Undo(Like) activities.
+ */
+export const likes = pgTable(
+	'likes',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/** The URI/ID of the post being liked. */
+		postId: text('post_id').notNull(),
+
+		/** The local user who liked the post. */
+		actorId: uuid('actor_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** The ActivityPub ID of the Like activity (used for Undo). */
+		likeActivityId: text('like_activity_id').notNull(),
+
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// One like per user per post
+			postActorUniqueIdx: uniqueIndex('likes_post_actor_idx').on(table.postId, table.actorId)
+		};
+	}
+);
+
+/**
+ * Notifications Table (Task 4.4.1)
+ * Aggregates inbound activities directed at the user:
+ * follow requests, likes, replies, mentions, boosts.
+ */
+export const notifications = pgTable(
+	'notifications',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/** The local user receiving the notification. */
+		recipientId: uuid('recipient_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** The actor who triggered the notification (local user ID or null for remote). */
+		actorId: uuid('actor_id')
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** URI of the remote actor who triggered the notification (null for local). */
+		remoteActorUri: text('remote_actor_uri'),
+
+		/** Notification type. */
+		type: text('type').notNull(), // 'follow' | 'like' | 'reply' | 'mention' | 'boost'
+
+		/** The ActivityPub object ID related to this notification (e.g. post URI). */
+		objectId: text('object_id'),
+
+		/** Whether the user has read this notification. */
+		read: boolean('read').notNull().default(false),
+
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// Fast lookup of unread notifications for a user
+			recipientReadIdx: index('notifications_recipient_read_idx').on(table.recipientId, table.read),
+			recipientCreatedAtIdx: index('notifications_recipient_created_at_idx').on(table.recipientId, table.createdAt)
+		};
+	}
+);

@@ -18,8 +18,13 @@ jobs:
         run: sleep 10
 
       - name: Check landing page
+        DEPLOYMENT_URL: ${{ inputs.deployment_url }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ inputs.deployment_url }}")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOYMENT_URL")
+          echo "Landing page status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            exit 1
+          fi
           echo "Landing page status: $STATUS"
           if [ "$STATUS" -ne 200 ]; then
             echo "❌ Landing page returned $STATUS"

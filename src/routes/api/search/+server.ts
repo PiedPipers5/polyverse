@@ -67,7 +67,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				displayName: localUser.displayName,
 				bio: localUser.bio,
 				avatarUrl: localUser.avatarUrl,
-				profileUrl: `/u/${localUser.username}`
+				profileUrl: `/u/@${localUser.username}`
 			}
 		});
 	}

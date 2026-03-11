@@ -1,19 +1,20 @@
+```
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
 type Theme = 'light' | 'dark';
 
-// Get initial theme from localStorage or default to dark
+// Get initial theme from localStorage or default to light
 function getInitialTheme(): Theme {
-    if (!browser) return 'dark';
+    if (!browser) return 'light';
 
     const stored = localStorage.getItem('theme');
     if (stored === 'light' || stored === 'dark') {
         return stored;
     }
 
-    // Default to dark theme
-    return 'dark';
+    // Default to light theme
+    return 'light';
 }
 
 // Create the theme store

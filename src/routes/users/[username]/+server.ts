@@ -19,7 +19,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
     const acceptHeader = request.headers.get('accept') || '';
 
     // Check if requesting ActivityPub JSON
-    const wantsActivityPub = 
+    const wantsActivityPub =
         acceptHeader.includes('application/activity+json') ||
         acceptHeader.includes('application/ld+json');
 
@@ -64,7 +64,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 
     // Build public key for ActivityPub (using the DID verification method)
     const verificationMethod = didDocument.verificationMethod?.[0];
-    
+
     // Construct the Actor JSON-LD object
     const actor: Record<string, unknown> = {
         '@context': [
@@ -78,6 +78,9 @@ export const GET: RequestHandler = async ({ params, request }) => {
         outbox: `${actorUrl}/outbox`,
         followers: `${actorUrl}/followers`,
         following: `${actorUrl}/following`,
+        endpoints: {
+            sharedInbox: `https://${domain}/inbox`
+        }
     };
 
     // Add optional profile fields
@@ -109,6 +112,9 @@ export const GET: RequestHandler = async ({ params, request }) => {
 
     // Link to DID Document
     actor.alsoKnownAs = [didDocument.id];
+
+    // Shared Inbox for federation optimization (US 3.4)
+    actor.endpoints = { sharedInbox: `https://${domain}/inbox` };
 
     return json(actor, {
         headers: {

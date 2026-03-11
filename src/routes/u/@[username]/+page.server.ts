@@ -32,59 +32,60 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const bio = user.bio || didDoc?.summary || '';
 	const avatarUrl = user.avatarUrl || didDoc?.icon?.url || '';
 
-	// Count followers (users who follow this user)
-	const followersResult = await db
-		.select({ count: count() })
-		.from(followers)
-		.where(eq(followers.userId, user.id));
-	const followersCount = followersResult[0]?.count || 0;
-
-	// Count following (users this user follows)
-	const followingResult = await db
-		.select({ count: count() })
-		.from(followers)
-		.where(eq(followers.followerId, user.id));
-	const followingCount = followingResult[0]?.count || 0;
-
-	// Count posts (activities created by this user)
-	const postsResult = await db
-		.select({ count: count() })
-		.from(activities)
-		.where(eq(activities.actorId, user.id));
-	const postsCount = postsResult[0]?.count || 0;
-
-	// Fetch recent activities for the feed
-	// We'll fetch the last 20 activities for this user
-	// Determine requestor's access level
+	// Check the follow status between requestor and profile owner
 	const requestor = locals.user;
-	// Check if the current user is the owner of this profile
 	const isOwner = requestor?.username === username;
 
-	// Check if requestor is a follower
+	// Run all stats and data queries in parallel
+	const [
+		followersResult,
+		followingResult,
+		allUserActivitiesCount,
+		followRecord,
+		recentActivitiesRaw
+	] = await Promise.all([
+		db.select({ count: count() }).from(followers).where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted'))),
+		db.select({ count: count() }).from(followers).where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted'))),
+		db.query.activities.findMany({ where: and(eq(activities.actorId, user.id), eq(activities.type, 'Create')) }),
+		(requestor && !isOwner)
+			? db.query.followers.findFirst({ where: and(eq(followers.userId, user.id), eq(followers.followerId, requestor.userId)) })
+			: Promise.resolve(null),
+		db.query.activities.findMany({
+			where: and(eq(activities.actorId, user.id), eq(activities.type, 'Create')),
+			orderBy: (activities, { desc }) => [desc(activities.createdAt)],
+			limit: 30
+		})
+	]);
+
+	const followersCount = followersResult[0]?.count || 0;
+	const followingCount = followingResult[0]?.count || 0;
+
+	// Filter out tombstones to get accurate active post count
+	const postsCount = allUserActivitiesCount.filter((a) => {
+		const obj = (a.activity as any).object;
+		return obj && obj.type !== 'Tombstone';
+	}).length;
+
+	let followStatus: 'none' | 'pending' | 'accepted' = 'none';
 	let isFollower = false;
-	if (requestor && !isOwner) {
-		const followRecord = await db.query.followers.findFirst({
-			where: and(
-				eq(followers.userId, user.id),
-				eq(followers.followerId, requestor.userId)
-			)
-		});
-		isFollower = !!followRecord;
+
+	if (followRecord) {
+		followStatus = followRecord.status as 'pending' | 'accepted';
+		isFollower = followRecord.status === 'accepted';
 	}
 
 	const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
 	const followersUri = `https://${env.DOMAIN}/users/${username}/followers`;
 
-	// Fetch recent activities (fetch more to filter)
-	const recentActivitiesRaw = await db.query.activities.findMany({
-		where: eq(activities.actorId, user.id),
-		orderBy: (activities, { desc }) => [desc(activities.createdAt)],
-		limit: 20 // Fetch more than needed to account for filtering
-	});
-
-	// Filter based on privacy
-	const recentActivities = recentActivitiesRaw.filter(record => {
+	// Filter based on privacy and tombstones
+	let filteredActivities = recentActivitiesRaw.filter(record => {
 		const act = record.activity as any;
+
+		// Filter out Tombstones (deleted posts)
+		if (act.object?.type === 'Tombstone' || act.type === 'Tombstone') {
+			return false;
+		}
+
 		const to = act.to || [];
 		const cc = act.cc || [];
 		const audiences = [...to, ...cc];
@@ -102,7 +103,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		if (isFollower && isFollowersOnly) return true;
 
 		return false;
-	}).slice(0, 5);
+	});
+
+	const hasMore = filteredActivities.length > 5;
+	const initialSelection = filteredActivities.slice(0, 5);
+	const nextCursor = hasMore ? initialSelection[initialSelection.length - 1].createdAt : null;
 
 	return {
 		profile: {
@@ -116,12 +121,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			followingCount,
 			postsCount
 		},
-		activities: recentActivities.map((a) => ({
+		activities: initialSelection.map((a) => ({
 			...a,
 			// Simplified content extraction for now - assuming Note type has content
 			content: (a.activity as any).object?.content || (a.activity as any).content || '',
 			publishedAt: a.createdAt
 		})),
-		isOwner
+		isOwner,
+		followStatus,
+		nextCursor,
+		hasMore
 	};
 };

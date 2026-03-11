@@ -5,6 +5,8 @@
 	import { auth } from '$lib/stores/auth';
 	import { page } from '$app/stores';
 
+	import AppleStyleDock from '$lib/components/ui/apple-style-dock.svelte';
+
 	let { children } = $props();
 
 	$effect(() => {
@@ -22,14 +24,26 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" type="image/svg" href="/pied-piper.svg" />
 </svelte:head>
 
 {#if $auth.loading}
 	<div class="flex min-h-screen items-center justify-center">Loading...</div>
 {:else}
-	<div class="min-h-screen bg-background text-foreground">
-		{@render children()}
+	<div class="flex min-h-screen bg-background text-foreground">
+		{#if $auth.user && $page.url.pathname !== '/' && $page.url.pathname !== '/login' && $page.url.pathname !== '/register'}
+			<AppleStyleDock currentPath={$page.url.pathname} />
+			<main
+				class="flex-1 pb-24 md:pb-20"
+				style="padding-bottom: max(6rem, calc(env(safe-area-inset-bottom, 0px) + 5rem))"
+			>
+				{@render children()}
+			</main>
+		{:else}
+			<main class="flex-1">
+				{@render children()}
+			</main>
+		{/if}
 	</div>
 {/if}
 

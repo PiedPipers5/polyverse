@@ -43,7 +43,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
     const domain = env.DOMAIN!;
     const body = await request.json();
     // Default to 'create' if no action specified
-    const { action = 'create', content, privacy = 'public', media = [], objectId } = body;
+    const { action = 'create', content, privacy = 'public', media = [], language = 'en', objectId, inReplyTo } = body;
 
     const actorUri = getActorUri(domain, username);
     const published = new Date().toISOString();
@@ -79,16 +79,46 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         // 4. Construct Note Object
         const noteId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
 
-        const note = {
+        // Custom Emoji Scanning
+        const emojiRegex = /:[a-zA-Z0-9_]+:/g;
+        const shortcodes = [...new Set(content.match(emojiRegex) || [])];
+        const tags: any[] = [];
+
+        if (shortcodes.length > 0) {
+            const emojisData = await db.query.customEmojis.findMany({
+                where: (table, { inArray }) => inArray(table.shortcode, shortcodes as string[])
+            });
+
+            for (const emoji of emojisData) {
+                tags.push({
+                    type: 'Emoji',
+                    name: emoji.shortcode,
+                    icon: {
+                        type: 'Image',
+                        mediaType: emoji.imageUrl.endsWith('.gif') ? 'image/gif' : 'image/png', // Simplified guess
+                        url: emoji.imageUrl
+                    }
+                });
+            }
+        }
+
+        const note: Record<string, unknown> = {
             id: noteId,
             type: 'Note',
             published,
             attributedTo: actorUri,
             content,
+            contentMap: { [language]: content },
             to,
             cc,
+            tag: tags,
             attachment: media
         };
+
+        // If this is a reply, set the inReplyTo field (ActivityPub standard)
+        if (inReplyTo) {
+            note.inReplyTo = inReplyTo;
+        }
 
         // 5. Construct Create Activity
         const createId = `https://${domain}/users/${username}/statuses/${crypto.randomUUID()}`;
@@ -158,6 +188,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         const updatedObject = {
             ...originalObject,
             content,
+            contentMap: { [language]: content },
             attachment: media, // Replace media
             updated: published // Add updated timestamp
         };
@@ -292,14 +323,21 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
     const pageParam = url.searchParams.get('page');
 
     if (!pageParam) {
-        // Return root OrderedCollection (Task 2.2.1)
-        // Get total count of activities for this user
-        const allActivities = await db.query.activities.findMany({
-            where: eq(activities.actorId, targetUser.id),
-            columns: { id: true }
+        // BUG FIX: Ensure the OrderedCollection totalItems only reflects valid, active posts.
+        // We filter for 'Create' activities and exclude those that are tombstones.
+        const allCreateActivities = await db.query.activities.findMany({
+            where: and(
+                eq(activities.actorId, targetUser.id),
+                eq(activities.type, 'Create')
+            ),
+            columns: { id: true, activity: true }
         });
 
-        const totalItems = allActivities.length;
+        // Filter out tombstones from count to match profile stats
+        const totalItems = allCreateActivities.filter(record => {
+            const act = record.activity as any;
+            return act.object?.type !== 'Tombstone';
+        }).length;
 
         return json({
             '@context': 'https://www.w3.org/ns/activitystreams',
@@ -355,6 +393,12 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
 
     const filteredItems = allActivities.filter(record => {
         const act = record.activity as any;
+
+        // BUG FIX: Filter out Tombstones (deleted posts) so they don't appear in the feed
+        if (act.object?.type === 'Tombstone' || act.type === 'Tombstone') {
+            return false;
+        }
+
         const to = act.to || [];
         const cc = act.cc || [];
         const audiences = [...to, ...cc];

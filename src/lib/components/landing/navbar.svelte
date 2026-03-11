@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import ThemeToggle from '$lib/components/ui/theme-toggle.svelte';
+	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
 
 	type User = {
 		username: string;
@@ -35,24 +36,24 @@
 </script>
 
 <nav
-	class="fixed top-0 right-0 left-0 z-50 transition-all duration-300 {scrolled
-		? 'glass-card bg-background/80 shadow-lg'
-		: 'bg-transparent'}"
+	class="fixed top-0 right-0 left-0 z-50 border-b border-border/60 backdrop-blur-xl transition-all duration-300 {scrolled
+		? 'bg-white/90 shadow-sm dark:bg-[#0d0a1a]/92 dark:shadow-lg dark:shadow-violet-950/40'
+		: 'bg-white/70 dark:bg-[#0d0a1a]/75'}"
 >
-	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
-		<div class="flex h-16 items-center justify-between md:h-20">
+	<div class="container mx-auto px-6 sm:px-8 lg:px-12">
+		<div class="relative flex h-18 items-center justify-between md:h-20">
 			<!-- Logo -->
 			<a href="/" class="group flex items-center space-x-2">
 				<div
-					class="flex h-10 w-10 transform items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 transition-transform group-hover:scale-110"
+					class="flex h-10 w-10 transform items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-fuchsia-500 transition-transform group-hover:scale-110"
 				>
 					<span class="text-xl font-bold text-white">Pp</span>
 				</div>
-				<span class="gradient-text hidden text-xl font-bold sm:inline">POLYVERSE</span>
+				<span class="gradient-text xs:inline hidden text-xl font-bold sm:inline">POLYVERSE</span>
 			</a>
 
 			<!-- Desktop Navigation -->
-			<div class="hidden items-center space-x-10 md:flex">
+			<div class="absolute left-1/2 hidden -translate-x-1/2 items-center space-x-14 md:flex">
 				{#each navLinks as link}
 					<a
 						href={link.href}
@@ -68,6 +69,9 @@
 
 			<!-- Theme Toggle & CTA Buttons -->
 			<div class="hidden items-center space-x-4 md:flex">
+				{#if user}
+					<GlobalSearch />
+				{/if}
 				<ThemeToggle />
 				{#if user}
 					<!-- Logged in: Show profile avatar -->
@@ -80,7 +84,7 @@
 							/>
 						{:else}
 							<div
-								class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-gradient-to-br from-violet-500 to-fuchsia-500 font-semibold text-white transition-transform group-hover:scale-110"
+								class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-linear-to-br from-violet-500 to-fuchsia-500 font-semibold text-white transition-transform group-hover:scale-110"
 							>
 								{(user.displayName || user.username).charAt(0).toUpperCase()}
 							</div>
@@ -94,7 +98,7 @@
 					<a href="/register">
 						<Button
 							size="sm"
-							class="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
+							class="bg-linear-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
 						>
 							Get Started
 						</Button>
@@ -141,6 +145,15 @@
 							{link.label}
 						</a>
 					{/each}
+					{#if user}
+						<div class="pt-4 pb-2">
+							<GlobalSearch />
+						</div>
+					{/if}
+					<div class="flex items-center justify-between pt-2">
+						<span class="text-sm font-medium text-foreground/70">Appearance</span>
+						<ThemeToggle />
+					</div>
 					<div class="flex flex-col space-y-2 border-t border-border pt-4">
 						{#if user}
 							<!-- Logged in: Show profile link -->
@@ -157,7 +170,7 @@
 									/>
 								{:else}
 									<div
-										class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-gradient-to-br from-violet-500 to-fuchsia-500 font-semibold text-white"
+										class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-500 bg-linear-to-br from-violet-500 to-fuchsia-500 font-semibold text-white"
 									>
 										{(user.displayName || user.username).charAt(0).toUpperCase()}
 									</div>
@@ -171,7 +184,7 @@
 							</a>
 							<a href="/register" onclick={() => (mobileMenuOpen = false)}>
 								<Button
-									class="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
+									class="w-full bg-linear-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600"
 								>
 									Get Started
 								</Button>

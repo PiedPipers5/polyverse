@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users, activities, followers } from '$lib/server/db/schema';
-import { eq, count, and } from 'drizzle-orm';
+import { users, activities, followers, interactions } from '$lib/server/db/schema';
+import { eq, count, and, inArray } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
@@ -33,45 +33,101 @@ export const load: PageServerLoad = async ({ locals }) => {
     const did = (user.didDocument as { id: string }).id;
     const domain = env.DOMAIN!;
 
-    // Fetch recent activities for the logged-in user (only Create activities = actual posts)
-    const recentActivities = await db.query.activities.findMany({
-        where: and(
-            eq(activities.actorId, user.id),
-            eq(activities.type, 'Create')
-        ),
-        orderBy: (activities, { desc }) => [desc(activities.createdAt)],
-        limit: 5
-    });
+    // Run parallel queries
+    const [
+        recentActivities,
+        followersResult,
+        followingResult,
+        postsCountResult,
+        pendingFollowRows
+    ] = await Promise.all([
+        db.query.activities.findMany({
+            where: and(eq(activities.actorId, user.id), eq(activities.type, 'Create')),
+            orderBy: (activities, { desc }) => [desc(activities.createdAt)],
+            limit: 50
+        }),
+        db.select({ count: count() }).from(followers).where(and(eq(followers.userId, user.id), eq(followers.status, 'accepted'))),
+        db.select({ count: count() }).from(followers).where(and(eq(followers.followerId, user.id), eq(followers.status, 'accepted'))),
+        db.query.activities.findMany({
+            where: and(eq(activities.actorId, user.id), eq(activities.type, 'Create'))
+        }),
+        db.query.followers.findMany({ where: and(eq(followers.userId, user.id), eq(followers.status, 'pending')) })
+    ]);
 
-    // Count followers
-    const followersResult = await db
-        .select({ count: count() })
-        .from(followers)
-        .where(eq(followers.userId, user.id));
     const followersCount = followersResult[0]?.count || 0;
-
-    // Count following
-    const followingResult = await db
-        .select({ count: count() })
-        .from(followers)
-        .where(eq(followers.followerId, user.id));
     const followingCount = followingResult[0]?.count || 0;
 
     // Count posts (only Create activities with non-Tombstone objects)
-    const allUserActivities = await db.query.activities.findMany({
-        where: and(
-            eq(activities.actorId, user.id),
-            eq(activities.type, 'Create')
-        )
-    });
+    const postsCount = postsCountResult.filter((a) => {
+        const obj = (a.activity as any).object;
+        return obj && obj.type !== 'Tombstone';
+    }).length;
 
-    // Filter out tombstones
-    const nonDeletedPosts = allUserActivities.filter((a) => {
+    const filteredActivities = recentActivities.filter((a) => {
         const obj = (a.activity as any).object;
         return obj && obj.type !== 'Tombstone';
     });
 
-    const postsCount = nonDeletedPosts.length;
+    // Hydrate interaction data and pending follower info in parallel
+    const postIds = filteredActivities.map(a => (a.activity as any).object?.id || a.id);
+    const pendingFollowerIds = [...new Set(pendingFollowRows.map(r => r.followerId).filter(Boolean))] as string[];
+
+    const [interactionsData, pendingFollowersData, allReplies] = await Promise.all([
+        postIds.length > 0
+            ? db.query.interactions.findMany({ where: inArray(interactions.postId, postIds) })
+            : Promise.resolve([]),
+        pendingFollowerIds.length > 0
+            ? db.query.users.findMany({ where: inArray(users.id, pendingFollowerIds), columns: { id: true, username: true, displayName: true, avatarUrl: true } })
+            : Promise.resolve([]),
+        db.query.activities.findMany({
+            where: eq(activities.type, 'Create')
+        })
+    ]);
+
+    // Build a map of Comment Counts
+    const commentCountMap = new Map<string, number>();
+    for (const row of allReplies) {
+        const act = row.activity as any;
+        const parentId = act.object?.inReplyTo;
+        if (parentId) {
+            commentCountMap.set(parentId, (commentCountMap.get(parentId) || 0) + 1);
+        }
+    }
+
+    const hydratedActivities = filteredActivities.map(a => {
+        const act = a.activity as any;
+        const postId = act.object?.id || a.id;
+
+        const postInteractions = interactionsData.filter(i => i.postId === postId);
+        const upvotes = postInteractions.filter(i => i.type === 'upvote').length;
+        const downvotes = postInteractions.filter(i => i.type === 'downvote').length;
+        const netScore = upvotes - downvotes;
+        const currentUserVote = postInteractions.find(i => i.actorId === user.id)?.type || null;
+
+        return {
+            ...a,
+            content: act.object?.content || act.content || '',
+            publishedAt: a.createdAt,
+            netScore,
+            commentsCount: commentCountMap.get(postId) || 0,
+            userVote: currentUserVote
+        };
+    });
+
+    const pendingUserMap = new Map(pendingFollowersData.map(u => [u.id, u]));
+
+    const pendingRequests = pendingFollowRows.map(r => {
+        const follower = r.followerId ? pendingUserMap.get(r.followerId) : null;
+        return {
+            id: r.id,
+            follower: follower ? {
+                username: follower.username,
+                displayName: follower.displayName,
+                avatarUrl: follower.avatarUrl
+            } : null,
+            createdAt: r.createdAt
+        };
+    });
 
     return {
         user: {
@@ -88,16 +144,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             followingCount,
             postsCount
         },
-        activities: recentActivities
-            .filter((a) => {
-                const obj = (a.activity as any).object;
-                // Exclude deleted posts (tombstones)
-                return obj && obj.type !== 'Tombstone';
-            })
-            .map((a) => ({
-                ...a,
-                content: (a.activity as any).object?.content || (a.activity as any).content || '',
-                publishedAt: a.createdAt
-            }))
+        activities: hydratedActivities,
+        pendingRequests
     };
 };
