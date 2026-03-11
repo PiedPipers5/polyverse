@@ -402,7 +402,10 @@
 
 		<div class="space-y-2">
 			<div class="mt-3 text-sm leading-relaxed text-foreground/90">
-				<RichContent content={apActivity.object.content} tags={apActivity.object.tag} />
+				<RichContent 
+					content={showTranslated && translatedContent ? translatedContent : apActivity.object.content} 
+					tags={apActivity.object.tag} 
+				/>
 			</div>
 
 			{#if showTranslated}
