@@ -21,27 +21,33 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		throw error(401, 'Unauthorized');
 	}
 
-	const query = url.searchParams.get('q')?.trim();
+	const rawQuery = url.searchParams.get('q')?.trim();
 
-	if (!query) {
-		throw error(400, 'Search query is required (use ?q=@user@domain)');
+	if (!rawQuery) {
+		throw error(400, 'Search query is required');
+	}
+
+	const localDomain = env.DOMAIN!;
+	
+	// Check if this is a bare username (no @ and no domain)
+	let query = rawQuery;
+	if (!rawQuery.includes('@') && /^[a-zA-Z0-9_.-]+$/.test(rawQuery)) {
+		query = `@${rawQuery}@${localDomain}`;
 	}
 
 	// 2. Check if the query looks like a Fediverse handle
 	const parsed = parseHandle(query);
 
 	if (!parsed) {
-		// Not a handle pattern — return empty results for now
-		// (local full-text search can be added in a future story)
+		// Not a handle pattern
 		return json({
 			type: 'no_results',
-			query,
-			message: 'Search term does not match a Fediverse handle pattern (@user@domain). Try using the full handle.'
+			query: rawQuery,
+			message: 'Search term does not match a Fediverse handle or valid username.'
 		});
 	}
 
 	const { username, domain } = parsed;
-	const localDomain = env.DOMAIN!;
 
 	// 3. If querying a local user, look up directly
 	if (domain === localDomain) {
