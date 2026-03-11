@@ -1,0 +1,24 @@
+{
+	"appId": "com.piedpipers.polyverse",
+	"appName": "Polyverse",
+	"server": {
+		"url": "https://polyverse-pp.vercel.app",
+		"cleartext": false
+	},
+	"android": {
+		"allowMixedContent": false,
+		"useLegacyBridge": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#09090b",
+			"showSpinner": false,
+			"androidScaleType": "CENTER_CROP"
+		},
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#09090b"
+		}
+	}
+}

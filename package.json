@@ -76,6 +76,7 @@
 		"resend": "^6.9.1",
 		"svelte-sonner": "^1.0.7",
 		"tailwindcss-animate": "^1.0.7",
+		"turbo": "^2.8.15",
 		"zod": "^4.3.6"
 	}
 }
