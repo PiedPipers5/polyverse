@@ -470,43 +470,32 @@
 			{/if}
 		</div>
 
-		<div class="mt-3 flex items-center justify-between">
-			<!-- Vote controls -->
-			<div class="flex items-center gap-1 rounded-full bg-white/5 p-1 ring-1 ring-white/10">
+		<!-- Action bar: Row 1 – interactive buttons -->
+		<div class="mt-3 flex items-center gap-2">
+			<!-- Vote pill -->
+			<div class="flex items-center gap-0.5 rounded-full bg-white/5 p-1 ring-1 ring-white/10">
 				<button
-					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote ===
-					'upvote'
-						? 'bg-violet-500/20 text-violet-400'
-						: 'text-foreground/50'}"
+					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote === 'upvote' ? 'bg-violet-500/20 text-violet-400' : 'text-foreground/50'}"
 					onclick={() => handleVote('upvote')}
 					disabled={isVoting}
 					aria-label="Upvote"
 				>
-					<ArrowUp class="h-4 w-4" />
+					<ArrowUp class="h-3.5 w-3.5" />
 				</button>
-				<span
-					class="min-w-[1.5rem] text-center text-xs font-bold {localUserVote === 'upvote'
-						? 'text-violet-400'
-						: localUserVote === 'downvote'
-							? 'text-rose-400'
-							: 'text-foreground/70'}"
-				>
+				<span class="min-w-[1.75rem] text-center text-xs font-bold tabular-nums {localUserVote === 'upvote' ? 'text-violet-400' : localUserVote === 'downvote' ? 'text-rose-400' : 'text-foreground/70'}">
 					{localNetScore}
 				</span>
 				<button
-					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote ===
-					'downvote'
-						? 'bg-rose-500/20 text-rose-400'
-						: 'text-foreground/50'}"
+					class="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10 {localUserVote === 'downvote' ? 'bg-rose-500/20 text-rose-400' : 'text-foreground/50'}"
 					onclick={() => handleVote('downvote')}
 					disabled={isVoting}
 					aria-label="Downvote"
 				>
-					<ArrowDown class="h-4 w-4" />
+					<ArrowDown class="h-3.5 w-3.5" />
 				</button>
 			</div>
 
-			<!-- Like button -->
+			<!-- Like -->
 			<button
 				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
 					   {isLiked ? 'bg-rose-500/10 text-rose-400 ring-rose-500/20' : 'text-foreground/50'}"
@@ -514,13 +503,11 @@
 				disabled={isLiking}
 				aria-label={isLiked ? 'Unlike' : 'Like'}
 			>
-				<Heart class="h-3.5 w-3.5 transition-transform {isLiked ? 'scale-110 fill-current' : ''}" />
-				{#if localLikesCount > 0}
-					<span>{localLikesCount}</span>
-				{/if}
+				<Heart class="h-3.5 w-3.5 shrink-0 transition-transform {isLiked ? 'scale-110 fill-current' : ''}" />
+				{#if localLikesCount > 0}<span class="tabular-nums">{localLikesCount}</span>{/if}
 			</button>
 
-			<!-- Boost button -->
+			<!-- Boost -->
 			<button
 				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
 					   {isBoosted ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20' : 'text-foreground/50'}"
@@ -528,69 +515,77 @@
 				disabled={isBoosting}
 				aria-label={isBoosted ? 'Unboost' : 'Boost'}
 			>
-				<Repeat2 class="h-3.5 w-3.5 transition-transform {isBoosted ? 'scale-110' : ''}" />
-				{#if localBoostsCount > 0}
-					<span>{localBoostsCount}</span>
-				{/if}
+				<Repeat2 class="h-3.5 w-3.5 shrink-0 transition-transform {isBoosted ? 'scale-110' : ''}" />
+				{#if localBoostsCount > 0}<span class="tabular-nums">{localBoostsCount}</span>{/if}
 			</button>
 
-			<!-- Comment toggle -->
+			<!-- Comments -->
 			<button
-				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-colors hover:bg-white/10 {showComments
-					? 'text-violet-400'
-					: 'text-foreground/50'}"
+				class="flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all
+					{showComments ? 'bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20' : 'bg-white/5 text-foreground/50 ring-1 ring-white/10 hover:bg-white/10'}"
 				onclick={() => (showComments = !showComments)}
 			>
-				<MessageSquare class="h-3.5 w-3.5" />
-				<span>
-					{localCommentsCount > 0 ? localCommentsCount : ''}
-					{showComments ? 'Hide' : 'Comments'}
-				</span>
+				<MessageSquare class="h-3.5 w-3.5 shrink-0" />
+				{#if localCommentsCount > 0}
+					<span class="tabular-nums">{localCommentsCount}</span>
+				{/if}
+				<span class="hidden sm:inline">{showComments ? 'Hide' : 'Comments'}</span>
 			</button>
+		</div>
 
-			<p
-				class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs text-muted-foreground"
-			>
-				{#if privacyLevel === 'public'}
-					<span class="flex items-center gap-1"><Globe class="h-3.5 w-3.5" /> Public</span>
-				{:else if privacyLevel === 'unlisted'}
-					<span class="flex items-center gap-1"><Lock class="h-3.5 w-3.5" /> Unlisted</span>
-				{:else}
-					<span class="flex items-center gap-1"><Users class="h-3.5 w-3.5" /> Followers</span>
-				{/if}
-				<span>
-					{new Date(activity.publishedAt || activity.published).toLocaleString('en-IN', {
-						day: '2-digit',
-						month: '2-digit',
-						year: 'numeric',
-						hour: '2-digit',
-						minute: '2-digit',
-						hour12: true,
-						timeZone: 'Asia/Kolkata'
-					})} IST
-				</span>
-				{#if activity.object?.updated}
-					<span class="italic">(edited)</span>
-				{/if}
-				<span class="flex items-center gap-1">
-					<Languages class="h-3 w-3" />
-					{languageName}
-				</span>
-				{#if postLanguage !== 'en'}
-					<button
-						onclick={translatePost}
-						disabled={isTranslating}
-						class="group ml-2 flex items-center gap-1 transition-colors hover:text-primary"
-					>
-						{#if isTranslating}
-							<Loader2 class="h-3 w-3 animate-spin" />
-							<span>Translating...</span>
-						{:else}
-							<span>{showTranslated ? 'Show Original' : 'Translate'}</span>
-						{/if}
-					</button>
-				{/if}
-			</p>
+		<!-- Action bar: Row 2 – metadata -->
+		<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-foreground/35">
+			<!-- Privacy badge -->
+			{#if privacyLevel === 'public'}
+				<span class="flex items-center gap-1"><Globe class="h-3 w-3" /> Public</span>
+			{:else if privacyLevel === 'unlisted'}
+				<span class="flex items-center gap-1"><Lock class="h-3 w-3" /> Unlisted</span>
+			{:else}
+				<span class="flex items-center gap-1"><Users class="h-3 w-3" /> Followers</span>
+			{/if}
+
+			<span class="text-foreground/25">·</span>
+
+			<!-- Timestamp -->
+			<span>
+				{new Date(activity.publishedAt || activity.published).toLocaleString('en-IN', {
+					day: '2-digit',
+					month: '2-digit',
+					year: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit',
+					hour12: true,
+					timeZone: 'Asia/Kolkata'
+				})} IST
+			</span>
+
+			{#if activity.object?.updated}
+				<span class="italic text-foreground/30">(edited)</span>
+			{/if}
+
+			<span class="text-foreground/25">·</span>
+
+			<!-- Language -->
+			<span class="flex items-center gap-1">
+				<Languages class="h-3 w-3" />
+				{languageName}
+			</span>
+
+			{#if postLanguage !== 'en'}
+				<button
+					onclick={translatePost}
+					disabled={isTranslating}
+					class="flex items-center gap-1 text-foreground/40 transition-colors hover:text-primary"
+				>
+					{#if isTranslating}
+						<Loader2 class="h-3 w-3 animate-spin" />
+						<span>Translating…</span>
+					{:else}
+						<Sparkles class="h-3 w-3" />
+						<span>{showTranslated ? 'Show original' : 'Translate'}</span>
+					{/if}
+				</button>
+			{/if}
 		</div>
 	</Card>
 
