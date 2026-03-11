@@ -454,22 +454,119 @@
 				<div in:fly={{ y: 20, duration: 400 }} class="space-y-6">
 					<Card class="glass-card border-white/10 shadow-xl">
 						<CardHeader>
-							<CardTitle class="text-lg font-bold">Privacy Control</CardTitle>
+							<CardTitle class="text-lg font-bold">Privacy & Security</CardTitle>
 							<p class="text-sm text-muted-foreground">
-								Manage your privacy preferences and account security.
+								Manage your account security and authentication credentials.
 							</p>
 						</CardHeader>
-						<CardContent class="py-12 text-center">
-							<div
-								class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-500/10"
-							>
-								<ShieldCheck class="h-8 w-8 text-violet-500" />
+						<CardContent class="space-y-8">
+							<div class="space-y-4">
+								<div class="flex items-center gap-3">
+									<div
+										class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10"
+									>
+										<ShieldCheck class="h-5 w-5 text-violet-500" />
+									</div>
+									<div>
+										<h3 class="font-semibold">Security Protocol</h3>
+										<p class="text-xs text-muted-foreground">
+											Update your access key to stay secure.
+										</p>
+									</div>
+								</div>
+
+								<form
+									method="POST"
+									action="?/changePassword"
+									use:enhance={() => {
+										saving = true;
+										return async ({ result, update }) => {
+											await update();
+											saving = false;
+											if (result.type === 'success' && result.data?.passwordSuccess) {
+												toast.success('Access key updated successfully');
+											} else if (result.type === 'failure' && result.data?.passwordError) {
+												toast.error(result.data.passwordError);
+											}
+										};
+									}}
+									class="mt-6 space-y-6 rounded-2xl border border-white/5 bg-white/5 p-6"
+								>
+									<div class="grid gap-6 sm:grid-cols-1">
+										<div class="space-y-2">
+											<label for="currentPassword" class="text-sm font-semibold text-foreground/80"
+												>Current Keyphrase</label
+											>
+											<Input
+												id="currentPassword"
+												name="currentPassword"
+												type="password"
+												placeholder="••••••••"
+												required
+												class="border-white/10 bg-white/5 focus-visible:ring-violet-500"
+											/>
+										</div>
+
+										<div class="grid gap-6 sm:grid-cols-2">
+											<div class="space-y-2">
+												<label for="newPassword" class="text-sm font-semibold text-foreground/80"
+													>New Keyphrase</label
+												>
+												<Input
+													id="newPassword"
+													name="newPassword"
+													type="password"
+													placeholder="••••••••"
+													required
+													class="border-white/10 bg-white/5 focus-visible:ring-violet-500"
+												/>
+											</div>
+
+											<div class="space-y-2">
+												<label
+													for="confirmPassword"
+													class="text-sm font-semibold text-foreground/80"
+													>Confirm New Keyphrase</label
+												>
+												<Input
+													id="confirmPassword"
+													name="confirmPassword"
+													type="password"
+													placeholder="••••••••"
+													required
+													class="border-white/10 bg-white/5 focus-visible:ring-violet-500"
+												/>
+											</div>
+										</div>
+									</div>
+
+									<div class="flex justify-start">
+										<Button
+											type="submit"
+											disabled={saving}
+											class="bg-violet-600 hover:bg-violet-500"
+										>
+											{#if saving}
+												<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+												Updating...
+											{:else}
+												Update Access Key
+											{/if}
+										</Button>
+									</div>
+								</form>
 							</div>
-							<h3 class="text-lg font-semibold">Privacy Settings Coming Soon</h3>
-							<p class="mx-auto max-w-sm text-sm text-muted-foreground">
-								We are working on advanced privacy features including blocklists, instance blocking,
-								and post visibility defaults.
-							</p>
+
+							<div class="rounded-2xl border border-amber-500/10 bg-amber-500/5 p-6">
+								<h4 class="mb-2 text-sm font-bold tracking-widest text-amber-500 uppercase">
+									Notice
+								</h4>
+								<p class="text-xs leading-relaxed text-amber-500/80">
+									Changing your access key will encrypt your DID identity with the new protocol.
+									Ensure you remember your new keyphrase as it cannot be recovered without a
+									recovery email.
+								</p>
+							</div>
 						</CardContent>
 					</Card>
 				</div>

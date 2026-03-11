@@ -22,6 +22,7 @@ const registerSchema = z.object({
     username: z.string()
         .min(5, { message: "Username must be at least 5 characters" })
         .regex(/^[a-zA-Z0-9_]+$/, { message: "Username can only contain letters, numbers, and underscores" }),
+    email: z.string().email({ message: "Invalid email address" }),
     password: z.string()
         .min(8, { message: "Password must be at least 8 characters" })
         .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
@@ -46,6 +47,7 @@ export const actions: Actions = {
         // Validate username and password with zod
         const isValid = registerSchema.safeParse({
             username: usernameRaw?.toString(),
+            email: formData.get("email")?.toString(),
             password: passwordRaw?.toString(),
             confirmPassword: confirmPasswordRaw?.toString()
         })
@@ -56,6 +58,7 @@ export const actions: Actions = {
             const formattedErrors = isValid.error.flatten();
             return fail(400, {
                 errors: formattedErrors.fieldErrors.username?.[0] ||
+                    formattedErrors.fieldErrors.email?.[0] ||
                     formattedErrors.fieldErrors.password?.[0] ||
                     formattedErrors.fieldErrors.confirmPassword?.[0] ||
                     "Invalid input"
@@ -85,6 +88,7 @@ export const actions: Actions = {
             // Add public viewable user data
             const [newUser] = await db.insert(users).values({
                 username: validatedUserData.username,
+                email: validatedUserData.email,
                 passwordHash: pswdHash,
                 didDocument: didResult.didDocument
             }).returning({ id: users.id });
