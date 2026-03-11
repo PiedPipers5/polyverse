@@ -95,7 +95,7 @@ async function fetchTrendingStatuses(instance: string): Promise<TrendingStatus[]
 		const url = `https://${instance}/api/v1/trends/statuses?limit=10`;
 		const res = await fetch(url, {
 			headers: { Accept: 'application/json' },
-			signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+			signal: AbortSignal.timeout(4_000) // Much shorter timeout for background fetch
 		});
 
 		if (!res.ok) {
@@ -120,7 +120,7 @@ async function fetchTrendingTags(instance: string): Promise<TrendingTag[]> {
 		const url = `https://${instance}/api/v1/trends/tags?limit=10`;
 		const res = await fetch(url, {
 			headers: { Accept: 'application/json' },
-			signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+			signal: AbortSignal.timeout(4_000) // Much shorter timeout for background fetch
 		});
 
 		if (!res.ok) {
@@ -173,6 +173,46 @@ function aggregateTags(allTags: TrendingTag[]): TrendingTag[] {
 	return [...tagMap.values()].sort((a, b) => (b.totalUses || 0) - (a.totalUses || 0));
 }
 
+// ── Background Fetcher ───────────────────────────────────────────
+async function refreshTrendingData(type: 'statuses' | 'tags', cacheKey: string) {
+	try {
+		console.log(`[Trending] Background refresh started for ${type}`);
+		if (type === 'statuses') {
+			const results = await Promise.all(FEDIVERSE_INSTANCES.map(fetchTrendingStatuses));
+			const allStatuses = results.flat();
+			const aggregated = aggregateStatuses(allStatuses);
+
+			const response = {
+				type: 'statuses',
+				statuses: aggregated.slice(0, 30),
+				instances: FEDIVERSE_INSTANCES,
+				fetchedAt: new Date().toISOString()
+			};
+
+			// Store in cache without EX so it persists, we will check fetchedAt
+			await setCachedData(cacheKey, response, CACHE_TTL_SECONDS * 10); // Keep stale data longer
+			console.log(`[Trending] Background refresh completed for statuses`);
+		} else {
+			const results = await Promise.all(FEDIVERSE_INSTANCES.map(fetchTrendingTags));
+			const allTags = results.flat();
+			const aggregated = aggregateTags(allTags);
+
+			const response = {
+				type: 'tags',
+				tags: aggregated.slice(0, 20),
+				instances: FEDIVERSE_INSTANCES,
+				fetchedAt: new Date().toISOString()
+			};
+
+			await setCachedData(cacheKey, response, CACHE_TTL_SECONDS * 10);
+			console.log(`[Trending] Background refresh completed for tags`);
+		}
+	} catch (err) {
+		console.error(`[Trending] Background refresh failed for ${type}:`, err);
+	}
+}
+
+
 // ── Handler ──────────────────────────────────────────────────────
 export const GET: RequestHandler = async ({ url }) => {
 	const type = url.searchParams.get('type') || 'statuses';
@@ -183,43 +223,38 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	const cacheKey = `polyverse:trending:${type}`;
 
-	// Check cache first
+	// 1. Check Cache
 	const cached = await getCachedData(cacheKey);
+
+	// 2. Determine if we need to refresh (if cache is older than 5 minutes)
+	let needsRefresh = true;
+	if (cached && cached.fetchedAt) {
+		const ageInMs = Date.now() - new Date(cached.fetchedAt).getTime();
+		if (ageInMs < CACHE_TTL_SECONDS * 1000) {
+			needsRefresh = false;
+		}
+	}
+
 	if (cached) {
+		// If data is stale, trigger background refresh
+		if (needsRefresh) {
+			// Fire and forget
+			Promise.resolve().then(() => refreshTrendingData(type, cacheKey)).catch(console.error);
+		}
+
 		return json({
 			...cached,
-			cached: true
+			cached: true,
+			stale: needsRefresh
 		});
 	}
 
-	// Fetch from all instances in parallel
-	if (type === 'statuses') {
-		const results = await Promise.all(FEDIVERSE_INSTANCES.map(fetchTrendingStatuses));
-		const allStatuses = results.flat();
-		const aggregated = aggregateStatuses(allStatuses);
+	// 3. Fallback if strictly empty (first ever load)
+	// We await it this time so the user doesn't get an empty screen
+	await refreshTrendingData(type, cacheKey);
+	const freshData = await getCachedData(cacheKey);
 
-		const response = {
-			type: 'statuses',
-			statuses: aggregated.slice(0, 30),
-			instances: FEDIVERSE_INSTANCES,
-			fetchedAt: new Date().toISOString()
-		};
-
-		await setCachedData(cacheKey, response, CACHE_TTL_SECONDS);
-		return json({ ...response, cached: false });
-	} else {
-		const results = await Promise.all(FEDIVERSE_INSTANCES.map(fetchTrendingTags));
-		const allTags = results.flat();
-		const aggregated = aggregateTags(allTags);
-
-		const response = {
-			type: 'tags',
-			tags: aggregated.slice(0, 20),
-			instances: FEDIVERSE_INSTANCES,
-			fetchedAt: new Date().toISOString()
-		};
-
-		await setCachedData(cacheKey, response, CACHE_TTL_SECONDS);
-		return json({ ...response, cached: false });
-	}
+	return freshData
+		? json({ ...freshData, cached: false })
+		: json({ error: 'Failed to fetch trending data' }, { status: 500 });
 };

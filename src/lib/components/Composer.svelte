@@ -5,7 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import { fly, fade, scale } from 'svelte/transition';
 	import EmojiPicker from './EmojiPicker.svelte';
-	import { Image as ImageIcon, X, Loader2, Globe, Lock, Users, ChevronDown } from 'lucide-svelte';
+	import { Image as ImageIcon, X, Loader2, Globe, Lock, Users, ChevronDown, ShieldAlert } from 'lucide-svelte';
 	import LanguagePicker from './LanguagePicker.svelte';
 
 	interface MediaItem {
@@ -52,6 +52,7 @@
 	let media = $state<MediaItem[]>(initialMedia);
 	let privacy = $state<'public' | 'unlisted' | 'followers'>(initialPrivacy);
 	let selectedLanguage = $state(initialLanguage);
+	let checkNsfw = $state(false);
 	let privacyDropdownOpen = $state(false);
 	let fileInput: HTMLInputElement;
 	let textarea = $state<HTMLTextAreaElement | null>(null);
@@ -186,6 +187,7 @@
 				action: mode,
 				privacy,
 				language: selectedLanguage,
+				checkNsfw,
 				objectId: mode === 'edit' ? objectId : undefined,
 				media: media.map((m) => ({
 					url: m.url,
@@ -215,6 +217,7 @@
 					media = [];
 					privacy = 'public';
 					selectedLanguage = 'en';
+					checkNsfw = false;
 					if (onPostCreated) onPostCreated(result);
 				} else {
 					toast.success('Note updated!');
@@ -381,6 +384,19 @@
 						disabled={isSubmitting}
 					/>
 				</div>
+                
+                <!-- NSFW Toggle -->
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onclick={() => (checkNsfw = !checkNsfw)}
+                    disabled={isSubmitting}
+                    class="flex h-9 items-center gap-1.5 rounded-lg px-2 text-muted-foreground transition-all {checkNsfw ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300' : 'hover:bg-white/5 hover:text-foreground active:bg-white/10'}"
+                    title="Scan for NSFW content using AI"
+                >
+                    <ShieldAlert class="h-3.5 w-3.5" />
+                    <span class="text-[11px] font-bold">NSFW Scan</span>
+                </Button>
 
 				{#if mode === 'edit'}
 					<Button
