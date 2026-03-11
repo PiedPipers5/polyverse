@@ -1,0 +1,298 @@
+-- Merging decision tree log ---
+provider#androidx.core.content.FileProvider
+INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:27:9-35:20
+	android:grantUriPermissions
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:31:13-47
+	android:authorities
+		INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:29:13-64
+	android:exported
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:30:13-37
+	android:name
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:28:13-62
+manifest
+ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:2:1-41:12
+INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:2:1-41:12
+INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:2:1-41:12
+INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:2:1-41:12
+MERGED from [:capacitor-android] /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/node_modules/@capacitor/android/capacitor/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:2:1-7:12
+MERGED from [:capacitor-cordova-android-plugins] /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:2:1-11:12
+MERGED from [org.apache.cordova:framework:14.0.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/e47013dec160bb8e8e78795049f410c2/transformed/framework-14.0.1/AndroidManifest.xml:20:1-27:12
+MERGED from [androidx.core:core-splashscreen:1.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/4f5eb2e1ae45a07736e2f6ed862ea36a/transformed/core-splashscreen-1.2.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.appcompat:appcompat-resources:1.7.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/bee8f78bb28e6cb788edd05c601f4778/transformed/appcompat-resources-1.7.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.appcompat:appcompat:1.7.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c3f09e8abd8bb01c9314454bd06bb337/transformed/appcompat-1.7.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ef97883a45eaa5cc79115d450cce1dbe/transformed/coordinatorlayout-1.3.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.fragment:fragment:1.8.9] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/754c4f1b691d2a1223e4f8f413992fee/transformed/fragment-1.8.9/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.activity:activity:1.11.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/4ce00e85fb17003296e7add5523825c1/transformed/activity-1.11.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/1e3e5961ccf37b13ee8a7c0a81228664/transformed/cursoradapter-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.drawerlayout:drawerlayout:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f570623fbaea2df5386d3e48ada25a61/transformed/drawerlayout-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.emoji2:emoji2-views-helper:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/25a881cfd51f0b690442a74b496782fd/transformed/emoji2-views-helper-1.3.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.viewpager:viewpager:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/5c150d65e548acad3954bacf90b47f66/transformed/viewpager-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.customview:customview:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/596ab941bf00b590daff3ec7eb267457/transformed/customview-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.webkit:webkit:1.14.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c2f70b51baa62bcee94ea5c7e05791a1/transformed/webkit-1.14.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/dbca2f6d95f7d2f69dee86e3f7b328a8/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/98eaa2f86c1e52fdab04ff44c25cd64f/transformed/vectordrawable-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.core:core-ktx:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/6443194ff2cd53b8a19f0de2b31832a0/transformed/core-ktx-1.17.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.loader:loader:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c0a22850032ed8caa67b3d94a8173736/transformed/loader-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:17:1-30:12
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/8d83e436f29a9ad9858ae8c630f3448b/transformed/lifecycle-livedata-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ab32e4c3e2bf096654fd9e14504854dc/transformed/lifecycle-viewmodel-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/b5655c5df44c26433ffde34d45e6b2a4/transformed/lifecycle-livedata-core-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ebf9360ba611f1d20f2bddac6f1045ca/transformed/lifecycle-runtime-2.6.2/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/de2a1b5c01db4d02ef6d13f0f4e2cf96/transformed/lifecycle-viewmodel-savedstate-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.savedstate:savedstate:1.2.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/3f2ab0b27a59a3dfe1466c241ece8334/transformed/savedstate-1.2.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:17:1-55:12
+MERGED from [androidx.startup:startup-runtime:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/7179ce4c01b9a0b75718a869351620f5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:17:1-33:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/b26bfd9a484ffd5014f872ac1684c434/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/a927f34fced1647a8adc4ec57dcbe539/transformed/interpolator-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.tracing:tracing:1.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/dcfd9b438b7b1dc562c63a5efe9cf4a0/transformed/tracing-1.2.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/56c299ca5cc1351fb9b11d94695125dc/transformed/core-runtime-2.2.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/1d9ef0194f51a6e0da4e440575587814/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.core:core-viewtree:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/9275faa7fc56368462609e8a34802ec7/transformed/core-viewtree-1.0.0/AndroidManifest.xml:2:1-7:12
+	package
+		INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:2:11-69
+application
+ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:4:5-36:19
+INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:4:5-36:19
+MERGED from [:capacitor-cordova-android-plugins] /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:8:5-9:19
+MERGED from [:capacitor-cordova-android-plugins] /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:8:5-9:19
+MERGED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:28:5-89
+MERGED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:28:5-89
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/7179ce4c01b9a0b75718a869351620f5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/7179ce4c01b9a0b75718a869351620f5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/b26bfd9a484ffd5014f872ac1684c434/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/b26bfd9a484ffd5014f872ac1684c434/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+	android:extractNativeLibs
+		INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+	android:appComponentFactory
+		ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:28:18-86
+	android:supportsRtl
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:9:9-35
+	android:label
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:7:9-41
+	android:roundIcon
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:8:9-54
+	android:icon
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:6:9-43
+	android:allowBackup
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:5:9-35
+	android:theme
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:10:9-40
+activity#com.piedpipers.polyverse.MainActivity
+ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:12:9-25:20
+	android:label
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:15:13-56
+	android:launchMode
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:17:13-44
+	android:exported
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:18:13-36
+	android:configChanges
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:13:13-148
+	android:theme
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:16:13-62
+	android:name
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:14:13-41
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:20:13-23:29
+action#android.intent.action.MAIN
+ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:21:17-69
+	android:name
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:21:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:22:17-77
+	android:name
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:22:27-74
+uses-permission#android.permission.INTERNET
+ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:40:5-67
+	android:name
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:40:22-64
+meta-data#android.support.FILE_PROVIDER_PATHS
+ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:32:13-34:64
+	android:resource
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:34:17-51
+	android:name
+		ADDED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml:33:17-67
+uses-sdk
+INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+MERGED from [:capacitor-android] /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/node_modules/@capacitor/android/capacitor/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:5:5-44
+MERGED from [:capacitor-android] /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/node_modules/@capacitor/android/capacitor/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:5:5-44
+MERGED from [:capacitor-cordova-android-plugins] /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:6:5-44
+MERGED from [:capacitor-cordova-android-plugins] /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:6:5-44
+MERGED from [org.apache.cordova:framework:14.0.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/e47013dec160bb8e8e78795049f410c2/transformed/framework-14.0.1/AndroidManifest.xml:25:5-44
+MERGED from [org.apache.cordova:framework:14.0.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/e47013dec160bb8e8e78795049f410c2/transformed/framework-14.0.1/AndroidManifest.xml:25:5-44
+MERGED from [androidx.core:core-splashscreen:1.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/4f5eb2e1ae45a07736e2f6ed862ea36a/transformed/core-splashscreen-1.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core-splashscreen:1.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/4f5eb2e1ae45a07736e2f6ed862ea36a/transformed/core-splashscreen-1.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat-resources:1.7.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/bee8f78bb28e6cb788edd05c601f4778/transformed/appcompat-resources-1.7.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.appcompat:appcompat-resources:1.7.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/bee8f78bb28e6cb788edd05c601f4778/transformed/appcompat-resources-1.7.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.appcompat:appcompat:1.7.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c3f09e8abd8bb01c9314454bd06bb337/transformed/appcompat-1.7.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.appcompat:appcompat:1.7.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c3f09e8abd8bb01c9314454bd06bb337/transformed/appcompat-1.7.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ef97883a45eaa5cc79115d450cce1dbe/transformed/coordinatorlayout-1.3.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ef97883a45eaa5cc79115d450cce1dbe/transformed/coordinatorlayout-1.3.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.fragment:fragment:1.8.9] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/754c4f1b691d2a1223e4f8f413992fee/transformed/fragment-1.8.9/AndroidManifest.xml:5:5-44
+MERGED from [androidx.fragment:fragment:1.8.9] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/754c4f1b691d2a1223e4f8f413992fee/transformed/fragment-1.8.9/AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity:1.11.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/4ce00e85fb17003296e7add5523825c1/transformed/activity-1.11.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity:1.11.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/4ce00e85fb17003296e7add5523825c1/transformed/activity-1.11.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/1e3e5961ccf37b13ee8a7c0a81228664/transformed/cursoradapter-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/1e3e5961ccf37b13ee8a7c0a81228664/transformed/cursoradapter-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.drawerlayout:drawerlayout:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f570623fbaea2df5386d3e48ada25a61/transformed/drawerlayout-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.drawerlayout:drawerlayout:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f570623fbaea2df5386d3e48ada25a61/transformed/drawerlayout-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.emoji2:emoji2-views-helper:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/25a881cfd51f0b690442a74b496782fd/transformed/emoji2-views-helper-1.3.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.emoji2:emoji2-views-helper:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/25a881cfd51f0b690442a74b496782fd/transformed/emoji2-views-helper-1.3.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/5c150d65e548acad3954bacf90b47f66/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/5c150d65e548acad3954bacf90b47f66/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.customview:customview:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/596ab941bf00b590daff3ec7eb267457/transformed/customview-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.customview:customview:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/596ab941bf00b590daff3ec7eb267457/transformed/customview-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.webkit:webkit:1.14.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c2f70b51baa62bcee94ea5c7e05791a1/transformed/webkit-1.14.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.webkit:webkit:1.14.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c2f70b51baa62bcee94ea5c7e05791a1/transformed/webkit-1.14.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/dbca2f6d95f7d2f69dee86e3f7b328a8/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/dbca2f6d95f7d2f69dee86e3f7b328a8/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/98eaa2f86c1e52fdab04ff44c25cd64f/transformed/vectordrawable-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/98eaa2f86c1e52fdab04ff44c25cd64f/transformed/vectordrawable-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.core:core-ktx:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/6443194ff2cd53b8a19f0de2b31832a0/transformed/core-ktx-1.17.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-ktx:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/6443194ff2cd53b8a19f0de2b31832a0/transformed/core-ktx-1.17.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.loader:loader:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c0a22850032ed8caa67b3d94a8173736/transformed/loader-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/c0a22850032ed8caa67b3d94a8173736/transformed/loader-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/8d83e436f29a9ad9858ae8c630f3448b/transformed/lifecycle-livedata-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/8d83e436f29a9ad9858ae8c630f3448b/transformed/lifecycle-livedata-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ab32e4c3e2bf096654fd9e14504854dc/transformed/lifecycle-viewmodel-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ab32e4c3e2bf096654fd9e14504854dc/transformed/lifecycle-viewmodel-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/b5655c5df44c26433ffde34d45e6b2a4/transformed/lifecycle-livedata-core-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/b5655c5df44c26433ffde34d45e6b2a4/transformed/lifecycle-livedata-core-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ebf9360ba611f1d20f2bddac6f1045ca/transformed/lifecycle-runtime-2.6.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/ebf9360ba611f1d20f2bddac6f1045ca/transformed/lifecycle-runtime-2.6.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/de2a1b5c01db4d02ef6d13f0f4e2cf96/transformed/lifecycle-viewmodel-savedstate-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/de2a1b5c01db4d02ef6d13f0f4e2cf96/transformed/lifecycle-viewmodel-savedstate-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/3f2ab0b27a59a3dfe1466c241ece8334/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/3f2ab0b27a59a3dfe1466c241ece8334/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.startup:startup-runtime:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/7179ce4c01b9a0b75718a869351620f5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.startup:startup-runtime:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/7179ce4c01b9a0b75718a869351620f5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/b26bfd9a484ffd5014f872ac1684c434/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/b26bfd9a484ffd5014f872ac1684c434/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.interpolator:interpolator:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/a927f34fced1647a8adc4ec57dcbe539/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/a927f34fced1647a8adc4ec57dcbe539/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.tracing:tracing:1.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/dcfd9b438b7b1dc562c63a5efe9cf4a0/transformed/tracing-1.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.tracing:tracing:1.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/dcfd9b438b7b1dc562c63a5efe9cf4a0/transformed/tracing-1.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/56c299ca5cc1351fb9b11d94695125dc/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/56c299ca5cc1351fb9b11d94695125dc/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/1d9ef0194f51a6e0da4e440575587814/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/1d9ef0194f51a6e0da4e440575587814/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-viewtree:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/9275faa7fc56368462609e8a34802ec7/transformed/core-viewtree-1.0.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-viewtree:1.0.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/9275faa7fc56368462609e8a34802ec7/transformed/core-viewtree-1.0.0/AndroidManifest.xml:5:5-44
+	android:targetSdkVersion
+		INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /home/kavinraj_95/6th-Sem/Software-Engineering/Project/polyverse/android/app/src/main/AndroidManifest.xml
+provider#androidx.startup.InitializationProvider
+ADDED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.startup:startup-runtime:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/7179ce4c01b9a0b75718a869351620f5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+MERGED from [androidx.startup:startup-runtime:1.1.1] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/7179ce4c01b9a0b75718a869351620f5/transformed/startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+	tools:node
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:28:13-31
+	android:authorities
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+	android:exported
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+meta-data#androidx.emoji2.text.EmojiCompatInitializer
+ADDED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.3.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:23:9-81
+permission#com.piedpipers.polyverse.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:23:9-81
+uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:26:22-94
+uses-permission#com.piedpipers.polyverse.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.17.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:26:22-94
+meta-data#androidx.lifecycle.ProcessLifecycleInitializer
+ADDED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/14a3b51da1167f75215e7e32d2231e74/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:30:17-78
+meta-data#androidx.profileinstaller.ProfileInstallerInitializer
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+receiver#androidx.profileinstaller.ProfileInstallReceiver
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+	android:enabled
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+	android:exported
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+	android:permission
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+	android:directBootAware
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+intent-filter#action:name:androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+action#androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+intent-filter#action:name:androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+action#androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+intent-filter#action:name:androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+action#androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+intent-filter#action:name:androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+action#androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/kavinraj_95/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
