@@ -374,7 +374,7 @@
 				</div>
 
 				<!-- Language Picker -->
-				<div class="hidden sm:block">
+				<div class="block">
 					<LanguagePicker
 						selected={selectedLanguage}
 						onSelect={(code) => (selectedLanguage = code)}
