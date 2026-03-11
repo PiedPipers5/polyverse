@@ -227,9 +227,7 @@
 		{:else if result?.type === 'remote_actor'}
 			{@const a = result.actor}
 			<a
-				href={a.url}
-				target="_blank"
-				rel="noopener noreferrer"
+				href="/remote/@{result.handle}"
 				class="block rounded-xl transition-transform hover:scale-[1.01]"
 			>
 				<Card class="flex items-center gap-4 p-5 transition-colors hover:border-sky-400">
