@@ -5,7 +5,16 @@
 	import { toast } from 'svelte-sonner';
 	import { fly, fade, scale } from 'svelte/transition';
 	import EmojiPicker from './EmojiPicker.svelte';
-	import { Image as ImageIcon, X, Loader2, Globe, Lock, Users, ChevronDown, ShieldAlert } from 'lucide-svelte';
+	import {
+		Image as ImageIcon,
+		X,
+		Loader2,
+		Globe,
+		Lock,
+		Users,
+		ChevronDown,
+		ShieldAlert
+	} from 'lucide-svelte';
 	import LanguagePicker from './LanguagePicker.svelte';
 
 	interface MediaItem {
@@ -291,7 +300,7 @@
 		</div>
 
 		<!-- Bottom Action Bar -->
-		<div class="flex items-center justify-between pt-2">
+		<div class="flex flex-wrap items-center justify-between gap-y-2 pt-2">
 			<div
 				class="flex flex-col text-[10px] leading-[1.1] font-semibold tracking-tight text-muted-foreground/50 {charsRemaining <
 				0
@@ -303,7 +312,7 @@
 				<span>remaining</span>
 			</div>
 
-			<div class="flex items-center gap-1.5 sm:gap-2">
+			<div class="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
 				<!-- Media Button -->
 				<Button
 					variant="ghost"
@@ -384,19 +393,21 @@
 						disabled={isSubmitting}
 					/>
 				</div>
-                
-                <!-- NSFW Toggle -->
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onclick={() => (checkNsfw = !checkNsfw)}
-                    disabled={isSubmitting}
-                    class="flex h-9 items-center gap-1.5 rounded-lg px-2 text-muted-foreground transition-all {checkNsfw ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300' : 'hover:bg-white/5 hover:text-foreground active:bg-white/10'}"
-                    title="Scan for NSFW content using AI"
-                >
-                    <ShieldAlert class="h-3.5 w-3.5" />
-                    <span class="text-[11px] font-bold">NSFW Scan</span>
-                </Button>
+
+				<!-- NSFW Toggle -->
+				<Button
+					variant="ghost"
+					size="sm"
+					onclick={() => (checkNsfw = !checkNsfw)}
+					disabled={isSubmitting}
+					class="flex h-9 items-center gap-1.5 rounded-lg px-2 text-muted-foreground transition-all {checkNsfw
+						? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300'
+						: 'hover:bg-white/5 hover:text-foreground active:bg-white/10'}"
+					title="Scan for NSFW content using AI"
+				>
+					<ShieldAlert class="h-3.5 w-3.5" />
+					<span class="text-[11px] font-bold">NSFW Scan</span>
+				</Button>
 
 				{#if mode === 'edit'}
 					<Button
