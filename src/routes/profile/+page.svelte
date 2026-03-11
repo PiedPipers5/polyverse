@@ -22,6 +22,7 @@
 	import LogoutConfirmModal from '$lib/components/LogoutConfirmModal.svelte';
 	import RightSidebar from '$lib/components/RightSidebar.svelte';
 	import { untrack, onMount } from 'svelte';
+	import { fade, scale } from 'svelte/transition';
 
 	type Tab = 'posts' | 'activity' | 'about';
 	let activeTab = $state<Tab>('posts');
@@ -37,6 +38,7 @@
 	let postsCount = $state(untrack(() => data.user.postsCount || 0));
 
 	let showingLogoutConfirm = $state(false);
+	let avatarLightboxOpen = $state(false);
 
 	// Pending follow requests
 	type PendingRequest = {
@@ -185,16 +187,29 @@
 				<div class="-mt-10 flex flex-col items-center px-4 pb-5">
 					<!-- Avatar -->
 					<div class="relative mb-2.5">
-						<Avatar class="relative h-20 w-20 border-4 border-card shadow-xl">
+						<!-- svelte-ignore a11y_interactive_supports_focus -->
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<div
+							role="button"
+							onclick={() => { if (user.avatarUrl) avatarLightboxOpen = true; }}
+							class="{user.avatarUrl ? 'cursor-pointer' : ''} group relative"
+						>
+							<Avatar class="relative h-20 w-20 border-4 border-card shadow-xl transition-transform duration-200 {user.avatarUrl ? 'group-hover:scale-105' : ''}">
+								{#if user.avatarUrl}
+									<AvatarImage src={user.avatarUrl} alt={user.displayName || user.username} />
+								{/if}
+								<AvatarFallback
+									class="bg-linear-to-br from-violet-500/80 to-fuchsia-500/80 text-lg font-bold text-white"
+								>
+									{getInitials(user.displayName, user.username)}
+								</AvatarFallback>
+							</Avatar>
 							{#if user.avatarUrl}
-								<AvatarImage src={user.avatarUrl} alt={user.displayName || user.username} />
+								<div class="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/30 group-hover:opacity-100">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0zm-6-3v6m-3-3h6" /></svg>
+								</div>
 							{/if}
-							<AvatarFallback
-								class="bg-linear-to-br from-violet-500/80 to-fuchsia-500/80 text-lg font-bold text-white"
-							>
-								{getInitials(user.displayName, user.username)}
-							</AvatarFallback>
-						</Avatar>
+						</div>
 					</div>
 
 					<!-- Identity -->
@@ -559,6 +574,38 @@
 </div>
 
 <LogoutConfirmModal bind:open={showingLogoutConfirm} />
+
+<!-- Avatar Lightbox -->
+{#if avatarLightboxOpen && user.avatarUrl}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm"
+		onclick={() => (avatarLightboxOpen = false)}
+		transition:fade={{ duration: 200 }}
+	>
+		<!-- Close button -->
+		<button
+			class="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+			onclick={() => (avatarLightboxOpen = false)}
+			aria-label="Close"
+		>
+			<X class="h-5 w-5" />
+		</button>
+
+		<!-- Avatar image -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div transition:scale={{ duration: 200, start: 0.85 }} onclick={(e) => e.stopPropagation()}>
+			<img
+				src={user.avatarUrl}
+				alt={user.displayName || user.username}
+				class="max-h-[80vh] max-w-[80vw] rounded-2xl object-contain shadow-2xl ring-4 ring-white/10"
+			/>
+			<p class="mt-3 text-center text-sm font-semibold text-white/70">{user.displayName || user.username}</p>
+		</div>
+	</div>
+{/if}
 
 <style>
 	/* ─────────────────────────────────────────────────────────────────
