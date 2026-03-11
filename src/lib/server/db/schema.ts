@@ -439,6 +439,41 @@ export const likes = pgTable(
 );
 
 /**
+ * Favorites Table
+ * Lets users privately bookmark/save posts.
+ * Stores a JSON snapshot of the activity so the post still renders
+ * even if the original was later deleted or edited.
+ * Not federated — purely local to this instance.
+ */
+export const favorites = pgTable(
+	'favorites',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/** The ActivityPub URI of the favorited post. */
+		postId: text('post_id').notNull(),
+
+		/** The local user who saved the post. */
+		userId: uuid('user_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** Full activity JSON snapshot for offline/deleted-post display. */
+		activitySnapshot: jsonb('activity_snapshot').notNull(),
+
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// One favorite per user per post
+			postUserUniqueIdx: uniqueIndex('favorites_post_user_idx').on(table.postId, table.userId)
+		};
+	}
+);
+
+
+
+/**
  * Notifications Table (Task 4.4.1)
  * Aggregates inbound activities directed at the user:
  * follow requests, likes, replies, mentions, boosts.

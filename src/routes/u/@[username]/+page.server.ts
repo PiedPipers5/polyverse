@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users, followers, activities } from '$lib/server/db/schema';
-import { eq, and, count } from 'drizzle-orm';
+import { users, followers, activities, favorites } from '$lib/server/db/schema';
+import { eq, and, count, inArray } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 
@@ -109,6 +109,21 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const initialSelection = filteredActivities.slice(0, 5);
 	const nextCursor = hasMore ? initialSelection[initialSelection.length - 1].createdAt : null;
 
+	const postIds = initialSelection.map((a) => (a.activity as any).object?.id || a.id);
+
+	// Fetch isFavorited for the requestor (if logged in)
+	let favoritedPostIds = new Set<string>();
+	if (requestor && postIds.length > 0) {
+		try {
+			const viewerFavorites = await db.query.favorites.findMany({
+				where: and(eq(favorites.userId, requestor.userId), inArray(favorites.postId, postIds))
+			});
+			favoritedPostIds = new Set(viewerFavorites.map((f) => f.postId));
+		} catch {
+			// Table may not exist yet (pre-migration) — silently skip
+		}
+	}
+
 	return {
 		profile: {
 			username: user.username,
@@ -123,9 +138,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		},
 		activities: initialSelection.map((a) => ({
 			...a,
-			// Simplified content extraction for now - assuming Note type has content
 			content: (a.activity as any).object?.content || (a.activity as any).content || '',
-			publishedAt: a.createdAt
+			publishedAt: a.createdAt,
+			isFavorited: favoritedPostIds.has((a.activity as any).object?.id || a.id)
 		})),
 		isOwner,
 		followStatus,

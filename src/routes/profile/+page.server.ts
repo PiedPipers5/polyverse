@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users, activities, followers, interactions } from '$lib/server/db/schema';
+import { users, activities, followers, interactions, favorites } from '$lib/server/db/schema';
 import { eq, count, and, inArray } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
@@ -84,6 +84,19 @@ export const load: PageServerLoad = async ({ locals }) => {
         })
     ]);
 
+    // Favorites — wrapped in try/catch in case the table hasn't been migrated yet
+    let favoritedPostIds = new Set<string>();
+    if (postIds.length > 0) {
+        try {
+            const userFavorites = await db.query.favorites.findMany({
+                where: and(eq(favorites.userId, user.id), inArray(favorites.postId, postIds))
+            });
+            favoritedPostIds = new Set(userFavorites.map((f) => f.postId));
+        } catch {
+            // Table may not exist yet (pre-migration) — silently skip
+        }
+    }
+
     // Build a map of Comment Counts
     const commentCountMap = new Map<string, number>();
     for (const row of allReplies) {
@@ -110,7 +123,8 @@ export const load: PageServerLoad = async ({ locals }) => {
             publishedAt: a.createdAt,
             netScore,
             commentsCount: commentCountMap.get(postId) || 0,
-            userVote: currentUserVote
+            userVote: currentUserVote,
+            isFavorited: favoritedPostIds.has(postId)
         };
     });
 
