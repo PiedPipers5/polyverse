@@ -143,18 +143,18 @@
 			{#if showNewDM}
 				<div class="glass-card space-y-3 rounded-xl border border-white/10 p-3">
 					<p class="text-xs font-medium text-foreground/50">Start a conversation</p>
-					<div class="flex gap-2">
+					<div class="flex w-full gap-2">
 						<input
 							type="text"
 							bind:value={newDMTarget}
 							placeholder="username or user@domain"
-							class="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-foreground/30 focus:border-blue-500/50"
+							class="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-foreground/30 focus:border-blue-500/50"
 							onkeydown={(e) => e.key === 'Enter' && startNewConversation()}
 						/>
 						<Button
 							onclick={startNewConversation}
 							disabled={creating || !newDMTarget.trim()}
-							class="shrink-0 bg-blue-600 hover:bg-blue-700"
+							class="shrink-0 bg-blue-600 px-4 hover:bg-blue-700"
 						>
 							{#if creating}
 								<Loader2 class="h-4 w-4 animate-spin" />
