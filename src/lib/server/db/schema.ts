@@ -479,3 +479,94 @@ export const notifications = pgTable(
 		};
 	}
 );
+
+/**
+ * Conversations Table
+ * Groups DM threads between two participants (local or remote).
+ * Each conversation is uniquely identified by the sorted pair of participant URIs.
+ */
+export const conversations = pgTable(
+	'conversations',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/** Local user ID of participant one (null if remote). */
+		participantOneId: uuid('participant_one_id')
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** ActivityPub URI of participant one (always set). */
+		participantOneUri: text('participant_one_uri').notNull(),
+
+		/** Local user ID of participant two (null if remote). */
+		participantTwoId: uuid('participant_two_id')
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** ActivityPub URI of participant two (always set). */
+		participantTwoUri: text('participant_two_uri').notNull(),
+
+		/** When the last message in this conversation was sent. */
+		lastMessageAt: timestamp('last_message_at').defaultNow().notNull(),
+
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// Prevent duplicate conversations between the same pair
+			participantPairIdx: uniqueIndex('conversations_participant_pair_idx').on(
+				table.participantOneUri,
+				table.participantTwoUri
+			),
+			// Fast lookup of conversations for a specific local user
+			participantOneIdx: index('conversations_participant_one_idx').on(table.participantOneId),
+			participantTwoIdx: index('conversations_participant_two_idx').on(table.participantTwoId)
+		};
+	}
+);
+
+/**
+ * Direct Messages Table
+ * Individual messages within a conversation.
+ */
+export const directMessages = pgTable(
+	'direct_messages',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+
+		/** The conversation this message belongs to. */
+		conversationId: uuid('conversation_id')
+			.notNull()
+			.references(() => conversations.id, { onDelete: 'cascade' }),
+
+		/** ActivityPub URI of the sender. */
+		senderUri: text('sender_uri').notNull(),
+
+		/** Local user ID of the sender (null if remote). */
+		senderLocalId: uuid('sender_local_id')
+			.references(() => users.id, { onDelete: 'cascade' }),
+
+		/** Message content (HTML allowed, sanitized). */
+		content: text('content').notNull(),
+
+		/** Full ActivityPub Create(Note) JSON for federation. */
+		activityJson: jsonb('activity_json'),
+
+		/** Whether the recipient has read this message. */
+		read: boolean('read').notNull().default(false),
+
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => {
+		return {
+			// Message ordering within a conversation
+			conversationCreatedAtIdx: index('dm_conversation_created_at_idx').on(
+				table.conversationId,
+				table.createdAt
+			),
+			// Unread count queries
+			conversationReadIdx: index('dm_conversation_read_idx').on(
+				table.conversationId,
+				table.read
+			)
+		};
+	}
+);

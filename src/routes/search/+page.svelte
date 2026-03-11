@@ -38,7 +38,8 @@
 	let loading = $state(false);
 	let searched = $state(false); // whether a search has been triggered
 
-	const HANDLE_PATTERN = /^@?[\w.-]+@[\w.-]+\.\w+$/;
+	// Accept @user@domain or a simple username
+	const HANDLE_PATTERN = /^(@?[\w.-]+@[\w.-]+\.\w+)|(^[a-zA-Z0-9_.-]+)$/;
 	const isHandle = $derived(HANDLE_PATTERN.test(query.trim()));
 
 	// Pre-fill from ?q= URL param on mount
@@ -168,14 +169,14 @@
 		<!-- Handle hint -->
 		{#if query && !isHandle && !loading}
 			<p class="mt-2 text-center text-xs text-amber-500">
-				Try a full Fediverse handle, e.g. <code class="rounded bg-muted px-1"
+				Try a local username or full Fediverse handle, e.g. <code class="rounded bg-muted px-1"
 					>@alice@mastodon.social</code
 				>
 			</p>
-		{:else if isHandle && !loading}
+		{:else if isHandle && !loading && !result}
 			<p class="mt-2 text-center text-xs text-violet-400">
 				<span class="inline-block h-1.5 w-1.5 rounded-full bg-violet-400 align-middle"></span>
-				Handle detected — press <kbd class="rounded bg-muted px-1 py-0.5 font-mono">Enter</kbd> or click
+				Valid format detected — press <kbd class="rounded bg-muted px-1 py-0.5 font-mono">Enter</kbd> or click
 				Search
 			</p>
 		{/if}
@@ -265,12 +266,11 @@
 					Showing cached result · fetched from remote server
 				</p>
 			{/if}
-		{:else if result?.type === 'no_results'}
 			<Card class="p-8 text-center">
 				<Search class="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
 				<p class="font-medium">No match found</p>
 				<p class="mt-1 text-sm text-muted-foreground">
-					Try the full Fediverse handle, e.g.
+					Try a local username or the full Fediverse handle, e.g.
 					<code class="rounded bg-muted px-1">@alice@mastodon.social</code>
 				</p>
 			</Card>
