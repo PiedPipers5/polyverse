@@ -47,11 +47,13 @@
 	let lightboxOpen = $state(false);
 	let lightboxIndex = $state(0);
 
-	let translatedContent = $state<string | null>(null);
 	let isTranslating = $state(false);
 	let showTranslated = $state(false);
 	let showComments = $state(false);
 	let localCommentsCount = $state(activity.commentsCount || 0);
+
+	// NSFW feature state
+	let isRevealed = $state(!(activity.activity?.object?.sensitive || activity.object?.sensitive || activity.sensitive));
 
 	// Like / Boost state
 	let isLiked = $state(activity.isLiked || false);
@@ -400,39 +402,60 @@
 			</div>
 		{/if}
 
-		<div class="space-y-2">
-			<div class="mt-3 text-sm leading-relaxed text-foreground/90">
-				<RichContent 
-					content={showTranslated && translatedContent ? translatedContent : apActivity.object.content} 
-					tags={apActivity.object.tag} 
-				/>
+		<div class="relative overflow-hidden rounded-lg">
+			<!-- NSFW Blur Overlay -->
+			{#if !isRevealed}
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div 
+					class="absolute inset-0 z-10 flex cursor-pointer flex-col items-center justify-center gap-2 bg-black/40 backdrop-blur-3xl transition-all hover:bg-black/30"
+					onclick={() => isRevealed = true}
+				>
+					<ShieldAlert class="h-10 w-10 text-rose-400" />
+					<span class="font-bold text-white">Content Warning</span>
+					<span class="text-sm font-medium text-white/80">
+						{apActivity.object.summary || "Sensitive Content"}
+					</span>
+					<span class="mt-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 transition-all hover:bg-white/20">
+						Click to reveal
+					</span>
+				</div>
+			{/if}
+
+			<div class="space-y-2 transition-all duration-500 {!isRevealed ? 'opacity-30 blur-md pointer-events-none select-none' : ''}">
+				<div class="mt-3 text-sm leading-relaxed text-foreground/90">
+					<RichContent 
+						content={showTranslated && translatedContent ? translatedContent : apActivity.object.content} 
+						tags={apActivity.object.tag} 
+					/>
+				</div>
+
+				{#if showTranslated}
+					<p class="flex items-center gap-1 text-[10px] text-muted-foreground italic">
+						<span class="inline-block h-1 w-1 animate-pulse rounded-full bg-primary"></span>
+						Translated by Google Gemini
+					</p>
+				{/if}
 			</div>
 
-			{#if showTranslated}
-				<p class="flex items-center gap-1 text-[10px] text-muted-foreground italic">
-					<span class="inline-block h-1 w-1 animate-pulse rounded-full bg-primary"></span>
-					Translated by Google Gemini
-				</p>
+			<!-- Media Gallery -->
+			{#if attachments.length > 0}
+				<div class="mt-3 {attachments.length === 1 ? '' : 'grid grid-cols-2 gap-1.5 md:gap-2'} transition-all duration-500 {!isRevealed ? 'opacity-30 blur-md pointer-events-none select-none' : ''}">
+					{#each attachments as attachment, index}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+						<img
+							src={attachment.url}
+							alt="Post image {index + 1}"
+							class="{attachments.length === 1
+								? 'max-h-96 w-full'
+								: 'aspect-square'} cursor-pointer rounded-md object-cover transition-opacity hover:opacity-90"
+							onclick={() => openLightbox(index)}
+						/>
+					{/each}
+				</div>
 			{/if}
 		</div>
-
-		<!-- Media Gallery -->
-		{#if attachments.length > 0}
-			<div class="mt-3 {attachments.length === 1 ? '' : 'grid grid-cols-2 gap-1.5 md:gap-2'}">
-				{#each attachments as attachment, index}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-					<img
-						src={attachment.url}
-						alt="Post image {index + 1}"
-						class="{attachments.length === 1
-							? 'max-h-96 w-full'
-							: 'aspect-square'} cursor-pointer rounded-md object-cover transition-opacity hover:opacity-90"
-						onclick={() => openLightbox(index)}
-					/>
-				{/each}
-			</div>
-		{/if}
 
 		<div class="mt-3 flex items-center justify-between">
 			<!-- Vote controls -->
