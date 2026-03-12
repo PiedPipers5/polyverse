@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { users } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
+import * as jose from 'jose';
 import type { RequestHandler } from './$types';
 
 /**
@@ -103,10 +104,21 @@ export const GET: RequestHandler = async ({ params, request }) => {
 
     // Add public key for HTTP Signatures
     if (verificationMethod) {
+        let publicKeyPem: string | undefined;
+        try {
+            if (verificationMethod.publicKeyJwk) {
+                const key = await jose.importJWK(verificationMethod.publicKeyJwk as jose.JWK, 'EdDSA');
+                publicKeyPem = await jose.exportSPKI(key as CryptoKey);
+            }
+        } catch (err) {
+            console.error('Failed to convert JWK to PEM for Actor public key:', err);
+        }
+
         actor.publicKey = {
             id: `${actorUrl}#main-key`,
             owner: actorUrl,
-            publicKeyJwk: verificationMethod.publicKeyJwk
+            publicKeyJwk: verificationMethod.publicKeyJwk,
+            ...(publicKeyPem ? { publicKeyPem } : {})
         };
     }
 

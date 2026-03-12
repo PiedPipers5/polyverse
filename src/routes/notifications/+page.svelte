@@ -23,6 +23,7 @@
 	let unreadCount = $state(0);
 	let loading = $state(false);
 	let markingRead = $state(false);
+	let acceptingId = $state<string | null>(null);
 
 	$effect(() => {
 		if (data.notifications) notifications = data.notifications;
@@ -135,6 +136,28 @@
 			console.error('Failed to refresh notifications:', err);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function acceptFollow(notifId: string) {
+		acceptingId = notifId;
+		try {
+			const res = await fetch('/api/federated-follow/accept', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ notificationId: notifId })
+			});
+			if (res.ok) {
+				// Mark locally as read so the button disappears
+				notifications = notifications.map((n: any) =>
+					n.id === notifId ? { ...n, read: true } : n
+				);
+				unreadCount = Math.max(0, unreadCount - 1);
+			}
+		} catch (err) {
+			console.error('Failed to accept follow:', err);
+		} finally {
+			acceptingId = null;
 		}
 	}
 
@@ -257,15 +280,33 @@
 								{/if}
 							</div>
 
-							<!-- Timestamp -->
-							<span class="shrink-0 text-[10px] text-foreground/25 tabular-nums">
-								{notif.createdAt ? relativeTime(notif.createdAt) : ''}
-							</span>
-
-							<!-- Unread dot -->
-							{#if !notif.read}
-								<div class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-violet-500 shadow-md shadow-violet-500/30"></div>
-							{/if}
+							<!-- Timestamp & Actions -->
+							<div class="flex flex-col items-end shrink-0 gap-2">
+								<span class="text-[10px] text-foreground/25 tabular-nums">
+									{notif.createdAt ? relativeTime(notif.createdAt) : ''}
+								</span>
+								
+								{#if notif.type === 'follow' && !notif.read}
+									<Button
+										size="sm"
+										variant="outline"
+										class="h-6 px-2 text-[10px] border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+										onclick={(e: Event) => {
+											e.stopPropagation();
+											acceptFollow(notif.id);
+										}}
+										disabled={acceptingId === notif.id}
+									>
+										{#if acceptingId === notif.id}
+											<Loader2 class="h-3 w-3 animate-spin" />
+										{:else}
+											Accept
+										{/if}
+									</Button>
+								{:else if !notif.read}
+									<div class="mt-1 h-2 w-2 rounded-full bg-violet-500 shadow-md shadow-violet-500/30"></div>
+								{/if}
+							</div>
 						</div>
 					{/each}
 				{/if}

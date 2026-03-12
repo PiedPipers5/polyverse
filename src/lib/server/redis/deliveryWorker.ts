@@ -11,7 +11,7 @@ import { db } from '../db/index.js';
 import { userSecrets, users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { decrypt } from '../encryption.js';
-import { createSign, createHash } from 'node:crypto';
+import { createPrivateKey, createHash, sign } from 'node:crypto';
 import type { Redis } from 'ioredis';
 
 const QUEUE_KEY = 'polyverse:delivery_queue';
@@ -108,15 +108,18 @@ async function processDeliveryJob(job: DeliveryJob, redis: Redis): Promise<void>
             `content-type: application/activity+json`
         ].join('\n');
 
-        const signer = createSign('RSA-SHA256');
-        signer.update(signingString);
-        signer.end();
-        const signature = signer.sign(privateKeyPem, 'base64');
+        const privateKeyObj = createPrivateKey({
+            key: JSON.parse(privateKeyPem),
+            format: 'jwk'
+        });
+
+        const signatureBuffer = sign(null, Buffer.from(signingString), privateKeyObj);
+        const signature = signatureBuffer.toString('base64');
 
         const domain = inboxUrl.protocol + '//' + inboxUrl.host;
         const keyId = `https://${process.env.DOMAIN || 'polyverse-pp.vercel.app'}/users/${actorUsername}#main-key`;
 
-        const signatureHeader = `keyId="${keyId}",algorithm="rsa-sha256",headers="${signedHeaders}",signature="${signature}"`;
+        const signatureHeader = `keyId="${keyId}",algorithm="ed25519",headers="${signedHeaders}",signature="${signature}"`;
 
         // 3. POST to the remote inbox
         const response = await fetch(inbox, {

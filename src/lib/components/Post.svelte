@@ -540,31 +540,46 @@
 				</button>
 			</div>
 
+			<!-- Like button -->
+			<!-- <button
 			<!-- Like -->
-			<button
+			<!--<button
 				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
 					   {isLiked ? 'bg-rose-500/10 text-rose-400 ring-rose-500/20' : 'text-foreground/50'}"
 				onclick={handleLike}
 				disabled={isLiking}
 				title={isLiked ? 'Unlike' : 'Like'}
 				aria-label={isLiked ? 'Unlike' : 'Like'}
-			>
+			> -->
+				<!-- <Heart class="h-3.5 w-3.5 transition-transform {isLiked ? 'scale-110 fill-current' : ''}" />
+				{#if localLikesCount > 0}
+					<span>{localLikesCount}</span>
+				{/if}
+			</button> -->
+
+			<!-- Boost button -->
+			<!-- <button
 				<Heart class="h-3.5 w-3.5 shrink-0 transition-transform {isLiked ? 'scale-110 fill-current' : ''}" />
 				{#if localLikesCount > 0}<span class="tabular-nums">{localLikesCount}</span>{/if}
 			</button>
 
 			<!-- Boost -->
-			<button
+		<!--	<button
 				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
 					   {isBoosted ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20' : 'text-foreground/50'}"
 				onclick={handleBoost}
 				disabled={isBoosting}
 				title={isBoosted ? 'Unboost' : 'Boost'}
 				aria-label={isBoosted ? 'Unboost' : 'Boost'}
-			>
+			> -->
+				<!--<Repeat2 class="h-3.5 w-3.5 transition-transform {isBoosted ? 'scale-110' : ''}" />
+				{#if localBoostsCount > 0}
+					<span>{localBoostsCount}</span>
+				{/if}
+			</button>
 				<Repeat2 class="h-3.5 w-3.5 shrink-0 transition-transform {isBoosted ? 'scale-110' : ''}" />
 				{#if localBoostsCount > 0}<span class="tabular-nums">{localBoostsCount}</span>{/if}
-			</button>
+			</button> -->
 
 			<!-- Comments -->
 			<button

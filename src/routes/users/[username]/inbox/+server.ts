@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
 
 	// ── 1. Validate the target user exists ──────────────────────────
 	const targetUser = await db.query.users.findFirst({
-		where: eq(users.username, username),
+		where: eq(users.username, username!),
 		columns: { id: true, username: true }
 	});
 
@@ -90,10 +90,36 @@ export const POST: RequestHandler = async ({ params, request }) => {
 			break;
 
 		case 'Follow':
-			// Incoming follow requests from remote users - acknowledge receipt
+			// Incoming follow requests from remote users
 			console.log(`[Inbox] Received Follow activity from ${actorId} for ${username}`);
-			// Task 4.4.2: Create a notification for the follow
-			await insertNotification(targetUser.id, null, actorId || null, 'follow', null);
+			try {
+				const followId = activity.id as string;
+				if (actorId && followId) {
+					// Check if a pending follow already exists to avoid duplicates
+					const existingFollow = await db.query.federatedFollows.findFirst({
+						where: and(
+							eq(federatedFollows.localUserId, targetUser.id),
+							eq(federatedFollows.remoteActorUri, actorId),
+							eq(federatedFollows.status, 'pending')
+						)
+					});
+
+					if (!existingFollow) {
+						await db.insert(federatedFollows).values({
+							localUserId: targetUser.id,
+							remoteActorUri: actorId,
+							status: 'pending',
+							followActivityId: followId,
+							createdAt: new Date(),
+							updatedAt: new Date()
+						});
+					}
+					// Create a notification for the follow
+					await insertNotification(targetUser.id, null, actorId, 'follow', followId);
+				}
+			} catch (err) {
+				console.error('[Inbox:Follow] Error saving follow request:', err);
+			}
 			break;
 
 		case 'Like':

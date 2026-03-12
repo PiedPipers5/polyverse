@@ -60,6 +60,15 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         actorMap = new Map(actorUsers.map((u) => [u.id, u]));
     }
 
+    const remoteUris = [...new Set(items.map((n) => n.remoteActorUri).filter(Boolean))] as string[];
+    let remoteActorMap = new Map<string, any>();
+    if (remoteUris.length > 0) {
+        const remoteActorRecords = await db.query.remoteActors.findMany({
+            where: inArray(remoteActors.actorUri, remoteUris)
+        });
+        remoteActorMap = new Map(remoteActorRecords.map((r) => [r.actorUri, r]));
+    }
+
     // Count unread
     const allUnread = await db.query.notifications.findMany({
         where: and(
@@ -77,6 +86,19 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     return json({
         notifications: items.map((n) => {
             const actor = n.actorId ? actorMap.get(n.actorId) : null;
+            const remoteActor = n.remoteActorUri ? remoteActorMap.get(n.remoteActorUri) : null;
+            
+            let remoteActorData = null;
+            if (remoteActor && remoteActor.actorJson) {
+                const json = remoteActor.actorJson as Record<string, any>;
+                remoteActorData = {
+                    username: json.preferredUsername || remoteActor.handle || n.remoteActorUri,
+                    displayName: json.name || json.preferredUsername || null,
+                    avatarUrl: json.icon?.url || null,
+                    profileUrl: json.url || n.remoteActorUri
+                };
+            }
+
             return {
                 id: n.id,
                 type: n.type,
@@ -91,9 +113,11 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                         avatarUrl: actor.avatarUrl,
                         profileUrl: `/u/@${actor.username}`
                     }
-                    : n.remoteActorUri
-                        ? { username: n.remoteActorUri, displayName: null, avatarUrl: null, profileUrl: n.remoteActorUri }
-                        : null
+                    : remoteActorData
+                        ? remoteActorData
+                        : n.remoteActorUri
+                            ? { username: n.remoteActorUri, displayName: null, avatarUrl: null, profileUrl: n.remoteActorUri }
+                            : null
             };
         }),
         unreadCount: allUnread.length,
