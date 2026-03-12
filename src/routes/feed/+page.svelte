@@ -298,18 +298,18 @@
 					<!-- Stats -->
 					<div class="mt-4 w-full rounded-xl border border-white/10 bg-white/5">
 						<div class="grid grid-cols-3 divide-x divide-white/10 py-3">
-							<div class="flex flex-col items-center gap-0.5">
+							<a href="/u/@{user.username}/followers" class="flex flex-col items-center gap-0.5 rounded-lg py-1 transition-colors hover:bg-white/5">
 								<span class="text-lg font-black">{user.followersCount}</span>
 								<span class="text-[9px] font-bold tracking-widest text-foreground/35 uppercase"
 									>Followers</span
 								>
-							</div>
-							<div class="flex flex-col items-center gap-0.5">
+							</a>
+							<a href="/u/@{user.username}/following" class="flex flex-col items-center gap-0.5 rounded-lg py-1 transition-colors hover:bg-white/5">
 								<span class="text-lg font-black">{user.followingCount}</span>
 								<span class="text-[9px] font-bold tracking-widest text-foreground/35 uppercase"
 									>Following</span
 								>
-							</div>
+							</a>
 							<div class="flex flex-col items-center gap-0.5">
 								<span class="text-lg font-black">{user.postsCount}</span>
 								<span class="text-[9px] font-bold tracking-widest text-foreground/35 uppercase"

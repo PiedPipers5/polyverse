@@ -263,18 +263,18 @@
 				class="glass-card overflow-hidden rounded-2xl border border-white/10 bg-card/70 shadow-xl ring-1 ring-white/5 backdrop-blur-md"
 			>
 				<div class="grid grid-cols-3 divide-x divide-white/10 py-4">
-					<div class="flex flex-col items-center gap-0.5">
+					<a href="/u/@{user.username}/followers" class="flex flex-col items-center gap-0.5 rounded-lg py-1 transition-colors hover:bg-white/5">
 						<span class="text-base font-black text-foreground">{user.followersCount || 0}</span>
 						<span class="text-[8px] font-bold tracking-widest text-foreground/35 uppercase"
 							>Followers</span
 						>
-					</div>
-					<div class="flex flex-col items-center gap-0.5">
+					</a>
+					<a href="/u/@{user.username}/following" class="flex flex-col items-center gap-0.5 rounded-lg py-1 transition-colors hover:bg-white/5">
 						<span class="text-base font-black text-foreground">{user.followingCount || 0}</span>
 						<span class="text-[8px] font-bold tracking-widest text-foreground/35 uppercase"
 							>Following</span
 						>
-					</div>
+					</a>
 					<div class="flex flex-col items-center gap-0.5">
 						<span class="text-base font-black text-foreground">{postsCount}</span>
 						<span class="text-[8px] font-bold tracking-widest text-foreground/35 uppercase"
