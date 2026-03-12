@@ -524,6 +524,7 @@
 									activity={post}
 									isOwner={user?.username === post.author?.username}
 									username={user?.username ?? ''}
+									isFavorited={post.isFavorited ?? false}
 									onDelete={noop}
 									onUpdate={noop}
 								/>
@@ -612,7 +613,7 @@
 			</a>
 
 			<!-- Favourites -->
-			<a href="#" class="nav-link">
+			<a href="/favorites" class="nav-link">
 				<Star class="nav-icon" />
 				<span>Favourites</span>
 			</a>

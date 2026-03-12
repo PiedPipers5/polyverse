@@ -4,6 +4,7 @@ import { activities, users, followers } from '$lib/server/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
+import { isContentNsfw } from '$lib/server/ai/nsfw';
 
 // Standard ActivityStreams Public URI
 const PUBLIC_URI = 'https://www.w3.org/ns/activitystreams#Public';
@@ -23,7 +24,8 @@ const getActorUri = (domain: string, username: string) => `https://${domain}/use
  * {
  *   "content": "Hello World",
  *   "privacy": "public" | "unlisted" | "followers",
- *   "media": [ { "url": "...", "type": "Image", "mediaType": "image/jpeg" } ]
+ *   "media": [ { "url": "...", "type": "Image", "mediaType": "image/jpeg" } ],
+ *   "checkNsfw": true
  * }
  */
 export const POST: RequestHandler = async ({ params, request, locals }) => {
@@ -43,7 +45,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
     const domain = env.DOMAIN!;
     const body = await request.json();
     // Default to 'create' if no action specified
-    const { action = 'create', content, privacy = 'public', media = [], language = 'en', objectId, inReplyTo } = body;
+    const { action = 'create', content, privacy = 'public', media = [], language = 'en', objectId, inReplyTo, checkNsfw } = body;
 
     const actorUri = getActorUri(domain, username);
     const published = new Date().toISOString();
@@ -81,7 +83,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 
         // Custom Emoji Scanning
         const emojiRegex = /:[a-zA-Z0-9_]+:/g;
-        const shortcodes = [...new Set(content.match(emojiRegex) || [])];
+        const shortcodes = [...new Set((content || '').match(emojiRegex) || [])];
         const tags: any[] = [];
 
         if (shortcodes.length > 0) {
@@ -102,6 +104,15 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
             }
         }
 
+        // NSFW AI Check
+        let isSensitive = false;
+        let flaggedWords: string[] = [];
+        if (checkNsfw && content) {
+            const moderationResult = await isContentNsfw(content);
+            isSensitive = moderationResult.isNsfw;
+            flaggedWords = moderationResult.flaggedWords;
+        }
+
         const note: Record<string, unknown> = {
             id: noteId,
             type: 'Note',
@@ -112,7 +123,8 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
             to,
             cc,
             tag: tags,
-            attachment: media
+            attachment: media,
+            ...(isSensitive ? { sensitive: true, summary: "NSFW Content", nsfwWords: flaggedWords } : {})
         };
 
         // If this is a reply, set the inReplyTo field (ActivityPub standard)
