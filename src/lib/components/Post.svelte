@@ -468,9 +468,9 @@
 			</div>
 
 			<!-- Like button -->
-			<button
+			<!-- <button
 				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
-					   {isLiked ? 'text-rose-400 ring-rose-500/20 bg-rose-500/10' : 'text-foreground/50'}"
+					   {isLiked ? 'bg-rose-500/10 text-rose-400 ring-rose-500/20' : 'text-foreground/50'}"
 				onclick={handleLike}
 				disabled={isLiking}
 				aria-label={isLiked ? 'Unlike' : 'Like'}
@@ -479,10 +479,10 @@
 				{#if localLikesCount > 0}
 					<span>{localLikesCount}</span>
 				{/if}
-			</button>
+			</button> -->
 
 			<!-- Boost button -->
-			<button
+			<!-- <button
 				class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium ring-1 ring-white/10 transition-all hover:bg-white/10
 					   {isBoosted ? 'text-emerald-400 ring-emerald-500/20 bg-emerald-500/10' : 'text-foreground/50'}"
 				onclick={handleBoost}
@@ -493,7 +493,7 @@
 				{#if localBoostsCount > 0}
 					<span>{localBoostsCount}</span>
 				{/if}
-			</button>
+			</button> -->
 
 			<!-- Comment toggle -->
 			<button
