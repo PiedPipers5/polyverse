@@ -17,7 +17,7 @@
             "description": "PolyVerse Instance",
             "variables": {
                 "domain": {
-                    "default": "polyverse.social",
+                    "default": "polyverse-pp.vercel.app",
                     "description": "Your instance domain"
                 }
             }
@@ -47,6 +47,26 @@
         {
             "name": "Search & Federation",
             "description": "Federated user search via WebFinger (Epic 3 — US 3.1, Tasks 3.1.2, 3.1.3, 3.1.4)"
+        },
+        {
+            "name": "Feed",
+            "description": "User timeline and trending content"
+        },
+        {
+            "name": "Notifications",
+            "description": "User notifications"
+        },
+        {
+            "name": "Direct Messages",
+            "description": "Private conversations between users"
+        },
+        {
+            "name": "Interactions",
+            "description": "Likes, Boosts, Upvotes, Downvotes, Favorites"
+        },
+        {
+            "name": "System",
+            "description": "Translation, Emojis, Newsletter"
         }
     ],
     "paths": {
@@ -1059,7 +1079,7 @@
                     "Search & Federation"
                 ],
                 "summary": "Federated user search",
-                "description": "Searches for users by Fediverse handle (`@user@domain`). Supports:\n- **Local lookup:** queries the database directly\n- **Remote lookup:** performs WebFinger \u2192 Actor fetch with 24h caching in `remote_actors` table (Tasks 3.1.2, 3.1.3, 3.1.4)\n\nIf the query doesn't match a handle pattern, returns `no_results`.\n\n**Epic Ref:** Epic 3 \u2014 US 3.1 (Remote User Lookup)",
+                "description": "Searches for users by Fediverse handle (`@user@domain`). Supports:\n- **Local lookup:** queries the database directly\n- **Remote lookup:** performs WebFinger → Actor fetch with 24h caching in `remote_actors` table (Tasks 3.1.2, 3.1.3, 3.1.4)\n\nIf the query doesn't match a handle pattern, returns `no_results`.\n\n**Epic Ref:** Epic 3 — US 3.1 (Remote User Lookup)",
                 "operationId": "searchUsers",
                 "security": [
                     {
@@ -1157,6 +1177,1115 @@
                     },
                     "500": {
                         "description": "Remote lookup error"
+                    }
+                }
+            }
+        },
+        "/api/ai/translate": {
+            "post": {
+                "tags": [
+                    "System"
+                ],
+                "summary": "Translate text",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "type": "string"
+                                    },
+                                    "targetLanguage": {
+                                        "type": "string",
+                                        "default": "en"
+                                    }
+                                },
+                                "required": [
+                                    "text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Translated text",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "translatedText": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/boost": {
+            "post": {
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "Boost (Announce) a post",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "postId": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "postId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Boost successful"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "Unboost a post",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "postId": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "postId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Unboost successful"
+                    }
+                }
+            }
+        },
+        "/api/comments/{postId}": {
+            "get": {
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "Get comments for a post",
+                "parameters": [
+                    {
+                        "name": "postId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Threaded comments list"
+                    }
+                }
+            }
+        },
+        "/api/dm/conversations": {
+            "get": {
+                "tags": [
+                    "Direct Messages"
+                ],
+                "summary": "List conversations",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversations list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "conversations": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Conversation"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Direct Messages"
+                ],
+                "summary": "Create or find conversation",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "participantUri": {
+                                        "type": "string"
+                                    },
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "handle": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Conversation ID returned"
+                    }
+                }
+            }
+        },
+        "/api/dm/conversations/{id}": {
+            "get": {
+                "tags": [
+                    "Direct Messages"
+                ],
+                "summary": "Get conversation messages",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "before",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Messages list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "conversation": {
+                                            "$ref": "#/components/schemas/Conversation"
+                                        },
+                                        "messages": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Message"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Direct Messages"
+                ],
+                "summary": "Send direct message",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "content": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "content"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Message sent",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "$ref": "#/components/schemas/Message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/emojis": {
+            "get": {
+                "tags": [
+                    "System"
+                ],
+                "summary": "List custom emojis",
+                "responses": {
+                    "200": {
+                        "description": "List of custom emojis"
+                    }
+                }
+            }
+        },
+        "/api/favorites": {
+            "get": {
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "List favorites",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User's favorites"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "Favorite a post",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "postId": {
+                                        "type": "string"
+                                    },
+                                    "activitySnapshot": {
+                                        "type": "object"
+                                    }
+                                },
+                                "required": [
+                                    "postId",
+                                    "activitySnapshot"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Post favorited"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "Remove favorite",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "postId": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "postId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Favorite removed"
+                    }
+                }
+            }
+        },
+        "/api/federated-follow/accept": {
+            "post": {
+                "tags": [
+                    "Search & Federation"
+                ],
+                "summary": "Accept a manual federated follow (notification response)",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "notificationId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "notificationId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Follow request accepted"
+                    }
+                }
+            }
+        },
+        "/api/feed": {
+            "get": {
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "Get local/public federated timeline feed",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "before",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of Activities in feed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "posts": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "nextCursor": {
+                                            "type": "string",
+                                            "nullable": true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/follow": {
+            "get": {
+                "tags": [
+                    "Search & Federation"
+                ],
+                "summary": "Get federated follows",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "accepted",
+                                "rejected"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Follow list"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Search & Federation"
+                ],
+                "summary": "Follow an actor (local or federated)",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "targetUsername": {
+                                        "type": "string"
+                                    },
+                                    "handle": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Follow created or pending"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Search & Federation"
+                ],
+                "summary": "Unfollow an actor",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "targetUsername": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "targetUsername"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Unfollowed successfully"
+                    }
+                }
+            }
+        },
+        "/api/follow/accept": {
+            "get": {
+                "tags": [
+                    "Search & Federation"
+                ],
+                "summary": "Get pending follow requests",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pending requests list"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Search & Federation"
+                ],
+                "summary": "Accept or reject a follow request",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "followerUsername": {
+                                        "type": "string"
+                                    },
+                                    "action": {
+                                        "type": "string",
+                                        "enum": [
+                                            "accept",
+                                            "reject"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "followerUsername",
+                                    "action"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Action completed"
+                    }
+                }
+            }
+        },
+        "/api/interact": {
+            "post": {
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "Upvote, downvote, or remove interaction",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "postId": {
+                                        "type": "string"
+                                    },
+                                    "action": {
+                                        "type": "string",
+                                        "enum": [
+                                            "upvote",
+                                            "downvote",
+                                            "remove"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "postId",
+                                    "action"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Interaction recorded"
+                    }
+                }
+            }
+        },
+        "/api/like": {
+            "post": {
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "Like a post",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "postId": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "postId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Like successful"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "Unlike a post",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "postId": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "postId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Unlike successful"
+                    }
+                }
+            }
+        },
+        "/api/newsletter": {
+            "post": {
+                "tags": [
+                    "System"
+                ],
+                "summary": "Subscribe to newsletter",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "required": [
+                                    "email"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Subscribed successfully"
+                    },
+                    "400": {
+                        "description": "Invalid email error"
+                    }
+                }
+            }
+        },
+        "/api/notifications": {
+            "get": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Get notifications",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "before",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "unread",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notifications list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "unreadCount": {
+                                            "type": "integer"
+                                        },
+                                        "nextCursor": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "notifications": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Notification"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark notifications as read",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                        }
+                                    },
+                                    "all": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Notifications marked as read"
+                    }
+                }
+            }
+        },
+        "/api/statuses/{id}/context": {
+            "get": {
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "Get conversation context (ancestors/descendants) for a post",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thread context",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "ancestors": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "descendants": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/trending": {
+            "get": {
+                "tags": [
+                    "Search & Federation"
+                ],
+                "summary": "Get federated trending content",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "statuses",
+                                "tags"
+                            ],
+                            "default": "statuses"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trending lists",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "cached": {
+                                            "type": "boolean"
+                                        },
+                                        "statuses": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TrendingStatus"
+                                            }
+                                        },
+                                        "tags": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TrendingTag"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{username}/followers": {
+            "get": {
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Get followers or following list",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "followers",
+                                "following"
+                            ],
+                            "default": "followers"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "users": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "username": {
+                                                        "type": "string"
+                                                    },
+                                                    "displayName": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "avatarUrl": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "followedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1652,6 +2781,176 @@
                     },
                     "cached": {
                         "type": "boolean"
+                    }
+                }
+            },
+            "Conversation": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "otherParticipant": {
+                        "type": "object",
+                        "properties": {
+                            "uri": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "avatar": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "handle": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "lastMessage": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                            "content": {
+                                "type": "string"
+                            },
+                            "senderUri": {
+                                "type": "string"
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "isOwn": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "unreadCount": {
+                        "type": "integer"
+                    },
+                    "lastMessageAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Message": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "senderUri": {
+                        "type": "string"
+                    },
+                    "isOwn": {
+                        "type": "boolean"
+                    },
+                    "read": {
+                        "type": "boolean"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Notification": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "objectId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "read": {
+                        "type": "boolean"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "remoteActorUri": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "actor": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                            "username": {
+                                "type": "string"
+                            },
+                            "displayName": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "avatarUrl": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "profileUrl": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "TrendingStatus": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "engagement": {
+                        "type": "integer"
+                    },
+                    "instance": {
+                        "type": "string"
+                    }
+                }
+            },
+            "TrendingTag": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "totalUses": {
+                        "type": "integer"
+                    },
+                    "totalAccounts": {
+                        "type": "integer"
+                    },
+                    "instance": {
+                        "type": "string"
                     }
                 }
             }
