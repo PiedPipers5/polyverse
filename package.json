@@ -65,7 +65,7 @@
 		"@capacitor/android": "^8.1.0",
 		"@capacitor/cli": "^8.1.0",
 		"@capacitor/core": "^8.1.0",
-		"@fedify/fedify": "^1.5.9",
+		"@fedify/fedify": "^1.10.4",
 		"@google/generative-ai": "^0.24.1",
 		"@js-temporal/polyfill": "^0.5.1",
 		"@neondatabase/serverless": "^1.0.2",
